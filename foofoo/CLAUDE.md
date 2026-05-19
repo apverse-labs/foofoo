@@ -1,0 +1,349 @@
+@AGENTS.md
+
+> IMPORTANT: Also always read AGENTS.md at the project root before writing any Expo code. 
+> It points to the correct versioned Expo docs. Always consult those docs first.
+
+# CLAUDE.md — FooFoo Project Context
+> This file is read by Claude Code at the start of every session.
+> Keep it updated at the end of every sprint.
+> Last updated: Sprint 1 Setup | May 2026
+
+---
+
+## What Is FooFoo?
+
+AI-powered meal decision assistant for the Indian market. Every morning, users see a personalised Breakfast / Lunch / Dinner meal plan. Swipe to browse, lock what they like, cook or order online.
+
+**Core product = the DECISION ("what to eat"), not the instruction ("how to cook").**
+
+The **Recommendation Engine (RE)** is the heart of the product. It must always work correctly before anything else matters.
+
+App name is configured in `src/config/constants.ts` → `APP_NAME = "Foofoo"`. Change it there, updates everywhere.
+
+---
+
+## Platform
+
+Single codebase for **Android + iOS + Web** using React Native Web + Expo.
+- Android: primary test device via Expo Go
+- iOS: via Expo Go on iPhone
+- Web: runs in browser via `npx expo start --web`
+
+No local Xcode or Android Studio needed. Builds happen in Expo EAS cloud.
+
+---
+
+## Tech Stack
+
+| Layer | Technology | Version / Notes |
+|-------|-----------|-----------------|
+| Framework | React Native + Expo SDK 52+ | TypeScript strictly throughout |
+| Web | React Native Web + Expo Metro | Full feature parity — same screens, same RE |
+| Navigation | Expo Router (file-based) | Screen file name = route |
+| State | Zustand | Lightweight, no boilerplate |
+| Server state | @tanstack/react-query | Caching, offline, background refresh |
+| Gestures | react-native-gesture-handler + react-native-reanimated 3 | 60fps — non-negotiable |
+| Backend | Supabase (PostgreSQL + Auth + Storage + Edge Functions) | Free tier covers MVP |
+| Auth | Supabase Auth | Email+password MVP. Google Sign-In Phase 0.5. |
+| Functions | Supabase Edge Functions (Deno/TypeScript) | RE scoring, plan generation, weather |
+| Push | expo-notifications + OneSignal | Free unlimited |
+| Images | Supabase Storage + Cloudinary CDN | WebP, Blurhash, on-the-fly resize |
+| Weather | OpenWeatherMap API | Free: 1K calls/day |
+| Analytics | PostHog | Free: 1M events/month |
+| Errors | Sentry | Free: 5K events/month |
+| Session storage | expo-secure-store (mobile) + localStorage (web) | Platform-aware adapter in supabase.ts |
+
+---
+
+## Project Structure
+
+```
+foofoo/
+├── CLAUDE.md                        ← YOU ARE HERE — update every sprint
+├── CHANGELOG.md                     ← Log every change here
+├── app.json                         ← App config (name, platforms, plugins)
+├── babel.config.js                  ← Reanimated plugin MUST be last
+├── metro.config.js                  ← Web support config
+├── .env.local                       ← API keys (gitignored — never commit)
+│
+├── app/                             ← Expo Router screens (file = route)
+│   ├── _layout.tsx                  ← Root layout (GestureHandler + QueryClient)
+│   ├── index.tsx                    ← Entry: check session → route to auth or home
+│   ├── (auth)/                      ← Sign in / Sign up screens
+│   ├── (onboarding)/                ← 7-step onboarding flow
+│   └── (tabs)/                      ← Main app (home, search, grocery, profile)
+│
+├── src/
+│   ├── config/
+│   │   └── constants.ts             ← APP_NAME, COLORS, SPACING, FEATURES, RE_CONFIG
+│   │
+│   ├── modules/                     ← Feature modules (one folder per feature)
+│   │   ├── recommendation-engine/   ← RE scoring logic, hooks, types
+│   │   ├── auth/                    ← Auth hooks and helpers
+│   │   ├── home/                    ← Home screen logic, planner hooks
+│   │   ├── dish-detail/             ← Dish detail logic
+│   │   ├── search/                  ← Search + filter logic
+│   │   ├── grocery/                 ← Grocery list generation
+│   │   ├── profile/                 ← Profile + preferences
+│   │   └── notifications/           ← Push notification setup
+│   │
+│   ├── services/
+│   │   └── supabase.ts              ← Supabase client (single instance)
+│   │
+│   ├── repositories/                ← All Supabase queries go here — NEVER raw SQL in screens
+│   │   ├── dishes.repository.ts
+│   │   ├── plans.repository.ts
+│   │   ├── users.repository.ts
+│   │   └── suggestion-logs.repository.ts
+│   │
+│   ├── components/
+│   │   ├── shared/                  ← Reusable across screens
+│   │   ├── dish/                    ← Dish card, meal card, dish detail components
+│   │   └── planner/                 ← Home screen planner components
+│   │
+│   ├── types/
+│   │   └── index.ts                 ← All TypeScript types (Dish, DailyPlan, etc.)
+│   │
+│   └── utils/                       ← Pure helper functions
+│
+├── supabase/
+│   ├── functions/                   ← Edge Functions (Deno/TypeScript)
+│   │   ├── generate-daily-plan/     ← RE v1 scoring + plan creation
+│   │   ├── weather-fetch/           ← OpenWeatherMap → weather_cache table
+│   │   └── analytics-email/         ← Daily 13-metric founder email
+│   └── migrations/                  ← Ordered SQL migration files (run in sequence)
+│
+└── assets/
+    ├── images/                      ← App icons, splash screen
+    └── fonts/                       ← Inter font family
+```
+
+---
+
+## Database
+
+**42 MVP-active tables.** Full spec in Doc 11A (Final Merged Database Schema v4).
+
+Key groups:
+- **Food Knowledge Base:** `dishes`, `cuisines_master`, `dish_tags`, `ingredients_master`, `meal_ingredients`, `dish_combos`, `dish_combo_items`, `term_synonyms`
+- **User & Preferences:** `profiles`, `user_diet_rules`, `user_category_preferences`, `user_inferred_prefs`, `user_behavioral_profile`, `never_list`, `user_recipe_affinity`
+- **Planner & RE:** `planner`, `planner_carousel`, `suggestion_logs`, `recommendation_debug_log`, `weather_cache`, `region_food_affinity`
+- **App Intelligence:** `app_events`, `experiments`, `experiment_assignments`
+- **Operations:** `audit_log`, `etl_jobs`, `notification_log`, `referrals`, `media_assets`
+
+**Critical rules:**
+- All PKs are UUIDs (except `dishes.id` which is integer + sequence)
+- All timestamps stored as UTC `timestamptz`. IST conversion happens in Edge Functions and client only.
+- Diet exclusions use `excluded_ingredients integer[]` (NOT text — avoids language-matching bugs)
+- Food DNA stored in `dish_tags` junction (not columns) — supports unlimited dimensions
+- Auto-derivation: `allergens`, `diet_type`, `is_jain` computed from ingredient flags via `derive-dish-attributes` script — never manual
+- RLS on every table: `WHERE user_id = auth.uid()`
+- Cascade delete on user deletion. Anonymise `suggestion_logs` (keep for analytics). Retain `audit_log` (3-year DPDP requirement).
+- Supabase region: **ap-south-1 (Mumbai)** — required for latency
+
+**Connection:** Use `supabase` client from `src/services/supabase.ts` — never import createClient directly in screens.
+
+---
+
+## Recommendation Engine (RE)
+
+**The heart of FooFoo. Prioritise correctness here above everything else.**
+
+### RE Versions
+| Version | When | Status |
+|---------|------|--------|
+| RE v1 | MVP launch (Sprint 3) | Build now |
+| RE v2 | Week 3+ post-launch | Build Sprint 6 |
+| RE v2.5 | Weeks 4–8 post-launch | Tier 2 tags active |
+| RE v3 | Phase 1.5 (5K+ MAU) | K-means clustering |
+| RE v4 | Phase 2–3 | Full collaborative filtering |
+
+### RE v1 Scoring Pipeline (build first)
+1. **Hard filter** — exclude by `diet_type`, `allergens` (integer IDs), `never_list`, `is_active=false`
+2. **Cuisine boost** — user's Frequently bucket: +0.3, Occasionally: +0.1, Never: excluded
+3. **Meal item boost** — user's bucket preferences for specific dishes: +0.2 to +0.4
+4. **Weather boost** — cold/rainy: heavy/spicy +0.15; hot: light/chilled +0.15
+5. **Home state boost** — regional affinity score from `region_food_affinity` table: +0.0 to +0.2
+6. **Day-of-week** — `user_dish_patterns.preferred_days` (post MVP Week 3)
+7. **Variety guard** — penalise dishes seen in last 3 days: -0.5
+8. **Random factor** — 5% randomness (prevents staleness)
+9. **Rank** — return top 8 per slot
+10. **Combo-aware** — score combos as unit; swap components if one is never-listed
+11. **Coherence** — don't suggest 3 heavy dishes in one day (learned per user, not hard rule)
+
+### RE Fallback (if pipeline not ready by Day 3 of Sprint 3 Week 6)
+Simplified: hard filters only + cuisine boost + random. Ship this, iterate to full pipeline.
+
+### Food DNA Tiers
+- **Tier 1 (MVP):** cuisine, diet_type, allergens, spice_level, cook_time_mins, difficulty, calories
+- **Tier 2 (Weeks 4–8 post-launch):** cooking_method, primary_taste, texture, heaviness, richness, sweetness, weather_affinity
+- **Tier 3 (Phase 2+):** mouthfeel, aroma_profile, fermentation, serving_temp, health_tags, ingredient_complexity
+
+---
+
+## Content Model
+
+| Level | Content | When |
+|-------|---------|------|
+| 1 | Dish cards: name, photo, Tier 1 Food DNA tags, cuisine, diet, cook time, difficulty, calories | All 500 dishes at MVP launch |
+| 2 | Simple ingredients: names only, no quantities. E.g. "paneer, tomato, cream, onion, spices" | All 500 dishes at MVP launch |
+| 3 | Full recipes: step-by-step, quantities, audio/video | Phase 0.5 — top 50–100 dishes first |
+
+---
+
+## Gestures (Non-negotiable — must feel exact)
+
+| Gesture | Action | Component |
+|---------|--------|-----------|
+| Swipe Left / Right | Browse carousel options | Meal card |
+| Long Press Down (300ms) | Never — remove dish permanently | Meal card |
+| Long Press Up (300ms) | Not Today — skip today only | Meal card |
+| Tap Lock icon | Lock meal (no RE re-suggestion) | Meal card |
+| Tap Plus icon | Add dish to future date | Meal Detail |
+| Tap card | Open Meal Detail | Meal card |
+| Pull Down | Refresh plan | Home Day View |
+
+All gestures log to `suggestion_logs` and `app_events`. This is how RE v2 learns.
+
+---
+
+## Design System (from Doc 09)
+
+```typescript
+// Already in src/config/constants.ts
+COLORS = {
+  primary: '#2D6A4F',       // Deep green
+  accent: '#FF6B35',        // Warm orange
+  background: '#FAFAF8',
+  surface: '#FFFFFF',
+  textPrimary: '#1A1A1A',
+  textSecondary: '#6B6B6B',
+}
+SPACING = { xs:4, sm:8, md:16, lg:24, xl:32, xxl:48 }
+BORDER_RADIUS = { sm:8, md:16, lg:24, full:9999 }
+TIMING = { LONG_PRESS_MS: 300, ANIMATION_NORMAL: 350 }
+```
+
+- Font: Inter (with system fallback)
+- Min touch target: 48dp on all interactive elements
+- Dish photo always dominates the card — UI elements support, never compete
+- Blurhash placeholder while images load — never blank white boxes
+- All animations: 60fps, fluid, never abrupt
+
+---
+
+## Coding Rules (follow strictly)
+
+1. **TypeScript strict** — no `any` types. Add types to `src/types/index.ts`.
+2. **Max 300 lines per file** — split into sub-files if longer.
+3. **No raw SQL in screens** — all Supabase queries go through `src/repositories/`.
+4. **No API calls in screens** — all external calls go through `src/services/`.
+5. **Every async function gets try/catch** — errors logged to Sentry.
+6. **Structured logs** — format: `[MODULE_NAME] message`. E.g. `[RE-SCORING] Plan generated in 1.2s`.
+7. **All timestamps UTC in DB** — convert to IST only in Edge Functions and UI display.
+8. **Error response format from Edge Functions:**
+   ```json
+   // Success: { "success": true, "data": { ... } }
+   // Error:   { "success": false, "error": { "code": "PLAN_GENERATION_FAILED", "message": "...", "retry": true } }
+   ```
+
+---
+
+## Function Documentation Standard
+
+Every function must have this JSDoc block:
+
+```typescript
+/**
+ * @summary One-line: WHAT the function does (not how).
+ *
+ * @description Optional expanded context, edge cases, intent.
+ *
+ * @param {string} userId - Supabase UUID of the requesting user
+ * @returns {Promise<DailyPlan>} Generated meal plan for the date
+ *
+ * @throws {SupabaseError} When database query fails
+ *
+ * @calledBy
+ * - `app/(tabs)/index.tsx` — Home screen on mount
+ * - `supabase/functions/daily-batch/index.ts` — 5 AM batch
+ */
+```
+
+---
+
+## Environment Variables
+
+All in `.env.local` (gitignored). Prefixed `EXPO_PUBLIC_` so Expo can read them.
+Secrets in Edge Functions go in **Supabase Vault** (Dashboard → Settings → Vault) — never hardcoded.
+
+| Variable | Where to Get It | When Needed |
+|----------|----------------|-------------|
+| `EXPO_PUBLIC_SUPABASE_URL` | supabase.com → project → Settings → API | NOW |
+| `EXPO_PUBLIC_SUPABASE_ANON_KEY` | supabase.com → project → Settings → API | NOW |
+| `EXPO_PUBLIC_OPENWEATHERMAP_KEY` | openweathermap.org → My Account → API Keys | Sprint 3 |
+| `EXPO_PUBLIC_ONESIGNAL_APP_ID` | onesignal.com → your app | Sprint 5–6 |
+| `EXPO_PUBLIC_POSTHOG_KEY` | posthog.com → project settings | Sprint 6 |
+| `EXPO_PUBLIC_SENTRY_DSN` | sentry.io → project settings → DSN | Sprint 6 |
+
+---
+
+## Current Sprint Status
+
+**Sprint:** 1 — Foundation
+**Week:** 1
+**Status:** Project scaffolded. Supabase credentials need to be added.
+
+**Completed:**
+- [x] Expo project created with TypeScript
+- [x] React Native Web configured
+- [x] Supabase client created
+- [x] Folder structure established
+- [x] constants.ts, types/index.ts created
+- [x] Root layout (_layout.tsx) with GestureHandler + React Query
+- [x] Entry point (index.tsx) with session check
+
+**In progress:**
+- [ ] Add real Supabase URL + anon key to constants.ts and .env.local
+- [ ] Run Supabase migration (42 tables from Doc 11A)
+- [ ] Build Splash screen
+- [ ] Build 3 Intro screens
+- [ ] Build Auth screens (Sign Up + Sign In)
+
+**Sprint 1 Gate Criteria (must all pass before Sprint 2):**
+- [ ] All 42 MVP tables migrated with RLS policies
+- [ ] cuisines_master (~20 rows) seeded
+- [ ] ingredients_master (100+ rows with flags) seeded
+- [ ] Auth: signup → email verify → login → session persists on physical device
+- [ ] Splash + 3 intro screens render correctly
+- [ ] Auto-derivation verified on 10–20 test dishes
+
+---
+
+## Conversation Index
+
+Tag every Claude session:
+`[FooFoo| #NNN | Topic: <2–4 words> | Stage: <MVP-Sprint-N/Phase-X> | Output: <outcome>]`
+
+Reference this in CHANGELOG.md for full traceability.
+
+---
+
+## Key Reminders (Claude will prompt at right time)
+
+| Reminder | Phase |
+|----------|-------|
+| OpenWeatherMap setup | Sprint 3 |
+| Cloudinary account + dish images | Sprint 4–5 |
+| OneSignal push setup | Sprint 5–6 |
+| Google Play Developer (₹2,100) | Sprint 7 / Week 13 |
+| Apple Developer Account (₹8,700) | Phase 0.5 start |
+| Privacy Policy + Terms of Service | Sprint 7 / Week 13 |
+| Founder dish data (500 dishes, Tier 1 tags) | Sprint 4–5 / Week 10 deadline |
+| LLP Registration | Production deployment |
+| Co-Founder Agreement | Firm registration |
+| Trademark Filing | Firm registration |
+
+---
+
+*Update this file at end of every sprint. Claude Code reads it fresh every session.*
