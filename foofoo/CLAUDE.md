@@ -290,33 +290,42 @@ Secrets in Edge Functions go in **Supabase Vault** (Dashboard → Settings → V
 
 ## Current Sprint Status
 
-**Sprint:** 1 — Foundation
-**Week:** 1
-**Status:** Project scaffolded. Supabase credentials need to be added.
+**Sprint:** 2 — Onboarding Flow
+**Week:** 3
+**Status:** All 7 onboarding steps built. Testing + Supabase verification required.
 
-**Completed:**
-- [x] Expo project created with TypeScript
-- [x] React Native Web configured
-- [x] Supabase client created
-- [x] Folder structure established
-- [x] constants.ts, types/index.ts created
-- [x] Root layout (_layout.tsx) with GestureHandler + React Query
-- [x] Entry point (index.tsx) with session check
+**Sprint 1 — COMPLETED:**
+- [x] Expo project + TypeScript + React Native Web
+- [x] Supabase client with SecureStore adapter
+- [x] Root layout (GestureHandler + React Query)
+- [x] Auth screens (Sign Up, Sign In, Email Verification, Forgot Password)
+- [x] Splash + Intro screens
+- [x] Entry index.tsx with session routing
 
-**In progress:**
-- [ ] Add real Supabase URL + anon key to constants.ts and .env.local
-- [ ] Run Supabase migration (42 tables from Doc 11A)
-- [ ] Build Splash screen
-- [ ] Build 3 Intro screens
-- [ ] Build Auth screens (Sign Up + Sign In)
+**Sprint 2 — Onboarding — COMPLETED (2026-05-19):**
+- [x] app/(onboarding)/_layout.tsx — Stack navigator (existed)
+- [x] src/components/shared/OnboardingLayout.tsx — shared layout with progress bar, back arrow, step counter, Next button, keyboard avoiding
+- [x] src/repositories/profiles.repository.ts — fetchProfile, checkUsernameAvailable, saveProfileStep1, updateOnboardingStep, saveNotificationSettings, completeOnboarding
+- [x] src/repositories/onboarding.repository.ts — saveFoodPref, saveAllergens, searchIngredients, fetchCuisines, saveCuisineBuckets, fetchUserCuisineBuckets, fetchFOCuisineIds, fetchBreakfastDishes, fetchLunchDinnerDishes, saveMealBuckets, recordConsent
+- [x] src/utils/indian-states.ts — complete Indian states + UTs list
+- [x] Step 1 — Profile Setup (name, username uniqueness debounce, city, state picker modal)
+- [x] Step 2 — Food Preference (5 icon cards: Veg/Non-Veg/Egg/Vegan/Jain)
+- [x] Step 3 — Allergies (ingredient_aliases search, integer ID storage, no-allergy toggle)
+- [x] src/components/shared/BucketSelector.tsx — tap-to-cycle F/O/N sorter, bottom bar with progress + Next
+- [x] Step 4 — Cuisine Buckets (cuisines_master, saves to user_category_preferences)
+- [x] Step 5 — Breakfast Buckets (dishes filtered by F+O cuisines, top 20)
+- [x] Step 6 — Lunch + Dinner Buckets (combined, deduped, top 30)
+- [x] Step 7 — Role toggle, notification permission + custom time picker, consent, onboarding_completed=true
+- [x] app/index.tsx — step-based resume routing (onboarding_step → resume at step N+1)
 
-**Sprint 1 Gate Criteria (must all pass before Sprint 2):**
-- [ ] All 42 MVP tables migrated with RLS policies
-- [ ] cuisines_master (~20 rows) seeded
-- [ ] ingredients_master (100+ rows with flags) seeded
-- [ ] Auth: signup → email verify → login → session persists on physical device
-- [ ] Splash + 3 intro screens render correctly
-- [ ] Auto-derivation verified on 10–20 test dishes
+**Sprint 2 Gate Criteria:**
+- [ ] All 7 steps save to Supabase (verify in Table Editor)
+- [ ] profiles: onboarding_completed=true, all fields filled
+- [ ] user_diet_rules: food_pref set, excluded_ingredients is integer array
+- [ ] user_category_preferences: rows for cuisine + meal_item buckets
+- [ ] user_consent: row exists with data_consent_at
+- [ ] Kill app mid-step-4, reopen → resumes at step 4
+- [ ] 100 dishes seeded with Tier 1 tags (Sprint 2 data requirement)
 
 ---
 

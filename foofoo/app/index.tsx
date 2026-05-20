@@ -11,7 +11,17 @@ const INTRO_SEEN_KEY = 'has_seen_intro';
 // cast through unknown so we can reference routes created this session without any.
 const hr = (path: string) => path as unknown as Href;
 
-type AppRoute = 'splash' | 'auth-gate' | 'onboarding' | 'home';
+type AppRoute =
+  | 'splash'
+  | 'auth-gate'
+  | 'onboarding-1'
+  | 'onboarding-2'
+  | 'onboarding-3'
+  | 'onboarding-4'
+  | 'onboarding-5'
+  | 'onboarding-6'
+  | 'onboarding-7'
+  | 'home';
 
 /**
  * @summary App entry point that resolves the correct initial screen.
@@ -42,7 +52,13 @@ export default function Index() {
 
   if (route === 'splash') return <Redirect href={hr('/splash')} />;
   if (route === 'auth-gate') return <Redirect href={hr('/(auth)/auth-gate')} />;
-  if (route === 'onboarding') return <Redirect href={hr('/(onboarding)/step-1')} />;
+  if (route === 'onboarding-1') return <Redirect href={hr('/(onboarding)/step-1')} />;
+  if (route === 'onboarding-2') return <Redirect href={hr('/(onboarding)/step-2')} />;
+  if (route === 'onboarding-3') return <Redirect href={hr('/(onboarding)/step-3')} />;
+  if (route === 'onboarding-4') return <Redirect href={hr('/(onboarding)/step-4')} />;
+  if (route === 'onboarding-5') return <Redirect href={hr('/(onboarding)/step-5')} />;
+  if (route === 'onboarding-6') return <Redirect href={hr('/(onboarding)/step-6')} />;
+  if (route === 'onboarding-7') return <Redirect href={hr('/(onboarding)/step-7')} />;
   return <Redirect href={hr('/(tabs)')} />;
 }
 
@@ -68,11 +84,16 @@ async function resolveRoute(): Promise<AppRoute> {
 
     const { data: profile } = await supabase
       .from('profiles')
-      .select('onboarding_completed')
+      .select('onboarding_completed, onboarding_step')
       .eq('id', session.user.id)
       .single();
 
-    return profile?.onboarding_completed ? 'home' : 'onboarding';
+    if (profile?.onboarding_completed) return 'home';
+
+    // Resume at the last incomplete step (step N means N is done, resume at N+1)
+    const step = (profile?.onboarding_step ?? 0) + 1;
+    const clamped = Math.min(Math.max(step, 1), 7) as 1 | 2 | 3 | 4 | 5 | 6 | 7;
+    return `onboarding-${clamped}` as AppRoute;
   } catch {
     console.error('[INDEX] Route resolution failed — defaulting to auth-gate');
     return 'auth-gate';

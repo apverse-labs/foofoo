@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
@@ -49,11 +48,9 @@ function evaluatePassword(password: string): { strength: PasswordStrength; missi
  */
 async function recordConsent(userId: string): Promise<void> {
   try {
-    await supabase.from('user_consents').insert({
+    await supabase.from('user_consent').insert({
       user_id: userId,
-      consent_type: 'dpdp_terms',
-      consented_at: new Date().toISOString(),
-      app_version: '0.1.0',
+      data_consent_at: new Date().toISOString(),
     });
   } catch {
     console.warn('[AUTH] DPDP consent record failed — non-blocking');
@@ -76,6 +73,7 @@ export default function SignUp() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   const { strength, missing } = evaluatePassword(password);
   const canSubmit =
@@ -91,6 +89,7 @@ export default function SignUp() {
   const handleSignUp = async () => {
     if (!canSubmit) return;
     setLoading(true);
+    setErrorMsg('');
     try {
       const { data, error } = await supabase.auth.signUp({
         email: email.trim(),
@@ -100,11 +99,17 @@ export default function SignUp() {
       if (error) throw error;
       if (data.user) {
         await recordConsent(data.user.id);
-        router.replace('/(auth)/email-verification');
+        // If session exists, email confirm is disabled → go straight to onboarding
+        if (data.session) {
+          router.replace('/(onboarding)/step-1' as never);
+        } else {
+          // Email confirmation required → show verification screen
+          router.replace('/(auth)/email-verification' as never);
+        }
       }
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Sign up failed. Please try again.';
-      Alert.alert('Error', msg);
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
@@ -165,6 +170,12 @@ export default function SignUp() {
         )}
       </View>
 
+      {errorMsg ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{errorMsg}</Text>
+        </View>
+      ) : null}
+
       <Pressable
         style={[styles.submitButton, !canSubmit && styles.submitDisabled]}
         onPress={handleSignUp}
@@ -221,4 +232,12 @@ const styles = StyleSheet.create({
   signInLink: { alignItems: 'center', paddingVertical: SPACING.sm },
   signInText: { fontSize: 15, color: COLORS.textSecondary },
   signInBold: { color: COLORS.primary, fontWeight: '600' },
+  errorBox: {
+    backgroundColor: `${COLORS.error}12`,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+  },
+  errorText: { fontSize: 14, color: COLORS.error, lineHeight: 20 },
 });

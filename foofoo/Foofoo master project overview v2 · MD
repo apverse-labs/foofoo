@@ -1,0 +1,580 @@
+# 🍽️ FooFoo — Master Project Overview
+**Version:** 2.0 | **Date:** May 19, 2026 | **Status:** Build Phase — Starting Now
+**Confidential | Living Document — Update after every sprint or major decision**
+
+> *"Zomato solved how to get food. We solve what to eat."*
+> App name is configurable: `APP_NAME = "Foofoo"` in `src/config/constants.ts` — one change, applies everywhere.
+
+---
+
+## Table of Contents
+1. [What Is FooFoo?](#1-what-is-foofoo)
+2. [Documentation Readiness](#2-documentation-readiness)
+3. [Key Modules & Phase Plan](#3-key-modules--phase-plan)
+4. [Core Architecture — Agreed & Final](#4-core-architecture--agreed--final)
+5. [Open Items — Resolved & Reminders](#5-open-items--resolved--reminders)
+6. [Key Dependencies by Phase](#6-key-dependencies-by-phase)
+7. [Next Steps with Gate Criteria](#7-next-steps-with-gate-criteria)
+8. [Tool Stack — Complete Guide](#8-tool-stack--complete-guide)
+9. [Budget Summary](#9-budget-summary)
+10. [Success Gates](#10-success-gates)
+11. [Code Standards & Documentation Protocol](#11-code-standards--documentation-protocol)
+12. [Master Change Log Protocol](#12-master-change-log-protocol)
+
+---
+
+## 1. What Is FooFoo?
+
+FooFoo is an **AI-powered meal decision assistant** built for the Indian market. The core promise: every morning, users see a personalised Breakfast / Lunch / Dinner meal plan. If they like it, they cook. If not, they swipe. The product is the **decision** ("what to eat"), not the instruction ("how to cook it").
+
+**Platform:** Web app + iOS (both built together from Day 1 using React Native Web + Expo) + Android.
+**Guiding mantra:** First-time-right recommendations, driven almost entirely by AI tools. Budget-constrained, founder-built, India-first. The Recommendation Engine is the heart — everything else serves it.
+
+---
+
+## 2. Documentation Readiness
+
+All 15 planning documents are complete. Build can begin now.
+
+| # | Document | Version | Status | What It Covers |
+|---|----------|---------|--------|----------------|
+| 01 | Business Model Canvas | v1 | ✅ Final | Value proposition, customer segments, revenue streams, key partners, cost structure |
+| 02 | Market Research & Competitive Analysis | v1 | ✅ Final | Indian food-tech landscape, competitor gaps, opportunity sizing |
+| 03 | Revenue & Monetization Strategy | v1 | ✅ Final | 3-tier freemium: Free / Premium ₹99 / Premium Plus ₹149. 3-month free launch period. |
+| 04 | Budget & Financial Projections | v1 | ✅ Final | 3-year model, ₹75K initial budget, break-even Month 5–6, Year 1 revenue ₹14.5L |
+| 05 | Legal & Compliance Checklist | v1 | ✅ Final | LLP, DPDP Act, IP/trademark, co-founder agreement, app store compliance |
+| 06 | PRD & User Personas | v4 | ✅ Final | 67 features across 7 phases, 5 personas, success metrics, monetisation tiers, NFRs |
+| 08 | Information Architecture & Sitemap | v2 | ✅ Final | 30 MVP screens, navigation model, gesture map, deep links, state management |
+| 09 | UI/UX Design System & Wireframes | v2 | ✅ Final | Colour system, typography, spacing grid, component library, screen-by-screen wireframe specs |
+| 10 | Recommendation Engine Specification | v3 | ✅ Final | 20-dimension Food DNA taxonomy, 4 RE versions, scoring algorithm, variety guard, clustering |
+| 11 | Technical Architecture & Database Design | v3 | ✅ Final | Tech stack, 40+ table schema, Edge Functions, indexing, error handling, infra costs |
+| 11A | Final Merged Database Schema | v4 FINAL | ✅ Final | Authoritative 42-table MVP-active schema. Supersedes all prior schema docs. |
+| 12 | MVP Sprint Plan | v3 | ✅ Final | 14-week plan, 7 sprints, budget ₹11,500–17,700, cut list, pre-launch checklist |
+| 12A | Post-Launch Sprint Plans | v3 | ✅ Final | Phase 0.5, 1, 1.5 plans, Weeks 14–28 timeline, Phase 2 readiness gates |
+| 13 | Go-To-Market Strategy | v2 | ✅ Final | Phased launch: MVP invite-only → Phase 1 public → Phase 2 growth |
+| 15 | Pitch Deck | v1 | ✅ Final | 12-slide investor deck |
+| — | Complete Feature Inventory | xlsx | ✅ Final | 67 features with dev effort, category, content effort per phase |
+
+**Design note:** Figma wireframes are NOT yet created (not needed now). Build directly from Doc 09 wireframe specs using Claude. Figma begins Phase 2 as per the plan.
+
+---
+
+## 3. Key Modules & Phase Plan
+
+### Phase Map
+```
+MVP (Wk 1–14) → Phase 0.5 (Wk 15–19) → Phase 1 (Wk 20–22) → Phase 1.5 (Wk 23–28) → Phase 2+ (Post Wk 28)
+```
+
+### 3.1 MVP — 25 Features | 14 Weeks | ₹0 Infrastructure Cost
+
+| Module | Key Features | Sprint |
+|--------|-------------|--------|
+| **Foundation & Auth** | Email auth, splash, 3 intro screens, 7-step onboarding with autocomplete allergens | S1–S2 |
+| **Home & Planner** | Day View (3 Rubik's Cube swipeable cards), Week View (7×3 grid), morning push notification | S3, S5 |
+| **Gesture System** | Swipe L/R (browse), Long Press Down (never), Long Press Up (not today), Lock, Plus (add to date), gesture tutorial overlay | S4 |
+| **🧠 Recommendation Engine v1** | Hard filters (auto-derived allergens/diet), onboarding boosts, weather, variety guard, combo-aware scoring, day-of-week | S3 |
+| **🧠 Recommendation Engine v2** | Personal history, decay curves, inferred prefs (spice, texture, complexity, repeat tolerance), suggestion_logs passive feed | S6 |
+| **Content & Dish Detail** | Meal Detail page (Food DNA chips, auto-derived dietary badges), Level 2 simple ingredients, 500 dishes at launch | S4–S5 |
+| **Search & Discovery** | Full-text search (tsvector + term_synonyms), basic filters (cuisine, diet, meal slot), meal listing | S5 |
+| **Grocery List** | Auto-generated from daily or weekly plan, category-grouped, combo de-duplication, checkbox UI | S4 |
+| **Profile & Settings** | Photo, preferences, notifications toggle, premium placeholder, logout, edit preferences | S5 |
+| **Analytics & Ops** | PostHog events, Sentry errors, daily founder email (13 metrics), app_events tracking, offline cached plan | S6 |
+
+### 3.2 Phase 0.5 — 8 Features | Weeks 15–19
+Google Sign-In · Full step-by-step recipes (Level 3, top 50–100 dishes) · Pantry system · Advanced filters · Extended notifications (2/day max) · iOS App Store launch · Carousel end→search prompt · Additional profile fields
+
+### 3.3 Phase 1 — 4 Features | Weeks 20–22
+WhatsApp referral (15 days free premium per referral, stackable to 180 days) · Mood selector (RE modifier) · Calorie targeting · Cooking diary
+
+### 3.4 Phase 1.5 — 8 Features | Weeks 23–28 (Revenue Activation)
+Premium tiers live (₹99/₹149/month) · AdMob ad integration · Guest mode · Family profiles · Audio/video recipes (top 20) · Cluster-based RE v3 (needs 5K+ MAU) · User ratings · Premium visibility
+
+### 3.5 Phase 2 — 11 Features (Post Week 28)
+Context tags · Meal insights & analytics · Health & diet profiles · Explore feed · Pantry WhatsApp/OCR · User modes (fasting, recovery, fitness) · Tier 3 Food DNA tagging · Family voting · Variant additions · Demo/tutorial. Figma design work begins in Phase 2 as planned.
+
+### 3.6 Phase 3–4 (Future)
+Social suite (5 features) · Order grocery/food (Blinkit/Zepto, Zomato/Swiggy integrations) · Voice cooking assistant · Chef login · Dietician services · Waste minimiser
+
+---
+
+## 4. Core Architecture — Agreed & Final
+
+### 4.1 Tech Stack
+
+| Layer | Technology | Why / Notes |
+|-------|-----------|-------------|
+| **App Framework** | React Native + Expo SDK 52+ | Single codebase: Android + iOS + Web. TypeScript throughout. Best AI coding support. |
+| **Web Support** | React Native Web (via Expo) | Web gets full feature parity. No separate codebase. Same screens, same RE, same backend. |
+| **Navigation** | Expo Router (file-based) | Matches IA screen structure exactly. Deep linking for notifications. Works on web too. |
+| **State** | Zustand + React Query | Zustand = lightweight in-memory. React Query = server cache + offline + background refresh. |
+| **Gestures** | Gesture Handler + Reanimated 3 | Native 60fps swipe/long-press. Non-negotiable for the core swipe UX. |
+| **Backend** | Supabase | PostgreSQL + Auth + Storage + Edge Functions + Realtime. Free tier: 500MB DB, 50K MAU. |
+| **Database** | PostgreSQL (inside Supabase) | Full SQL for RE scoring queries, joins, aggregations, full-text search. |
+| **Server Functions** | Supabase Edge Functions (Deno/TypeScript) | RE scoring, plan generation, weather fetch, analytics aggregation, daily batch. |
+| **Auth** | Supabase Auth | Email+password MVP. Google Sign-In Phase 0.5. |
+| **Push Notifications** | Expo Notifications + OneSignal | Free: unlimited devices. Morning plan notification at MVP. |
+| **Images** | Supabase Storage + Cloudinary CDN | On-the-fly resize, WebP conversion, Blurhash for lazy loading. Free: 25GB bandwidth. |
+| **Weather** | OpenWeatherMap API | Free: 1,000 calls/day. City from device GPS or home state capital as fallback. |
+| **Analytics** | PostHog | Free: 1M events/month. Tracks every user action from Day 1. |
+| **Error Tracking** | Sentry | Free: 5K events/month. Catches crashes before users report them. |
+| **CI/CD & Builds** | Expo EAS Build | Cloud builds — no local Xcode or Android Studio needed. OTA updates. |
+| **IDE** | GitHub Codespace | Cloud-based IDE. No local machine needed. Fully browser-based coding. |
+| **AI Builder** | Claude Code (primary) | Connected to GitHub Codespace. Writes ~70% of code from plain English instructions. |
+| **Code Reviewer** | Cursor free tier | For reviewing what Claude Code built, small targeted edits, understanding structure. |
+
+### 4.2 Database: 42 MVP-Active Tables (Doc 11A — FINAL)
+
+Organised into 5 groups:
+
+**Food Knowledge Base (14 tables):** cuisines, dishes (with 20 Food DNA columns), tags, dish_tags, dish_similar, dish_combos, dish_combo_items, ingredients, ingredient_aliases, meal_ingredients, term_synonyms, recipes (empty at MVP), recipe_steps (empty), media_assets
+
+**User & Preferences (11 tables):** profiles, user_diet_rules, user_category_preferences, user_consent, user_feedback, user_inferred_prefs, user_dish_patterns, user_behavioral_profile, family_members, user_recipe_affinity, never_list
+
+**Planner & RE (12 tables + 1 materialized view):** planner, planner_carousel, suggestion_logs, recommendation_debug_log (5% sample), weather_cache, region_food_affinity, experiments, experiment_assignments, daily_plans, dish_popularity (MV — refreshed daily)
+
+**App Intelligence (4 tables):** app_events, user_behavioral_profile (aggregated weekly), experiments, experiment_assignments
+
+**Operations (12 tables):** audit_log, role_audit, etl_jobs, cache_metadata, mv_refresh_history, migration_log, notification_log, referrals (Phase 1), pii_tokens (Phase 1.5+)
+
+**Key architectural choices:**
+- Integer IDs for diet exclusions (`excluded_ingredients integer[]`) — no language-matching issues
+- `dish_tags` junction for Food DNA — unlimited dimensions post-launch without schema changes
+- Polymorphic planner — supports both dishes and combos in same slots
+- Decay-weighted history: 7d=1.0, 8–30d=0.5, 31–90d=0.2, 90d+=0.05 (tunable via `decay_config jsonb`)
+- All timestamps UTC — IST conversion at Edge Function and client layer only
+- Auto-derivation: allergens, diet_type, is_jain computed from ingredient flags, not manual tagging
+
+### 4.3 Recommendation Engine — The Heart of FooFoo
+
+| Version | When | What's Added |
+|---------|------|-------------|
+| **RE v1** | MVP launch | Hard filters (auto-derived) + onboarding boosts + weather + day-of-week + home state + variety guard + random factor. Combo-aware. |
+| **RE v2** | MVP Week 3+ | Personal history scoring + decay curves + inferred spice/texture/complexity + per-user repeat tolerance + cuisine drift. |
+| **RE v2.5** | Weeks 4–8 post-launch | Tier 2 Food DNA tags active (cooking_method, texture, richness, heaviness, weather_affinity). +15% acceptance lift expected. |
+| **RE v3** | Phase 1.5 (5K+ MAU) | K-means clustering on food DNA similarity. Cluster-seeded new user recommendations. Context tags. |
+| **RE v4** | Phase 2–3 | 70% personal + 30% cluster. Mood/mode awareness. Calorie targeting. Tier 3 tags. Pantry-aware. |
+
+**Food DNA Taxonomy (20 Dimensions):**
+- **Tier 1 (MVP, 7 dims):** cuisine · diet_type · allergens · spice_level · cook_time_mins · difficulty · calories
+- **Tier 2 (Weeks 4–8, 7 dims):** cooking_method · primary_taste · texture · heaviness · richness · sweetness · weather_affinity
+- **Tier 3 (Phase 2+, 6 dims):** mouthfeel · aroma_profile · fermentation · serving_temp · health_tags · ingredient_complexity
+
+**RE Sprint 3 fallback plan:** If the full 10-step pipeline is not working by Day 3 of Week 6, switch to simplified: hard filters + cuisine boost + random. Pre-agreed so there is no debate on the day.
+
+### 4.4 Content Model: 3 Levels
+
+| Level | Content | Status at MVP Launch |
+|-------|---------|---------------------|
+| 1 | Dish cards (name, hero photo, Food DNA tags, cuisine, diet type, cook time, difficulty, calories, dish_role) | All 500 dishes |
+| 2 | Simple ingredients (names only — e.g., "paneer, tomato, cream, onion, spices" — no quantities) | All 500 dishes |
+| 3 | Full recipes (step-by-step, precise quantities, audio/video) | Phase 0.5 onwards — top 50–100 dishes first |
+
+### 4.5 Design System (Doc 09 — Build Directly From This)
+
+- **3 Design Pillars:** Fresh & Vibrant · Rounded & Soft · Real Photography (dummy images in development)
+- **Primary Green:** `#2D6A4F` | **Accent Orange:** `#FF6B35` | **Background:** `#FAFAF8`
+- **Font:** Inter (system fallback: SF Pro on iOS, Roboto on Android)
+- **Spacing grid:** 4px base unit
+- **Minimum touch target:** 48dp for all interactive elements
+- **Gesture activation time:** Long-press 300ms (forgiving, intentional)
+- **Animations:** 60fps, never abrupt. Lock = satisfying click. Never = dish slides away. Acceptance = gentle checkmark.
+- Combo card UI: combo name + component thumbnails on card. Meal Detail page is tabbed.
+- Snacks slot: schema supports it (`planner.snacks_ref`), UI deferred to Phase 1 (confirmed)
+- Notification permission: prompted at Onboarding Step 7 (confirmed)
+- 'Recipe coming soon' placeholder: needed for 450+ dishes without Level 3 at launch — Claude will design this component
+
+---
+
+## 5. Open Items — Resolved & Reminders
+
+All items from previous open items lists have been resolved or deferred. No blocking issues remain for starting the build.
+
+| # | Item | Status | Action / Reminder |
+|---|------|--------|-------------------|
+| **OI-01** | LLP Registration | ⏸ Deferred | 🔔 **REMIND at:** Production deployment phase |
+| **OI-02** | Apple Developer Account (₹8,700) | ⏸ Deferred | 🔔 **REMIND at:** Phase 0.5 start (Week 15) |
+| **OI-03** | Google Play Developer (₹2,100) | ⏸ Deferred | 🔔 **REMIND at:** MVP deployment (Week 13) |
+| **OI-04** | Co-Founder Agreement | ⏸ Deferred | 🔔 **REMIND at:** Firm registration |
+| **OI-05** | Trademark Filing for "FooFoo" | ⏸ Deferred | 🔔 **REMIND at:** Firm registration |
+| **OI-06** | 500-Dish Content Data | ✅ Ready | 🔔 **REMINDER:** Founder to provide data at the right stage. Tier 1 tags needed by Sprint 5 (Week 10). |
+| **OI-07** | Web App Scope | ✅ Decided | Web has **full feature parity** with mobile. Built together from Day 1 using React Native Web. No separate codebase. |
+| **OI-08** | Founder Research Documents (regional food maps) | ⏸ Deferred | Skip for now. RE v1 will use coded regional data. |
+| **OI-09** | Dish Image Storage | ✅ Decided | **Supabase Storage (free, included) + Cloudinary CDN (free 25GB).** Steps: create Cloudinary account (free) → upload dish images via dashboard or bulk upload script → reference URL in `dishes.hero_image_url`. Claude will guide when this step is reached in Sprint 4–5. |
+| **OI-10** | Privacy Policy & Terms of Service (DPDP) | ⏸ Deferred | 🔔 **REMIND at:** Play Store submission (Sprint 7, Week 13) |
+| **OI-11** | OpenWeatherMap API Setup | 📋 **To-Do at right time** | **Steps (Sprint 3):** (1) Go to openweathermap.org → Sign up free → (2) Go to API Keys tab → copy your key → (3) Add to Supabase project: Dashboard → Settings → Vault → add secret `OPENWEATHERMAP_KEY` → (4) Claude will use this in the weather Edge Function. Free tier: 1,000 calls/day. |
+| **OI-12** | Supabase Project Setup | 📋 **START CRITICAL — Do Today** | **Steps:** (1) Go to supabase.com → Sign up free → (2) New Project → name: `foofoo-mvp` → region: **ap-south-1 (Mumbai)** → (3) Note down: Project URL + anon public key → (4) Claude will run the full 42-table migration from these credentials. This is the first thing to do. |
+| **OI-13** | GitHub Repository Setup | 📋 **START CRITICAL — Do Today** | **Steps:** (1) Go to github.com → Sign up / log in → (2) New Repository → name: `foofoo` → Private → (3) Click "Code" → "Codespaces" → "Create codespace on main" → browser IDE opens → (4) This is your cloud computer. All coding happens here. No local machine needed. |
+| **OI-14** | Claude Code Setup | 📋 **START CRITICAL — Do Today** | **Steps (inside your Codespace):** (1) In Codespace terminal, run: `npm install -g @anthropic-ai/claude-code` → (2) Run: `claude` and follow auth prompts (uses your Claude Pro account) → (3) Create a file `CLAUDE.md` at project root (Claude will help write this — it tells Claude Code about FooFoo's stack and conventions). You are now ready to build. |
+| **OI-15** | iOS + Android + Web together | ✅ Decided | React Native + Expo builds all three from **one codebase**. Build once, test on Android (via Expo Go), test on iOS (via Expo Go on iPhone), web runs in browser. No duplication. |
+| **OI-16** | Figma / Phase 2 Design | ✅ Decided | Phase 2 design work starts as per the plan documents. Figma when Phase 2 begins. Claude handles all design in current phase. |
+| **OI-Doc1-4** | Drag-drop vs tap-to-cycle for bucket selector | ✅ Decided | Ship **tap-to-cycle first**, add drag-drop post-launch. Reduces Sprint 2 risk. |
+| **OI-Doc1-5** | RE v1 scope vs simplified fallback | ✅ Pre-agreed | If full pipeline not working by Day 3 of Week 6: switch to simplified (hard filters + cuisine boost + random). |
+| **OI-Doc1-6** | Tier 2 tagging AI prompt | 📋 To-Do Weeks 4–8 | Founder + Claude to design AI batch-tagging prompt. Claude will guide when this stage is reached. |
+
+---
+
+## 6. Key Dependencies by Phase
+
+### Pre-Build (This Week) — Critical Path
+```
+GitHub repo created
+  → Codespace opened
+    → Claude Code installed and authenticated
+      → Supabase project created (Mumbai region)
+        → Expo project initialized
+          → Supabase client configured
+            → Ready for Sprint 1
+```
+
+### MVP Sprint Critical Path (Weeks 1–14)
+```
+Auth working (S1)
+  → Onboarding stores data (S2)
+    → RE v1 scores + 100 dishes seeded (S3) ← MAKE-OR-BREAK SPRINT
+      → Gestures + suggestion_logs recording (S4)
+        → 500 dishes + auto-derivation complete (S5)
+          → RE v2 + analytics (S6)
+            → Polish + Play Store submission (S7)
+```
+
+**Dependency chain for RE v1 (Sprint 3):**
+`Ingredients master (100+ with flags) → Auto-derivation pipeline → Correct allergen filtering → RE v1 hard constraints → Weather API key → Full RE v1 operational`
+
+### Phase 0.5 (Weeks 15–19)
+```
+500-dish acceptance analytics → Identify top 50 for Level 3 recipes → Recipe content sprint
+user_pantry tables (schema exists, just activate) → Pantry tab goes live
+Apple Developer account (₹8,700) → iOS EAS build → App Store submission (+ 1–2 weeks Apple review)
+```
+
+### Phase 1 (Weeks 20–22)
+```
+suggestion_logs mature (8+ weeks data) → RE v2.5 Tier 2 tags meaningful → +15% acceptance lift
+WhatsApp Business API (free) → Referral link generation → Viral growth loop
+```
+
+### Phase 1.5 (Weeks 23–28)
+```
+5K+ MAU → RE v3 cluster activation (below threshold, defer clustering, keep RE v2)
+user_behavioral_profile weekly aggregation → K-means input → cluster_metadata populated
+Play Store + App Store in-app purchase setup → Premium tier activation
+AdMob account approved → Ad SDK integrated → Revenue stream 2 live
+```
+
+---
+
+## 7. Next Steps with Gate Criteria
+
+### IMMEDIATE (Do Today — In This Order)
+
+These are **sequential** for Founder 1 (tech setup). Founder 2 can work on dish data in parallel.
+
+| Order | Action | Expected Outcome |
+|-------|--------|-----------------|
+| **Step 1** | Create GitHub account if you don't have one → go to github.com | GitHub account active |
+| **Step 2** | Create new repository: name = `foofoo`, visibility = Private | Repo exists at github.com/[you]/foofoo |
+| **Step 3** | Inside repo → Code → Codespaces → "Create codespace on main" | Browser-based IDE opens — this is your cloud coding environment |
+| **Step 4** | In Codespace terminal: `npm install -g @anthropic-ai/claude-code` then `claude` | Claude Code active and authenticated |
+| **Step 5** | Go to supabase.com → New Project → name: foofoo-mvp → region: ap-south-1 (Mumbai) | Supabase dashboard live. Copy Project URL + anon key. |
+| **Step 6** | Tell Claude Code: "Create a new Expo project with TypeScript, Expo Router, Zustand, React Query, and React Native Web support. Connect it to Supabase using these credentials: [paste URL and key]" | FooFoo app skeleton running in Codespace. Web preview + mobile via Expo Go. |
+| **Step 7** | Create `CLAUDE.md` at project root. Tell Claude Code: "Write a CLAUDE.md for the FooFoo project based on this stack: [paste Section 4.1 of this doc]" | Claude Code now has project context for every future session |
+
+**Gate to Sprint 1:** GitHub ✅ + Codespace running ✅ + Claude Code active ✅ + Supabase project live ✅ + Expo app renders ✅
+
+---
+
+### Sprint-by-Sprint Gate Criteria
+
+| Sprint | Weeks | Outcome | Gate Criteria (all must pass before moving forward) |
+|--------|-------|---------|-----------------------------------------------------|
+| **S1** | 1–2 | User can sign up and log in on a real phone | ☐ All 42 MVP tables migrated with RLS policies ☐ cuisines_master (~20 rows) seeded ☐ ingredients_master (100+ with flags) seeded ☐ Auth: signup → email verify → login → session persists on physical device ☐ Splash + 3 intro screens render correctly ☐ Auto-derivation logic verified on 10–20 test dishes |
+| **S2** | 3–4 | Full onboarding complete and saves | ☐ All 7 steps complete and save to Supabase ☐ Allergen autocomplete pulls from ingredient_aliases, stores integer IDs ☐ Partial-save + resume-after-kill tested ☐ 100 dishes seeded with Tier 1 tags + dish_role + ingredient lists |
+| **S3** | 5–6 | Personalised meal plan on Home screen **(MAKE-OR-BREAK)** | ☐ generate-first-plan Edge Function returns in < 3 seconds ☐ 3 meal cards render with real dish photos (Blurhash → full image) ☐ Dish combos display correctly ☐ Weather API key active and influencing scores ☐ Jain user never sees onion/garlic in 20 test runs ☐ Allergy exclusion verified ☐ 250 dishes in DB |
+| **S4** | 7–8 | Gestures + meal detail + grocery | ☐ All 4 gestures work correctly and consistently ☐ suggestion_logs recording every swipe ☐ Meal Detail shows Food DNA chips + ingredients ☐ Grocery list auto-generates from day plan ☐ Gesture tutorial overlay shown on first use |
+| **S5** | 9–10 | Search + profile + 500 dishes | ☐ Full-text search returns results in < 500ms ☐ Profile editable with data persisting ☐ 500 dishes seeded with Tier 1 + Tier 2 tags ☐ Auto-derivation pipeline running on all dishes |
+| **S6** | 11–12 | RE v2 + analytics + notifications | ☐ RE v2 using acceptance history for personalisation ☐ Inferred prefs computing for users with 2+ weeks history ☐ Morning notification delivered on test device ☐ PostHog tracking all key events ☐ Sentry catching and reporting errors ☐ Daily founder email delivering 13 metrics |
+| **S7** | 13–14 | Launch-ready (with 1-week buffer) | ☐ App passes Google Play Store review ☐ All 25 MVP features working on physical Android phone ☐ 100 beta invites prepared and sent ☐ Acceptance rate > 40% in internal testing ☐ WhatsApp beta feedback group active ☐ Web version accessible at domain |
+
+---
+
+## 8. Tool Stack — Complete Guide
+
+### 8.1 IDE & AI Development (How You Will Actually Build)
+
+| Tool | What It Does (Plain English) | Free? | Why This One |
+|------|------------------------------|-------|-------------|
+| **GitHub Codespace** | A full computer in the cloud — your coding environment runs in the browser. No local machine setup needed. | ✅ 60 hrs/month free | Org policy compliant. No local machine. Everything in cloud. |
+| **Claude Code** | An AI that writes, edits, and runs code for you. You describe a feature; it builds files. | ✅ Included with Claude Pro ($20/month) | Primary builder. ~70% of all code. Already subscribed. |
+| **Cursor (free tier)** | Visual code editor for reviewing what Claude Code built, making small targeted changes | ✅ Free | Good for reading structure, small fixes |
+| **Expo Go app** | Install on your Android or iPhone. Instantly previews the app as it's being built — no build step needed. | ✅ Free | Your testing device during development |
+
+**How to use Claude Code effectively:**
+1. Keep `CLAUDE.md` at project root — Claude Code reads this every session to understand FooFoo's stack and conventions
+2. Reference specific documents: *"Build the generate-first-plan Edge Function per the RE v1 spec in CLAUDE.md"*
+3. One feature per session — do not batch unrelated features
+4. Always test on physical device after each generation run
+5. Use the conversation index tag `[FooFoo| #NNN | ...]` for all sessions
+
+### 8.2 App Framework & Libraries
+
+| Tool | What It Does (Plain English) | Free? | Alternative |
+|------|------------------------------|-------|------------|
+| **React Native + Expo SDK 52** | Builds one codebase that runs on Android, iOS, AND web. | ✅ Free | Flutter (also free, but less AI coding support) |
+| **React Native Web** | Makes the same React Native app run in a browser. Full feature parity — no extra code. | ✅ Free | None needed — comes with Expo |
+| **Expo Router** | Handles navigation between screens. File-based — screen names match file names. | ✅ Free | React Navigation (also free) |
+| **Zustand** | Remembers what's happening in the app right now (locked meals, current user, etc.) | ✅ Free | Redux (free but more complex) |
+| **React Query** | Fetches data from Supabase smartly — caches it, refreshes in background, works offline | ✅ Free | SWR (also free) |
+| **Gesture Handler + Reanimated 3** | Makes swipes and long-presses feel silky at 60fps | ✅ Free | None — these are the standard for React Native |
+
+### 8.3 Backend & Database
+
+| Tool | What It Does (Plain English) | Free? | Alternative |
+|------|------------------------------|-------|------------|
+| **Supabase** | Your entire backend: database + user accounts + file storage + server functions. One platform. | ✅ Free (500MB DB, 50K MAU) | Firebase (Google — also free tier, but less powerful SQL) |
+| **PostgreSQL** | The actual database inside Supabase. Stores all dish data, user profiles, meal plans. | ✅ Free via Supabase | MySQL (less powerful for RE queries) |
+| **Supabase Edge Functions** | Mini-programs on Supabase's servers. Run the RE scoring, weather fetch, plan generation. | ✅ Free (500K calls/month) | Firebase Cloud Functions (smaller free tier) |
+| **Supabase Auth** | Manages user accounts, passwords, sessions securely. | ✅ Free | Firebase Auth (also free) |
+
+### 8.4 Images & Media
+
+| Tool | What It Does (Plain English) | Free? | Alternative |
+|------|------------------------------|-------|------------|
+| **Supabase Storage** | Stores dish hero images. Free 1GB included. Primary storage bucket. | ✅ Free (1GB) | — |
+| **Cloudinary CDN** | Delivers images fast anywhere in India. Auto-converts to WebP, resizes on-the-fly, lazy loading. | ✅ Free (25GB bandwidth/month) | imgix (paid) |
+| **Blurhash** | Shows a blurred colour placeholder while the real dish photo loads. Prevents blank white boxes. | ✅ Free (npm package) | LQIP (also free) |
+| **Picsum / Unsplash** | Free dummy food images during development before real dish photos are ready | ✅ Free | Pexels (also free) |
+
+**Dish image setup (Claude will guide at Sprint 4–5):**
+1. Create Cloudinary account at cloudinary.com → free tier
+2. Upload dish photos via Cloudinary dashboard (drag-and-drop)
+3. Cloudinary gives you a URL for each image — save this in `dishes.hero_image_url` column
+4. Cloudinary auto-optimises (WebP, right size for device) — no manual work needed
+
+### 8.5 Analytics, Monitoring & Notifications
+
+| Tool | What It Does (Plain English) | Free? | Alternative |
+|------|------------------------------|-------|------------|
+| **PostHog** | Records every tap, swipe, search in the app. Shows you where users drop off, what they love. | ✅ Free (1M events/month) | Mixpanel (limited free tier) |
+| **Sentry** | Catches app crashes and errors automatically. You see the full error report without user telling you. | ✅ Free (5K errors/month) | Bugsnag (free tier) |
+| **OneSignal** | Sends push notifications to Android, iOS, and web. Morning meal plan alert, etc. | ✅ Free (unlimited notifications) | Firebase Cloud Messaging (also free) |
+| **OpenWeatherMap** | Tells the RE what the weather is in the user's city to suggest weather-appropriate food | ✅ Free (1,000 calls/day) | WeatherAPI.com (also free tier) |
+
+**OpenWeatherMap setup steps (Sprint 3 — Claude will remind):**
+1. Go to openweathermap.org → Create free account
+2. Navigate to: My Account → API Keys → copy the key
+3. In Supabase: Dashboard → Settings → Vault → Add secret: name = `OPENWEATHERMAP_KEY`, value = [your key]
+4. Claude will use this secret in the weather Edge Function automatically
+
+### 8.6 Build, Deploy & Stores
+
+| Tool | What It Does (Plain English) | Free? | Alternative |
+|------|------------------------------|-------|------------|
+| **Expo EAS Build** | Compiles app into files for Google Play and App Store. Cloud-based — no Mac or PC needed. | ✅ Free (slow queue) | Paid EAS ($29/month for faster builds) |
+| **GitHub** | Stores all code safely. Runs Codespace. Version history. | ✅ Free | GitLab (also free) |
+| **Google Play Console** | Publishes Android app, shows stats, manages reviews | 💰 ₹2,100 one-time | None — required for Android |
+| **Apple Developer Program** | Required for iOS App Store | 💰 ₹8,700/year | None — required for iOS |
+
+### 8.7 Content & AI Tagging (Founder 2 Workflow)
+
+| Tool | What It Does (Plain English) | Free? |
+|------|------------------------------|-------|
+| **Claude** | Batch-tags 500 dishes across Food DNA dimensions. ~80–85% accuracy, ~15% human correction. | ✅ Included with Pro |
+| **Google Sheets** | Review and validate AI-generated dish tags before bulk import to Supabase | ✅ Free |
+| **Supabase bulk import** | Load validated dish CSV into the database in one go | ✅ Free |
+| **sharp (npm)** | Generates Blurhash codes for dish images (one-time script) | ✅ Free |
+
+### 8.8 Cost Summary
+
+| Item | Cost | When |
+|------|------|------|
+| Claude Pro | $20/month (~₹1,700) | Now — already active |
+| Google Play Developer | ₹2,100 one-time | Sprint 7 (Week 13) — 🔔 Remind then |
+| Apple Developer | ₹8,700/year | Phase 0.5 start (Week 15) — 🔔 Remind then |
+| Domain (.in or .com) | ₹800/year | Before MVP launch |
+| **Everything else** | **₹0** | Free tiers cover MVP scale |
+| **Total to MVP launch** | **~₹11,500–14,000** | |
+
+---
+
+## 9. Budget Summary
+
+| Phase | Total | Key Spend |
+|-------|-------|-----------|
+| MVP (Wks 1–14) | **₹11,500–17,700** | Play Store ₹2,100 · Domain ₹800 · Claude Pro ₹6,800 (4 months) · Photography ₹5,000–8,000 |
+| Phase 0.5–1.5 (Wks 15–28) | **₹18,000–25,000** | Apple Dev ₹8,700 · Claude Pro ₹5,100 · Photography ₹3,000–5,000 · Video ₹2,000–5,000 |
+| Infrastructure (MVP) | **₹0** | All services on free tiers until ~15–18K MAU |
+| Infrastructure (Growth) | **₹2,100–8,000/month** | Supabase Pro at ~15K MAU · Cloudinary/Sentry/EAS at scale |
+
+**Total to revenue activation (Week 28): ₹29,500–42,700** from an estimated ₹50K–1L budget.
+**Remaining buffer: ₹7,300–70,500.**
+
+---
+
+## 10. Success Gates
+
+Do not build forward without meeting these. Non-negotiable.
+
+| Gate | What to Check | Threshold |
+|------|--------------|-----------|
+| **Sprint 3 demo** | RE v1 generates culturally correct plan | Jain/veg constraints NEVER violated across 20 test runs |
+| **Sprint 6 demo** | Passive feedback loop feeding RE | suggestion_logs accumulating; inferred_prefs computed for test user |
+| **Week 14 launch** | App on Play Store | App live and downloadable |
+| **Phase 2 entry (Week 28)** | All 6 readiness gates | MAU > 3K · DAU/MAU > 20% · D30 retention > 15% · Suggestion acceptance rate > 40% · Premium conversion > 2% · App rating > 3.5 |
+
+---
+
+## 11. Code Standards & Documentation Protocol
+
+Every file and function written for FooFoo must follow these standards — applied consistently by Claude and reviewed by founders.
+
+### 11.1 Project Structure
+```
+foofoo/
+├── CLAUDE.md                    ← Context file for Claude Code (read every session)
+├── CHANGELOG.md                 ← Master change log
+├── src/
+│   ├── config/
+│   │   └── constants.ts         ← APP_NAME, API URLs, all configurable values here
+│   ├── modules/
+│   │   ├── recommendation-engine/
+│   │   ├── auth/
+│   │   ├── home/
+│   │   ├── dish-detail/
+│   │   ├── search/
+│   │   ├── grocery/
+│   │   ├── profile/
+│   │   └── notifications/
+│   ├── services/                ← All API calls go here (never in components)
+│   ├── repositories/            ← All Supabase queries go here (never raw SQL in components)
+│   ├── components/              ← Shared UI components
+│   └── types/                   ← TypeScript type definitions
+├── supabase/
+│   ├── functions/               ← Edge Functions (RE scoring, plan generation, weather)
+│   └── migrations/              ← All schema migrations in sequence
+└── app/                         ← Expo Router screens (file = screen)
+```
+
+**Rules:**
+- No file longer than 300 lines — split into sub-files
+- App name: `export const APP_NAME = "Foofoo"` in `constants.ts` — one change, applies everywhere
+- All API calls go through `src/services/` — never directly in components
+- All Supabase queries go through `src/repositories/` — never raw SQL in screen files
+- Every async function wrapped in try/catch; errors logged to Sentry
+- Structured logs with `[MODULE_NAME]` prefix: e.g., `[RE-SCORING] Plan generated in 1.2s for user abc123`
+
+### 11.2 Mandatory Function Documentation
+
+Every function must include this block:
+
+```typescript
+/**
+ * @summary One-line: WHAT the function does (not how).
+ *
+ * @description
+ * Optional: edge cases, intent, context.
+ * E.g., "Runs at 5 AM daily batch AND on pull-to-refresh.
+ *        Returns cached plan if offline."
+ *
+ * @param {string} userId - Supabase UUID of the user requesting the plan
+ * @param {string} date   - ISO date string (YYYY-MM-DD) for which to generate the plan
+ *
+ * @returns {Promise<DailyPlan>} Generated or retrieved meal plan for the requested date
+ *
+ * @throws {SupabaseError} When database query fails
+ * @throws {REError} When RE scoring pipeline returns zero eligible dishes
+ *
+ * @calledBy
+ * - `app/(tabs)/index.tsx` — Home screen on mount and pull-to-refresh
+ * - `supabase/functions/daily-batch/index.ts` — Morning batch at 5 AM IST
+ */
+async function generateDailyPlan(userId: string, date: string): Promise<DailyPlan> {
+```
+
+### 11.3 Per-Change Log Entry Format
+
+Every time code is written or changed, add this to `CHANGELOG.md`:
+
+```markdown
+## [CHANGE LOG ENTRY] — YYYY-MM-DD
+- **Sprint:** S[N]
+- **Module:** e.g., Recommendation Engine / Auth / Home Screen
+- **File(s):** `src/modules/recommendation-engine/scoring.ts`
+- **Change Type:** NEW | UPDATE | FIX | REFACTOR | DEPRECATE
+- **Summary:** One-line — what changed (not how)
+- **Reason:** Why this change was made
+- **Dependencies:** Any new npm packages added (with version)
+- **Test Status:** Tested on device | Unit tested | Pending
+- **FooFoo Session:** [FooFoo| #NNN | ...]
+```
+
+---
+
+## 12. Master Change Log Protocol
+
+### 12.1 CHANGELOG.md Structure (at project root)
+
+```markdown
+# FooFoo — Master Change Log
+
+## [Unreleased]
+[Changes not yet in a named release]
+
+## [v0.1.0] — Sprint 1 Complete — YYYY-MM-DD
+### Added
+- Supabase migration: 42 tables, 16 indexes, 5 RLS policies
+- Email/password auth with Supabase Auth
+- Splash screen + 3 intro screens
+
+### Changed
+- (none)
+
+### Fixed
+- (none)
+
+## [v0.2.0] — Sprint 2 Complete — YYYY-MM-DD
+...
+```
+
+### 12.2 CLAUDE.md (Project Context File for Claude Code)
+
+This file is read by Claude Code at the start of every session. It must contain:
+- Stack summary (Section 4.1 of this doc, condensed)
+- Supabase project URL (not the secret key — that goes in Vault)
+- Key conventions (naming, structure, doc format)
+- Current sprint + what's been built so far
+- Links to key documents (RE spec, DB schema, IA doc)
+
+**Update CLAUDE.md at the end of every sprint.**
+
+---
+
+## Appendix A: FooFoo Conversation Index Log Format
+
+Every substantive Claude response in this project is tagged at the top:
+```
+[FooFoo| #NNN | Topic: <2–4 words> | Stage: <MVP/Phase-0.5/Phase-1/etc> | Output: <concise outcome>]
+```
+Reference these in CHANGELOG entries for full traceability between chat sessions and code changes.
+
+---
+
+## Appendix B: Reminder Tracker
+
+| Reminder | Trigger Moment |
+|----------|---------------|
+| 🔔 Register Google Play Developer (₹2,100) | Sprint 7 Week 13 — before Play Store submission |
+| 🔔 Buy Apple Developer Account (₹8,700) | Phase 0.5 start — Week 15 |
+| 🔔 Register LLP on MCA portal | Production deployment phase |
+| 🔔 Sign Co-Founder Agreement | Firm registration |
+| 🔔 File Trademark for "FooFoo" | Firm registration |
+| 🔔 Draft Privacy Policy + Terms of Service | Sprint 7 — before Play Store submission |
+| 🔔 Founder to provide 500-dish content data | Sprint 4–5 — needed by Week 10 |
+| 🔔 OpenWeatherMap API key setup | Sprint 3 — Claude will guide |
+| 🔔 Cloudinary account + dish image upload | Sprint 4–5 — Claude will guide |
+| 🔔 OneSignal setup for push notifications | Sprint 5–6 — Claude will guide |
+
+---
+
+*This is the single source of truth for FooFoo. Merged from two prior master documents (Doc_1 + Project Overview v1) incorporating all founder decisions made May 19, 2026. Update this document after every sprint completion, major decision, or scope change.*
+*Sources: Docs 01–13, 15, Complete Feature Inventory, FooFoo Master Overview v1, FooFoo Project Master Overview Doc_1*

@@ -6,7 +6,6 @@ import {
   Pressable,
   StyleSheet,
   ScrollView,
-  Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
@@ -29,6 +28,7 @@ export default function SignIn() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
   /**
    * @summary Authenticates user and routes to onboarding or home tab.
@@ -44,6 +44,7 @@ export default function SignIn() {
   const handleSignIn = async () => {
     if (!email.trim() || !password) return;
     setLoading(true);
+    setErrorMsg('');
     try {
       const { data, error } = await supabase.auth.signInWithPassword({
         email: email.trim(),
@@ -56,18 +57,24 @@ export default function SignIn() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('onboarding_completed')
+        .select('onboarding_completed, onboarding_step')
         .eq('id', userId)
         .single();
 
       if (profile?.onboarding_completed) {
-        router.replace('/(tabs)');
+        router.replace('/(tabs)' as never);
       } else {
-        router.replace('/(onboarding)/step-1');
+        // Resume at the last incomplete step
+        const next = Math.min(Math.max((profile?.onboarding_step ?? 0) + 1, 1), 7);
+        router.replace(`/(onboarding)/step-${next}` as never);
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
-      Alert.alert('Error', msg);
+      const raw = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
+      // Surface a friendlier message for the common "email not confirmed" case
+      const msg = raw.toLowerCase().includes('email not confirmed')
+        ? 'Please verify your email before signing in. Check your inbox.'
+        : raw;
+      setErrorMsg(msg);
     } finally {
       setLoading(false);
     }
@@ -115,6 +122,12 @@ export default function SignIn() {
           <Text style={styles.forgotText}>Forgot password?</Text>
         </Pressable>
       </View>
+
+      {errorMsg ? (
+        <View style={styles.errorBox}>
+          <Text style={styles.errorText}>{errorMsg}</Text>
+        </View>
+      ) : null}
 
       <Pressable
         style={[styles.submitButton, !canSubmit && styles.submitDisabled]}
@@ -173,4 +186,12 @@ const styles = StyleSheet.create({
   signUpLink: { alignItems: 'center', paddingVertical: SPACING.sm },
   signUpText: { fontSize: 15, color: COLORS.textSecondary },
   signUpBold: { color: COLORS.primary, fontWeight: '600' },
+  errorBox: {
+    backgroundColor: `${COLORS.error}12`,
+    borderRadius: BORDER_RADIUS.md,
+    padding: SPACING.md,
+    borderWidth: 1,
+    borderColor: COLORS.error,
+  },
+  errorText: { fontSize: 14, color: COLORS.error, lineHeight: 20 },
 });
