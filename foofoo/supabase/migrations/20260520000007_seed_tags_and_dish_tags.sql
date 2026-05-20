@@ -12,136 +12,135 @@
 -- schema completeness — can be enriched later without a migration.
 -- ============================================================
 
-INSERT INTO public.tags (category, value, tier) VALUES
+INSERT INTO public.tags (category, value, display_name, tier, is_food_dna) VALUES
 
-  -- TIER 1: spice_level (Doc 10 §4.2 — hard filter, day-one)
-  ('spice_level', 'level_1', 1),   -- very mild (suitable for kids, elderly)
-  ('spice_level', 'level_2', 1),   -- mild
-  ('spice_level', 'level_3', 1),   -- medium
-  ('spice_level', 'level_4', 1),   -- hot
+  -- TIER 1: spice_level
+  ('spice_level', 'level_1', 'Very Mild',    1, TRUE),
+  ('spice_level', 'level_2', 'Mild',         1, TRUE),
+  ('spice_level', 'level_3', 'Medium Spicy', 1, TRUE),
+  ('spice_level', 'level_4', 'Hot',          1, TRUE),
 
-  -- TIER 1: dish_category (Doc 11A §4 — primary classification)
-  ('dish_category', 'paratha_roti',     1),
-  ('dish_category', 'dosa_idli',        1),
-  ('dish_category', 'snack_starter',    1),
-  ('dish_category', 'chaat',            1),
-  ('dish_category', 'curry',            1),
-  ('dish_category', 'dal_lentil',       1),
-  ('dish_category', 'biryani_pulao',    1),
-  ('dish_category', 'rice',             1),
-  ('dish_category', 'bread',            1),
-  ('dish_category', 'salad_raita',      1),
-  ('dish_category', 'dessert_sweet',    1),
-  ('dish_category', 'beverage',         1),
+  -- TIER 1: dish_category
+  ('dish_category', 'paratha_roti',  'Paratha / Roti',   1, FALSE),
+  ('dish_category', 'dosa_idli',     'Dosa / Idli',      1, FALSE),
+  ('dish_category', 'snack_starter', 'Snack / Starter',  1, FALSE),
+  ('dish_category', 'chaat',         'Chaat',            1, FALSE),
+  ('dish_category', 'curry',         'Curry',            1, FALSE),
+  ('dish_category', 'dal_lentil',    'Dal / Lentil',     1, FALSE),
+  ('dish_category', 'biryani_pulao', 'Biryani / Pulao',  1, FALSE),
+  ('dish_category', 'rice',          'Rice',             1, FALSE),
+  ('dish_category', 'bread',         'Bread',            1, FALSE),
+  ('dish_category', 'salad_raita',   'Salad / Raita',    1, FALSE),
+  ('dish_category', 'dessert_sweet', 'Dessert / Sweet',  1, FALSE),
+  ('dish_category', 'beverage',      'Beverage',         1, FALSE),
 
-  -- TIER 1: weather_affinity (Doc 10 §6 — weather filter)
-  ('weather_affinity', 'rainy',        1),
-  ('weather_affinity', 'cold_weather', 1),
-  ('weather_affinity', 'hot_weather',  1),
-  ('weather_affinity', 'all_weather',  1),
+  -- TIER 1: weather_affinity
+  ('weather_affinity', 'rainy',        'Rainy Day',    1, TRUE),
+  ('weather_affinity', 'cold_weather', 'Cold Weather', 1, TRUE),
+  ('weather_affinity', 'hot_weather',  'Hot Weather',  1, TRUE),
+  ('weather_affinity', 'all_weather',  'All Weather',  1, TRUE),
 
-  -- TIER 1: dish_role (Doc 11A §2.1 — meal slot structuring)
-  ('dish_role', 'main',          1),
-  ('dish_role', 'side',          1),
-  ('dish_role', 'accompaniment', 1),
-  ('dish_role', 'dessert',       1),
-  ('dish_role', 'snack',         1),
-  ('dish_role', 'beverage',      1),
-  ('dish_role', 'standalone',    1),
-  ('dish_role', 'carb_base',     1),
-  ('dish_role', 'protein',       1),
-  ('dish_role', 'vegetable',     1),
+  -- TIER 1: dish_role
+  ('dish_role', 'main',          'Main',          1, FALSE),
+  ('dish_role', 'side',          'Side',          1, FALSE),
+  ('dish_role', 'accompaniment', 'Accompaniment', 1, FALSE),
+  ('dish_role', 'dessert',       'Dessert',       1, FALSE),
+  ('dish_role', 'snack',         'Snack',         1, FALSE),
+  ('dish_role', 'beverage',      'Beverage',      1, FALSE),
+  ('dish_role', 'standalone',    'Standalone',    1, FALSE),
+  ('dish_role', 'carb_base',     'Carb Base',     1, FALSE),
+  ('dish_role', 'protein',       'Protein',       1, FALSE),
+  ('dish_role', 'vegetable',     'Vegetable',     1, FALSE),
 
-  -- TIER 2: cooking_method (Doc 10 §4.4 — Tier 2 scoring)
-  ('cooking_method', 'steamed',          2),
-  ('cooking_method', 'pan_fried',        2),
-  ('cooking_method', 'deep_fried',       2),
-  ('cooking_method', 'slow_cooked',      2),
-  ('cooking_method', 'sauteed',          2),
-  ('cooking_method', 'pressure_cooked',  2),
-  ('cooking_method', 'grilled',          2),
-  ('cooking_method', 'baked',            2),
-  ('cooking_method', 'raw',              2),
-  ('cooking_method', 'tandoor',          2),
-  ('cooking_method', 'boiled',           2),
-  ('cooking_method', 'roasted',          2),
+  -- TIER 2: cooking_method
+  ('cooking_method', 'steamed',         'Steamed',          2, TRUE),
+  ('cooking_method', 'pan_fried',       'Pan Fried',        2, TRUE),
+  ('cooking_method', 'deep_fried',      'Deep Fried',       2, TRUE),
+  ('cooking_method', 'slow_cooked',     'Slow Cooked',      2, TRUE),
+  ('cooking_method', 'sauteed',         'Sautéed',          2, TRUE),
+  ('cooking_method', 'pressure_cooked', 'Pressure Cooked',  2, TRUE),
+  ('cooking_method', 'grilled',         'Grilled',          2, TRUE),
+  ('cooking_method', 'baked',           'Baked',            2, TRUE),
+  ('cooking_method', 'raw',             'Raw',              2, TRUE),
+  ('cooking_method', 'tandoor',         'Tandoor',          2, TRUE),
+  ('cooking_method', 'boiled',          'Boiled',           2, TRUE),
+  ('cooking_method', 'roasted',         'Roasted',          2, TRUE),
 
-  -- TIER 2: texture (Doc 10 §4.4)
-  ('texture', 'crispy',   2),
-  ('texture', 'soft',     2),
-  ('texture', 'creamy',   2),
-  ('texture', 'crunchy',  2),
-  ('texture', 'chewy',    2),
-  ('texture', 'fluffy',   2),
-  ('texture', 'grainy',   2),
-  ('texture', 'sticky',   2),
+  -- TIER 2: texture
+  ('texture', 'crispy',   'Crispy',   2, TRUE),
+  ('texture', 'soft',     'Soft',     2, TRUE),
+  ('texture', 'creamy',   'Creamy',   2, TRUE),
+  ('texture', 'crunchy',  'Crunchy',  2, TRUE),
+  ('texture', 'chewy',    'Chewy',    2, TRUE),
+  ('texture', 'fluffy',   'Fluffy',   2, TRUE),
+  ('texture', 'grainy',   'Grainy',   2, TRUE),
+  ('texture', 'sticky',   'Sticky',   2, TRUE),
 
-  -- TIER 2: heaviness (1=light, 2=moderate, 3=heavy)
-  -- Stored as tags for searchability alongside dishes.heaviness column
-  ('heaviness', 'light',    2),
-  ('heaviness', 'moderate', 2),
-  ('heaviness', 'heavy',    2),
+  -- TIER 2: heaviness
+  ('heaviness', 'light',    'Light',    2, TRUE),
+  ('heaviness', 'moderate', 'Moderate', 2, TRUE),
+  ('heaviness', 'heavy',    'Heavy',    2, TRUE),
 
-  -- TIER 2: richness (mirrors dishes.richness CHECK constraint)
-  ('richness', 'plain',     2),
-  ('richness', 'buttery',   2),
-  ('richness', 'creamy',    2),
-  ('richness', 'oily',      2),
-  ('richness', 'ghee_rich', 2),
+  -- TIER 2: richness
+  ('richness', 'plain',     'Plain',     2, TRUE),
+  ('richness', 'buttery',   'Buttery',   2, TRUE),
+  ('richness', 'creamy',    'Creamy',    2, TRUE),
+  ('richness', 'oily',      'Oily',      2, TRUE),
+  ('richness', 'ghee_rich', 'Ghee Rich', 2, TRUE),
 
-  -- TIER 2: sweetness (0–3 scale)
-  ('sweetness', 'none',    2),
-  ('sweetness', 'low',     2),
-  ('sweetness', 'medium',  2),
-  ('sweetness', 'high',    2),
+  -- TIER 2: sweetness
+  ('sweetness', 'none',   'Not Sweet',      2, TRUE),
+  ('sweetness', 'low',    'Slightly Sweet', 2, TRUE),
+  ('sweetness', 'medium', 'Medium Sweet',   2, TRUE),
+  ('sweetness', 'high',   'Very Sweet',     2, TRUE),
 
-  -- TIER 2: primary_taste (Doc 10 §4.4)
-  ('primary_taste', 'savory',  2),
-  ('primary_taste', 'sweet',   2),
-  ('primary_taste', 'spicy',   2),
-  ('primary_taste', 'tangy',   2),
-  ('primary_taste', 'bitter',  2),
-  ('primary_taste', 'umami',   2),
-  ('primary_taste', 'bland',   2),
+  -- TIER 2: primary_taste
+  ('primary_taste', 'savory', 'Savory', 2, TRUE),
+  ('primary_taste', 'sweet',  'Sweet',  2, TRUE),
+  ('primary_taste', 'spicy',  'Spicy',  2, TRUE),
+  ('primary_taste', 'tangy',  'Tangy',  2, TRUE),
+  ('primary_taste', 'bitter', 'Bitter', 2, TRUE),
+  ('primary_taste', 'umami',  'Umami',  2, TRUE),
+  ('primary_taste', 'bland',  'Bland',  2, TRUE),
 
-  -- TIER 3: fermentation (Phase 2+)
-  ('fermentation', 'none',   3),
-  ('fermentation', 'light',  3),
-  ('fermentation', 'medium', 3),
-  ('fermentation', 'heavy',  3),
+  -- TIER 3: fermentation
+  ('fermentation', 'none',   'Not Fermented',      3, TRUE),
+  ('fermentation', 'light',  'Lightly Fermented',  3, TRUE),
+  ('fermentation', 'medium', 'Fermented',          3, TRUE),
+  ('fermentation', 'heavy',  'Heavily Fermented',  3, TRUE),
 
-  -- TIER 3: serving_temp (Phase 2+)
-  ('serving_temp', 'hot',       3),
-  ('serving_temp', 'warm',      3),
-  ('serving_temp', 'room_temp', 3),
-  ('serving_temp', 'chilled',   3),
-  ('serving_temp', 'frozen',    3),
+  -- TIER 3: serving_temp
+  ('serving_temp', 'hot',       'Hot',       3, TRUE),
+  ('serving_temp', 'warm',      'Warm',      3, TRUE),
+  ('serving_temp', 'room_temp', 'Room Temp', 3, TRUE),
+  ('serving_temp', 'chilled',   'Chilled',   3, TRUE),
+  ('serving_temp', 'frozen',    'Frozen',    3, TRUE),
 
-  -- TIER 3: health_tags (Phase 2+)
-  ('health_tags', 'high_protein',   3),
-  ('health_tags', 'high_fibre',     3),
-  ('health_tags', 'low_carb',       3),
-  ('health_tags', 'gut_friendly',   3),
-  ('health_tags', 'iron_rich',      3),
-  ('health_tags', 'calcium_rich',   3),
-  ('health_tags', 'low_calorie',    3),
-  ('health_tags', 'diabetic_safe',  3),
+  -- TIER 3: health_tags
+  ('health_tags', 'high_protein',  'High Protein',  3, TRUE),
+  ('health_tags', 'high_fibre',    'High Fibre',    3, TRUE),
+  ('health_tags', 'low_carb',      'Low Carb',      3, TRUE),
+  ('health_tags', 'gut_friendly',  'Gut Friendly',  3, TRUE),
+  ('health_tags', 'iron_rich',     'Iron Rich',     3, TRUE),
+  ('health_tags', 'calcium_rich',  'Calcium Rich',  3, TRUE),
+  ('health_tags', 'low_calorie',   'Low Calorie',   3, TRUE),
+  ('health_tags', 'diabetic_safe', 'Diabetic Safe', 3, TRUE),
 
-  -- TIER 3: mouthfeel (Phase 2+)
-  ('mouthfeel', 'dry',      3),
-  ('mouthfeel', 'juicy',    3),
-  ('mouthfeel', 'smooth',   3),
-  ('mouthfeel', 'grainy',   3),
-  ('mouthfeel', 'gelatinous', 3),
+  -- TIER 3: mouthfeel
+  ('mouthfeel', 'dry',        'Dry',        3, TRUE),
+  ('mouthfeel', 'juicy',      'Juicy',      3, TRUE),
+  ('mouthfeel', 'smooth',     'Smooth',     3, TRUE),
+  ('mouthfeel', 'grainy',     'Grainy',     3, TRUE),
+  ('mouthfeel', 'gelatinous', 'Gelatinous', 3, TRUE),
 
-  -- TIER 3: aroma_profile (Phase 2+)
-  ('aroma_profile', 'smoky',      3),
-  ('aroma_profile', 'spiced',     3),
-  ('aroma_profile', 'herby',      3),
-  ('aroma_profile', 'neutral',    3),
-  ('aroma_profile', 'pungent',    3),
-  ('aroma_profile', 'floral',     3),
-  ('aroma_profile', 'fermented',  3)
+  -- TIER 3: aroma_profile
+  ('aroma_profile', 'smoky',     'Smoky',     3, TRUE),
+  ('aroma_profile', 'spiced',    'Spiced',    3, TRUE),
+  ('aroma_profile', 'herby',     'Herby',     3, TRUE),
+  ('aroma_profile', 'neutral',   'Neutral',   3, TRUE),
+  ('aroma_profile', 'pungent',   'Pungent',   3, TRUE),
+  ('aroma_profile', 'floral',    'Floral',    3, TRUE),
+  ('aroma_profile', 'fermented', 'Fermented', 3, TRUE)
 
 ON CONFLICT (category, value) DO NOTHING;
 

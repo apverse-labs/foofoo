@@ -35,15 +35,15 @@ FROM (VALUES
   -- PUNJAB (PB)
   ('PB', 'north_indian',     1.00, TRUE),
   ('PB', 'punjabi',          1.00, TRUE),
-  ('PB', 'mughal',           0.70, FALSE),
+  ('PB', 'mughlai',          0.70, FALSE),
   ('PB', 'street_food',      0.65, FALSE),
 
   -- DELHI (DL)
   ('DL', 'north_indian',     0.90, TRUE),
   ('DL', 'punjabi',          0.85, FALSE),
-  ('DL', 'mughal',           0.80, FALSE),
+  ('DL', 'mughlai',          0.80, FALSE),
   ('DL', 'street_food',      0.85, FALSE),
-  ('DL', 'chinese_indian',   0.55, FALSE),
+  ('DL', 'indo_chinese',     0.55, FALSE),
 
   -- TAMIL NADU (TN)
   ('TN', 'south_indian',     1.00, TRUE),
@@ -77,15 +77,13 @@ FROM (VALUES
 
   -- UTTAR PRADESH (UP)
   ('UP', 'north_indian',     0.95, TRUE),
-  ('UP', 'mughal',           0.90, FALSE),
-  ('UP', 'awadhi',           1.00, TRUE),
+  ('UP', 'mughlai',          0.90, FALSE),
   ('UP', 'street_food',      0.70, FALSE),
 
   -- TELANGANA (TG)
   ('TG', 'south_indian',     0.90, TRUE),
   ('TG', 'hyderabadi',       1.00, TRUE),
-  ('TG', 'mughal',           0.70, FALSE),
-  ('TG', 'andhra',           0.85, FALSE),
+  ('TG', 'mughlai',          0.70, FALSE),
 
   -- ANDHRA PRADESH (AP)
   ('AP', 'south_indian',     0.90, TRUE),
@@ -102,18 +100,16 @@ FROM (VALUES
   -- JAMMU & KASHMIR (JK)
   ('JK', 'kashmiri',         1.00, TRUE),
   ('JK', 'north_indian',     0.70, FALSE),
-  ('JK', 'mughal',           0.75, FALSE),
+  ('JK', 'mughlai',          0.75, FALSE),
 
   -- GOA (GA)
   ('GA', 'goan',             1.00, TRUE),
-  ('GA', 'seafood',          0.90, FALSE),
   ('GA', 'maharashtrian',    0.55, FALSE),
-  ('GA', 'konkan',           0.85, FALSE),
 
   -- HARYANA (HR)
   ('HR', 'north_indian',     0.90, TRUE),
   ('HR', 'punjabi',          0.85, FALSE),
-  ('HR', 'mughal',           0.55, FALSE),
+  ('HR', 'mughlai',          0.55, FALSE),
 
   -- MADHYA PRADESH (MP)
   ('MP', 'north_indian',     0.85, TRUE),
