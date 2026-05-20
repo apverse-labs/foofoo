@@ -4,6 +4,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import { COLORS } from '../src/config/constants';
+import { supabase } from '../src/services/supabase';
 
 // Always start at index in dev so session-check logic runs fresh on every reload.
 export const unstable_settings = { initialRouteName: 'index' };
@@ -26,6 +27,15 @@ export default function RootLayout() {
     if (__DEV__) {
       router.replace('/' as never);
     }
+
+    // Reactively route to auth-gate whenever the user signs out from any screen.
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_OUT') {
+        router.replace('/(auth)/auth-gate' as never);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
   return (

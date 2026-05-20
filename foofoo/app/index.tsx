@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../src/services/supabase';
+import { resetOnboardingProgress } from '../src/repositories/profiles.repository';
 import { COLORS, APP_NAME } from '../src/config/constants';
 
 const INTRO_SEEN_KEY = 'foofoo_has_seen_intro';
@@ -62,6 +63,8 @@ export default function Index() {
   }
 
   async function handleDevReset() {
+    const { data: { user } } = await supabase.auth.getUser();
+    if (user) await resetOnboardingProgress(user.id);
     await AsyncStorage.removeItem(INTRO_SEEN_KEY);
     await supabase.auth.signOut();
     checkAndRoute();

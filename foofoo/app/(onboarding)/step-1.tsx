@@ -84,7 +84,7 @@ export default function OnboardingStep1() {
         home_state: state,
         current_city: city.trim(),
       });
-      router.push('/(onboarding)/step-2' as never);
+      router.replace('/(onboarding)/step-2' as never);
     } catch (err) {
       console.error('[STEP1] save failed:', err);
       Alert.alert('Save failed', 'Could not save your profile. Please check your connection and try again.');

@@ -99,7 +99,7 @@ export default function OnboardingStep7() {
       title="Almost there! 🎉"
       subtitle="Just a couple of final touches."
       onNext={handleStart}
-      onBack={() => router.back()}
+      onBack={() => router.replace('/(onboarding)/step-6' as never)}
       nextDisabled={saving}
       nextLabel={saving ? 'Setting up…' : 'Start Using Foofoo'}
     >

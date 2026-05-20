@@ -176,6 +176,24 @@ export async function saveNotificationSettings(
 }
 
 /**
+ * @summary Reset onboarding state so the user re-enters the flow from step 1.
+ *
+ * @description Used by the dev reset button. Sets onboarding_completed=false and
+ *   onboarding_step=0 so index.tsx routes back to step-1 on next app open.
+ *
+ * @param {string} userId - Supabase auth UUID
+ *
+ * @calledBy Dev reset buttons in app/index.tsx and app/(tabs)/index.tsx
+ */
+export async function resetOnboardingProgress(userId: string): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update({ onboarding_completed: false, onboarding_step: 0 })
+    .eq('id', userId);
+  if (error) throw error;
+}
+
+/**
  * @summary Save user role (cook vs instruct) and mark onboarding complete.
  *
  * @param {string} userId - Supabase auth UUID

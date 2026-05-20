@@ -184,7 +184,7 @@ export async function recordConsent(userId: string): Promise<void> {
   const { error } = await supabase
     .from('user_consent')
     .upsert(
-      { user_id: userId, data_consent_at: new Date().toISOString() },
+      { user_id: userId, data_consent_at: new Date().toISOString(), data_consent_version: 'v1.0' },
       { onConflict: 'user_id' }
     );
   if (error) throw error;

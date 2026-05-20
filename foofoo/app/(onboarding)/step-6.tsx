@@ -65,7 +65,7 @@ export default function OnboardingStep6() {
     try {
       await saveMealBuckets(userId, buckets, dishIds);
       await updateOnboardingStep(userId, 6);
-      router.push('/(onboarding)/step-7' as never);
+      router.replace('/(onboarding)/step-7' as never);
     } catch (err) {
       console.error('[STEP6] save failed:', err);
       Alert.alert('Save failed', 'Could not save your meal preferences. Please check your connection and try again.');
@@ -81,8 +81,8 @@ export default function OnboardingStep6() {
       step={6}
       title="Lunch & Dinner dishes"
       subtitle="Sort your lunch and dinner dishes. Tap to cycle: Frequently → Occasionally → Never."
-      onNext={() => router.push('/(onboarding)/step-7' as never)}
-      onBack={() => router.back()}
+      onNext={() => router.replace('/(onboarding)/step-7' as never)}
+      onBack={() => router.replace('/(onboarding)/step-5' as never)}
       nextDisabled={!noData}
       hideFooter={!noData}
     >

@@ -60,7 +60,7 @@ export default function OnboardingStep4() {
     try {
       await saveCuisineBuckets(userId, buckets);
       await updateOnboardingStep(userId, 4);
-      router.push('/(onboarding)/step-5' as never);
+      router.replace('/(onboarding)/step-5' as never);
     } catch (err) {
       console.error('[STEP4] save failed:', err);
       Alert.alert('Save failed', 'Could not save your cuisine preferences. Please check your connection and try again.');
@@ -75,7 +75,7 @@ export default function OnboardingStep4() {
       title="Cuisines you love"
       subtitle="Sort every cuisine into a bucket. Tap a chip to cycle it through Frequently → Occasionally → Never → back."
       onNext={() => {}}
-      onBack={() => router.back()}
+      onBack={() => router.replace('/(onboarding)/step-3' as never)}
       hideFooter
     >
       {loading ? (

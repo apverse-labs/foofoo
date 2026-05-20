@@ -89,7 +89,7 @@ export default function OnboardingStep3() {
       const ids = noAllergies ? [] : selected.map((s) => s.ingredient_id);
       await saveAllergens(userId, ids);
       await updateOnboardingStep(userId, 3);
-      router.push('/(onboarding)/step-4' as never);
+      router.replace('/(onboarding)/step-4' as never);
     } catch (err) {
       console.error('[STEP3] save failed:', err);
       Alert.alert('Save failed', 'Could not save your allergens. Please check your connection and try again.');
@@ -104,7 +104,7 @@ export default function OnboardingStep3() {
       title="Any food allergies?"
       subtitle="Search for ingredients you're allergic to. We'll make sure they never appear in your plan."
       onNext={handleNext}
-      onBack={() => router.back()}
+      onBack={() => router.replace('/(onboarding)/step-2' as never)}
       nextDisabled={!isNextAllowed || saving}
       nextLabel={saving ? 'Saving…' : 'Next'}
     >

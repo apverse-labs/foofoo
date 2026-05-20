@@ -54,7 +54,7 @@ export default function OnboardingStep2() {
     try {
       await saveFoodPref(userId, selected);
       await updateOnboardingStep(userId, 2);
-      router.push('/(onboarding)/step-3' as never);
+      router.replace('/(onboarding)/step-3' as never);
     } catch (err) {
       console.error('[STEP2] save failed:', err);
       Alert.alert('Save failed', 'Could not save your food preference. Please check your connection and try again.');
@@ -69,7 +69,7 @@ export default function OnboardingStep2() {
       title="What's your food preference?"
       subtitle="This is the core filter for your meal plan. You can change it anytime."
       onNext={handleNext}
-      onBack={() => router.back()}
+      onBack={() => router.replace('/(onboarding)/step-1' as never)}
       nextDisabled={!selected || saving}
       nextLabel={saving ? 'Saving…' : 'Next'}
     >
