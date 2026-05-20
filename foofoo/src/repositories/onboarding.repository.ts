@@ -123,11 +123,12 @@ export async function fetchCuisines(): Promise<CuisineRow[]> {
  * @calledBy `app/(onboarding)/step-4.tsx` — on Next press
  */
 export async function saveCuisineBuckets(userId: string, buckets: BucketMap): Promise<void> {
-  await supabase
+  const { error: deleteError } = await supabase
     .from('user_category_preferences')
     .delete()
     .eq('user_id', userId)
     .eq('category_type', 'cuisine');
+  if (deleteError) throw new Error('[onboarding.repository] saveCuisineBuckets delete failed: ' + deleteError.message);
 
   const rows = [
     ...buckets.F.map((code) => ({ user_id: userId, category_type: 'cuisine', category_id: code, bucket: 'F' })),
@@ -165,5 +166,44 @@ export async function fetchUserCuisineBuckets(userId: string): Promise<BucketMap
   } catch (err) {
     console.error('[ONBOARDING] fetchUserCuisineBuckets failed:', err);
     return defaultMap;
+  }
+}
+
+/**
+ * @summary Search ingredient_aliases for allergen autocomplete.
+ * Returns matching aliases with their integer ingredient IDs.
+ * Alias for searchIngredients — preferred name in Phase 3 audit spec.
+ *
+ * @param {string} searchTerm - Min 2 chars typed by user
+ * @returns {Promise<IngredientAlias[]>} Up to 20 matching rows
+ *
+ * @calledBy `app/(onboarding)/step-3.tsx` allergen search input
+ */
+export const searchAllergens = searchIngredients;
+
+/**
+ * @summary Search ingredients_master by English name (case-insensitive).
+ * Use alongside searchAllergens for full allergen coverage.
+ *
+ * @param {string} searchTerm - Min 2 chars typed by user
+ * @returns {Promise<Array<{ id: number; name: string; is_allergen: boolean }>>} Up to 10 matches
+ *
+ * @calledBy `app/(onboarding)/step-3.tsx` — combined with searchAllergens
+ */
+export async function searchIngredientsByName(
+  searchTerm: string
+): Promise<Array<{ id: number; name: string; is_allergen: boolean }>> {
+  try {
+    const { data, error } = await supabase
+      .from('ingredients_master')
+      .select('id, name, is_allergen')
+      .ilike('name', `%${searchTerm}%`)
+      .eq('is_active', true)
+      .limit(10);
+    if (error) throw error;
+    return (data ?? []) as Array<{ id: number; name: string; is_allergen: boolean }>;
+  } catch (err) {
+    console.error('[ONBOARDING] searchIngredientsByName failed:', err);
+    return [];
   }
 }

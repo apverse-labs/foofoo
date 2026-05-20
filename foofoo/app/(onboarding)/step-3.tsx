@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   View, Text, TextInput, Pressable, FlatList,
-  StyleSheet, ActivityIndicator, Switch,
+  StyleSheet, ActivityIndicator, Switch, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
@@ -42,7 +42,7 @@ export default function OnboardingStep3() {
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { router.replace('/(auth)/sign-in' as never); return; }
       setUserId(user.id);
       const rules = await fetchUserDietRules(user.id);
       if (rules) {
@@ -92,6 +92,7 @@ export default function OnboardingStep3() {
       router.push('/(onboarding)/step-4' as never);
     } catch (err) {
       console.error('[STEP3] save failed:', err);
+      Alert.alert('Save failed', 'Could not save your allergens. Please check your connection and try again.');
     } finally {
       setSaving(false);
     }

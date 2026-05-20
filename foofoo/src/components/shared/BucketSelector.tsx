@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, ScrollView,
+  View, Text, StyleSheet, Pressable, ScrollView, Modal, TouchableOpacity,
 } from 'react-native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
 import type { BucketItem, BucketMap, BucketType } from '../../types';
@@ -12,22 +12,22 @@ interface BucketSelectorProps {
 }
 
 const BUCKET_CONFIG = {
-  F: { label: 'Frequently', color: COLORS.primary,  bgColor: `${COLORS.primary}15`  },
-  O: { label: 'Occasionally', color: '#E67E22',     bgColor: '#E67E2215'             },
-  N: { label: 'Never',       color: COLORS.error,   bgColor: `${COLORS.error}15`     },
+  F: { label: 'Frequently',   color: COLORS.primary, bgColor: `${COLORS.primary}15` },
+  O: { label: 'Occasionally', color: '#E67E22',      bgColor: '#E67E2215'            },
+  N: { label: 'Never',        color: COLORS.error,   bgColor: `${COLORS.error}15`    },
 } as const;
 
 /**
  * @summary Tap-to-cycle bucket sorter for cuisine and meal preferences.
  *
- * @description Items cycle through: Unsorted → Frequently (green) →
- *   Occasionally (orange) → Never (red) → Unsorted on each tap.
- *   "Next" button activates only when all items are sorted.
+ * @description Items cycle: Unsorted → Frequently → Occasionally → Never → Unsorted.
+ *   Long-pressing any chip opens a bottom sheet for direct bucket selection.
+ *   "Next" is always enabled — unsorted items default to Occasionally on submit.
  *   Calls onComplete with the final F/O/N bucket map.
  *
  * @param {BucketItem[]} items - Items to sort (id, label, emoji)
- * @param {(buckets: BucketMap) => void} onComplete - Called when Next is pressed after all sorted
- * @param {BucketMap} [initialBuckets] - Pre-populated bucket state (resume support)
+ * @param {(buckets: BucketMap) => void} onComplete - Called when Next is pressed
+ * @param {BucketMap} [initialBuckets] - Pre-populated state (resume support)
  *
  * @calledBy Steps 4, 5, 6 — cuisine and meal bucket onboarding screens
  */
@@ -42,6 +42,12 @@ export function BucketSelector({ items, onComplete, initialBuckets }: BucketSele
     }
     return initial;
   });
+
+  const [pickerChipId, setPickerChipId] = useState<string | null>(null);
+
+  const assignBucket = (id: string, bucket: BucketType | null) => {
+    setBucketMap((prev) => ({ ...prev, [id]: bucket }));
+  };
 
   const cycleItem = (id: string) => {
     setBucketMap((prev) => {
@@ -68,11 +74,17 @@ export function BucketSelector({ items, onComplete, initialBuckets }: BucketSele
     return { unsorted, sorted, buckets };
   }, [items, bucketMap]);
 
-  const allSorted = unsorted.length === 0 && items.length > 0;
-
+  // Unsorted items default to Occasional so nothing is ever lost.
   const handleNext = () => {
-    if (allSorted) onComplete(buckets);
+    const finalBuckets: BucketMap = {
+      F: [...buckets.F],
+      O: [...buckets.O, ...unsorted.map((item) => item.id)],
+      N: [...buckets.N],
+    };
+    onComplete(finalBuckets);
   };
+
+  const pickerItem = pickerChipId ? items.find((i) => i.id === pickerChipId) : null;
 
   return (
     <View style={styles.container}>
@@ -91,7 +103,12 @@ export function BucketSelector({ items, onComplete, initialBuckets }: BucketSele
               </View>
               <ScrollView style={styles.bucketContent} nestedScrollEnabled>
                 {bucketItems.map((item) => (
-                  <Pressable key={item.id} onPress={() => cycleItem(item.id)}>
+                  <Pressable
+                    key={item.id}
+                    onPress={() => cycleItem(item.id)}
+                    onLongPress={() => setPickerChipId(item.id)}
+                    delayLongPress={300}
+                  >
                     <View style={[styles.bucketChip, { borderColor: cfg.color, backgroundColor: cfg.bgColor }]}>
                       <Text style={styles.chipText} numberOfLines={1}>
                         {item.emoji ? `${item.emoji} ` : ''}{item.label}
@@ -107,7 +124,9 @@ export function BucketSelector({ items, onComplete, initialBuckets }: BucketSele
 
       {/* Unsorted grid */}
       <View style={styles.unsortedSection}>
-        <Text style={styles.unsortedTitle}>Tap to sort ↑</Text>
+        <Text style={styles.unsortedTitle}>
+          Tap to cycle · Long press to pick directly · Unselected = Occasional
+        </Text>
         <ScrollView
           showsVerticalScrollIndicator={false}
           style={styles.unsortedScroll}
@@ -119,6 +138,8 @@ export function BucketSelector({ items, onComplete, initialBuckets }: BucketSele
                 key={item.id}
                 style={styles.unsortedChip}
                 onPress={() => cycleItem(item.id)}
+                onLongPress={() => setPickerChipId(item.id)}
+                delayLongPress={300}
                 accessibilityRole="button"
                 accessibilityLabel={`Sort ${item.label}`}
               >
@@ -129,23 +150,74 @@ export function BucketSelector({ items, onComplete, initialBuckets }: BucketSele
             ))}
           </View>
         </ScrollView>
+        {unsorted.length > 0 && (
+          <Text style={styles.unsortedHint}>
+            Unselected items will be set to Occasional
+          </Text>
+        )}
       </View>
 
-      {/* Bottom bar */}
+      {/* Bottom bar — Next is always enabled */}
       <View style={styles.bottomBar}>
         <Text style={styles.progress}>
-          {sorted.length} of {items.length} sorted
+          {unsorted.length === 0
+            ? 'All sorted ✓'
+            : `${sorted.length} sorted · ${unsorted.length} → Occasional`}
         </Text>
         <Pressable
-          style={[styles.nextBtn, !allSorted && styles.nextBtnDisabled]}
+          style={styles.nextBtn}
           onPress={handleNext}
-          disabled={!allSorted}
           accessibilityRole="button"
-          accessibilityState={{ disabled: !allSorted }}
         >
           <Text style={styles.nextBtnText}>Next →</Text>
         </Pressable>
       </View>
+
+      {/* Long-press direct-selection bottom sheet */}
+      {pickerItem && (
+        <Modal
+          transparent
+          visible={pickerChipId !== null}
+          animationType="fade"
+          onRequestClose={() => setPickerChipId(null)}
+        >
+          <TouchableOpacity
+            style={styles.modalOverlay}
+            activeOpacity={1}
+            onPress={() => setPickerChipId(null)}
+          >
+            <View style={styles.pickerSheet}>
+              <Text style={styles.pickerTitle} numberOfLines={1}>
+                {pickerItem.emoji ? `${pickerItem.emoji} ` : ''}{pickerItem.label}
+              </Text>
+              {(['F', 'O', 'N'] as BucketType[]).map((b) => {
+                const cfg = BUCKET_CONFIG[b];
+                return (
+                  <TouchableOpacity
+                    key={b}
+                    style={styles.pickerRow}
+                    onPress={() => { assignBucket(pickerChipId!, b); setPickerChipId(null); }}
+                  >
+                    <View style={[styles.pickerDot, { backgroundColor: cfg.color }]} />
+                    <Text style={[styles.pickerOptionLabel, { color: cfg.color }]}>
+                      {cfg.label}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+              <TouchableOpacity
+                style={styles.pickerRow}
+                onPress={() => { assignBucket(pickerChipId!, null); setPickerChipId(null); }}
+              >
+                <View style={[styles.pickerDot, { backgroundColor: '#999' }]} />
+                <Text style={[styles.pickerOptionLabel, { color: '#999' }]}>
+                  Leave unselected
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </TouchableOpacity>
+        </Modal>
+      )}
     </View>
   );
 }
@@ -206,12 +278,12 @@ const styles = StyleSheet.create({
     paddingTop: SPACING.sm,
   },
   unsortedTitle: {
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: '600',
     color: COLORS.textSecondary,
     marginBottom: SPACING.sm,
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.3,
   },
   unsortedScroll: { flex: 1 },
   chipGrid: {
@@ -230,6 +302,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   unsortedChipText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '500' },
+  unsortedHint: {
+    fontSize: 12,
+    color: '#999999',
+    textAlign: 'center',
+    marginTop: SPACING.xs,
+  },
   bottomBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -248,6 +326,40 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
   },
-  nextBtnDisabled: { backgroundColor: COLORS.border },
   nextBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
+  // Direct-picker modal
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.4)',
+    justifyContent: 'flex-end',
+  },
+  pickerSheet: {
+    backgroundColor: '#fff',
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    padding: SPACING.lg,
+    paddingBottom: SPACING.xl,
+    gap: SPACING.xs,
+  },
+  pickerTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: COLORS.textPrimary,
+    marginBottom: SPACING.sm,
+  },
+  pickerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.md,
+    paddingVertical: SPACING.sm,
+  },
+  pickerDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+  },
+  pickerOptionLabel: {
+    fontSize: 16,
+    fontWeight: '500',
+  },
 });

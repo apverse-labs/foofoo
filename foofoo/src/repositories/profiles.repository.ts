@@ -1,5 +1,19 @@
 import { supabase } from '../services/supabase';
-import type { UserProfile, Step1Data, UserRole } from '../types';
+import type { UserProfile, Step1Data, UserRole, FoodPref } from '../types';
+
+export interface ProfileUpdate {
+  name?: string;
+  username?: string;
+  home_state?: string;
+  current_city?: string;
+  food_pref?: FoodPref;
+  onboarding_step?: number;
+  onboarding_completed?: boolean;
+  notification_time?: string;
+  notifications_enabled?: boolean;
+  role?: UserRole;
+  updated_at?: string;
+}
 
 /**
  * @summary Fetch the full profile row for a user.
@@ -23,7 +37,7 @@ export async function fetchProfile(userId: string): Promise<(UserProfile & {
       .from('profiles')
       .select('*')
       .eq('id', userId)
-      .single();
+      .maybeSingle();
     if (error) throw error;
     return data;
   } catch (err) {
@@ -58,6 +72,46 @@ export async function checkUsernameAvailable(username: string, userId: string): 
 }
 
 /**
+ * @summary Alias for fetchProfile — preferred name in Phase 3 audit spec.
+ *
+ * @param {string} userId - Supabase auth UUID
+ * @returns {Promise<UserProfile | null>} Profile row or null
+ *
+ * @calledBy Anywhere fetchProfile is needed
+ */
+export const getProfile = fetchProfile;
+
+/**
+ * @summary Generic profile update — updates any subset of profile fields.
+ *
+ * @param {string} userId - Supabase auth UUID
+ * @param {Partial<ProfileUpdate>} updates - Fields to update
+ * @returns {Promise<void>}
+ *
+ * @throws {Error} When Supabase update fails
+ *
+ * @calledBy Onboarding step-7, profile screen
+ */
+export async function updateProfile(userId: string, updates: Partial<ProfileUpdate>): Promise<void> {
+  const { error } = await supabase
+    .from('profiles')
+    .update(updates)
+    .eq('id', userId);
+  if (error) throw new Error('[profiles.repository] updateProfile failed: ' + error.message);
+}
+
+/**
+ * @summary Alias for checkUsernameAvailable — preferred name in Phase 3 audit spec.
+ *
+ * @param {string} username - Candidate username
+ * @param {string} currentUserId - Exclude this user from check
+ * @returns {Promise<boolean>} True if available
+ *
+ * @calledBy Wherever checkUsernameAvailable is called
+ */
+export const isUsernameAvailable = checkUsernameAvailable;
+
+/**
  * @summary Save Step 1 profile fields: name, username, city, state.
  *
  * @param {string} userId - Supabase auth UUID
@@ -69,16 +123,18 @@ export async function checkUsernameAvailable(username: string, userId: string): 
  * @calledBy `app/(onboarding)/step-1.tsx` — on Next press
  */
 export async function saveProfileStep1(userId: string, data: Step1Data): Promise<void> {
+  // upsert instead of update — creates the row if the signup trigger failed
+  // (live DB had username NOT NULL which silently aborted the trigger)
   const { error } = await supabase
     .from('profiles')
-    .update({
+    .upsert({
+      id: userId,
       name: data.name,
       username: data.username,
       home_state: data.home_state,
       current_city: data.current_city,
       onboarding_step: 1,
-    })
-    .eq('id', userId);
+    }, { onConflict: 'id' });
   if (error) throw error;
 }
 

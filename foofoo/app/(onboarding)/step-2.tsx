@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
 import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
@@ -41,7 +41,7 @@ export default function OnboardingStep2() {
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { router.replace('/(auth)/sign-in' as never); return; }
       setUserId(user.id);
       const rules = await fetchUserDietRules(user.id);
       if (rules?.food_pref) setSelected(rules.food_pref as FoodPref);
@@ -57,6 +57,7 @@ export default function OnboardingStep2() {
       router.push('/(onboarding)/step-3' as never);
     } catch (err) {
       console.error('[STEP2] save failed:', err);
+      Alert.alert('Save failed', 'Could not save your food preference. Please check your connection and try again.');
     } finally {
       setSaving(false);
     }

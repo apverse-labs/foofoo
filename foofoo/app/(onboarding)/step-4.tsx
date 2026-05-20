@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
 import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
@@ -31,7 +31,7 @@ export default function OnboardingStep4() {
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { router.replace('/(auth)/sign-in' as never); return; }
       setUserId(user.id);
 
       const [cuisines, existing] = await Promise.all([
@@ -63,6 +63,7 @@ export default function OnboardingStep4() {
       router.push('/(onboarding)/step-5' as never);
     } catch (err) {
       console.error('[STEP4] save failed:', err);
+      Alert.alert('Save failed', 'Could not save your cuisine preferences. Please check your connection and try again.');
     } finally {
       setSaving(false);
     }

@@ -355,4 +355,19 @@ Reference this in CHANGELOG.md for full traceability.
 
 ---
 
+## Product Decision Log (overrides planning docs where conflicts exist) | Onboarding UX Fixes
+- [#014] Bucket Selector: Next button is ALWAYS enabled. Unselected items 
+  default to 'O' (Occasional) when user taps Next. Do NOT force all items 
+  to be selected before allowing Next.
+- [#014] Bucket Selector: Tapping a chip cycles: Unselected(gray) → 
+  Frequently(green) → Occasionally(orange) → Never(red) → Unselected(gray).
+  First tap on an unselected chip must go to Frequently. This is correct.
+  But user must ALSO be able to long-press a chip to get a bottom sheet 
+  with direct selection: "Frequently / Occasionally / Never / Leave unselected"
+- [#014] Food preference cards (Veg/Non-Veg etc.) — Phase 1 will filter 
+  bucket content based on this selection. For MVP, show all dishes regardless 
+  of food preference in buckets but this is noted for Phase 1 improvement.
+- [#014] Server state: intro screens must show on every cold start during 
+  development. State persistence to be implemented in a dedicated session.
 *Update this file at end of every sprint. Claude Code reads it fresh every session.*
+

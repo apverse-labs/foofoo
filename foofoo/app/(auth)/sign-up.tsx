@@ -48,10 +48,10 @@ function evaluatePassword(password: string): { strength: PasswordStrength; missi
  */
 async function recordConsent(userId: string): Promise<void> {
   try {
-    await supabase.from('user_consent').insert({
-      user_id: userId,
-      data_consent_at: new Date().toISOString(),
-    });
+    await supabase.from('user_consent').upsert(
+      { user_id: userId, data_consent_at: new Date().toISOString() },
+      { onConflict: 'user_id', ignoreDuplicates: true }
+    );
   } catch {
     console.warn('[AUTH] DPDP consent record failed — non-blocking');
   }

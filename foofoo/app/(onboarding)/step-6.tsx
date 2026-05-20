@@ -1,13 +1,13 @@
 import { useState, useEffect } from 'react';
-import { View, ActivityIndicator, Text, StyleSheet } from 'react-native';
+import { View, ActivityIndicator, Text, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
 import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
 import { BucketSelector } from '../../src/components/shared/BucketSelector';
 import {
-  fetchLunchDinnerDishes, saveMealBuckets, fetchFOCuisineIds,
+  fetchLunchDinnerDishes, saveMealBuckets, fetchFOCuisineIds, fetchUserMealBuckets,
 } from '../../src/repositories/meal-prefs.repository';
-import { updateOnboardingStep } from '../../src/repositories/profiles.repository';
+import { updateOnboardingStep, fetchProfile } from '../../src/repositories/profiles.repository';
 import { COLORS, SPACING } from '../../src/config/constants';
 import type { BucketItem, BucketMap } from '../../src/types';
 
@@ -25,17 +25,21 @@ export default function OnboardingStep6() {
   const [userId, setUserId] = useState('');
   const [items, setItems] = useState<BucketItem[]>([]);
   const [dishIds, setDishIds] = useState<string[]>([]);
+  const [initialBuckets, setInitialBuckets] = useState<BucketMap | undefined>(undefined);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { router.replace('/(auth)/sign-in' as never); return; }
       setUserId(user.id);
 
-      const cuisineIds = await fetchFOCuisineIds(user.id);
-      const dishes = await fetchLunchDinnerDishes(cuisineIds);
+      const [profile, cuisineIds] = await Promise.all([
+        fetchProfile(user.id),
+        fetchFOCuisineIds(user.id),
+      ]);
+      const dishes = await fetchLunchDinnerDishes(cuisineIds, profile?.food_pref ?? null);
 
       const ids = dishes.map((d) => String(d.id));
       setDishIds(ids);
@@ -45,6 +49,12 @@ export default function OnboardingStep6() {
           label: d.name,
         }))
       );
+
+      // Pre-populate prior selections for back-nav resume (Fix 5)
+      const existing = await fetchUserMealBuckets(user.id, ids);
+      const hasExisting = existing.F.length + existing.O.length + existing.N.length > 0;
+      if (hasExisting) setInitialBuckets(existing);
+
       setLoading(false);
     })();
   }, []);
@@ -58,6 +68,7 @@ export default function OnboardingStep6() {
       router.push('/(onboarding)/step-7' as never);
     } catch (err) {
       console.error('[STEP6] save failed:', err);
+      Alert.alert('Save failed', 'Could not save your meal preferences. Please check your connection and try again.');
     } finally {
       setSaving(false);
     }
@@ -88,7 +99,7 @@ export default function OnboardingStep6() {
           </Text>
         </View>
       ) : (
-        <BucketSelector items={items} onComplete={handleComplete} />
+        <BucketSelector items={items} onComplete={handleComplete} initialBuckets={initialBuckets} />
       )}
     </OnboardingLayout>
   );

@@ -1,7 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, TextInput, StyleSheet, Pressable,
-  Modal, FlatList, ActivityIndicator,
+  Modal, FlatList, ActivityIndicator, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
@@ -36,7 +36,7 @@ export default function OnboardingStep1() {
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
+      if (!user) { router.replace('/(auth)/sign-in' as never); return; }
       setUserId(user.id);
       const profile = await fetchProfile(user.id);
       if (profile) {
@@ -87,6 +87,7 @@ export default function OnboardingStep1() {
       router.push('/(onboarding)/step-2' as never);
     } catch (err) {
       console.error('[STEP1] save failed:', err);
+      Alert.alert('Save failed', 'Could not save your profile. Please check your connection and try again.');
     } finally {
       setSaving(false);
     }

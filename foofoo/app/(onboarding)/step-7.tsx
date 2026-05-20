@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, Platform, ActivityIndicator,
+  View, Text, StyleSheet, Pressable, Platform, ActivityIndicator, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 // expo-notifications is not functional on web — import is deferred to the handler
@@ -43,7 +43,8 @@ export default function OnboardingStep7() {
   useEffect(() => {
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
-      if (user) setUserId(user.id);
+      if (!user) { router.replace('/(auth)/sign-in' as never); return; }
+      setUserId(user.id);
     })();
   }, []);
 
@@ -86,6 +87,7 @@ export default function OnboardingStep7() {
       router.replace('/(tabs)' as never);
     } catch (err) {
       console.error('[STEP7] completion failed:', err);
+      Alert.alert('Setup failed', 'Could not complete your setup. Please check your connection and try again.');
     } finally {
       setSaving(false);
     }
