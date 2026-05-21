@@ -6,6 +6,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import { useResponsive } from '../../src/utils/responsive';
 
 /**
  * @summary Full-screen skeleton shown while the plan is loading on first mount.
@@ -16,20 +17,23 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
  * @calledBy `app/(tabs)/index.tsx` — rendered when loading=true and not refreshing
  */
 export function LoadingScreen({ insetTop }: { insetTop: number }) {
+  const { contentWidth, cardWidth } = useResponsive();
   return (
     <View style={[styles.container, { paddingTop: insetTop }]}>
-      <View style={styles.topBar}>
-        <Text style={styles.appName}>Foofoo</Text>
-      </View>
-      <View style={styles.scrollContent}>
-        {(['BREAKFAST', 'LUNCH', 'DINNER'] as const).map(label => (
-          <View key={label} style={styles.cardWrapper}>
-            <View style={styles.skeletonCard}>
-              <ActivityIndicator color={COLORS.primary} size="small" />
-              <Text style={styles.skeletonText}>{label}</Text>
+      <View style={[styles.contentColumn, { maxWidth: contentWidth }]}>
+        <View style={styles.topBar}>
+          <Text style={styles.appName}>Foofoo</Text>
+        </View>
+        <View style={styles.scrollContent}>
+          {(['BREAKFAST', 'LUNCH', 'DINNER'] as const).map(label => (
+            <View key={label} style={styles.cardWrapper}>
+              <View style={[styles.skeletonCard, { width: cardWidth }]}>
+                <ActivityIndicator color={COLORS.primary} size="small" />
+                <Text style={styles.skeletonText}>{label}</Text>
+              </View>
             </View>
-          </View>
-        ))}
+          ))}
+        </View>
       </View>
     </View>
   );
@@ -71,16 +75,17 @@ export function EmptyState() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center' },
+  contentColumn: { width: '100%', flex: 1 },
   topBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
   },
   appName: { fontSize: 24, fontWeight: '800', color: COLORS.primary, letterSpacing: -0.5 },
   scrollContent: { gap: SPACING.md, paddingTop: SPACING.sm, paddingHorizontal: SPACING.md },
-  cardWrapper: { gap: 6 },
+  cardWrapper: { gap: 6, alignItems: 'center' },
   skeletonCard: {
-    height: 220, borderRadius: BORDER_RADIUS.md, backgroundColor: '#e8e8e8',
+    height: 200, borderRadius: BORDER_RADIUS.lg, backgroundColor: '#e8e8e8',
     justifyContent: 'center', alignItems: 'center', gap: 8,
   },
   skeletonText: { color: '#9e9e9e', fontSize: 11, fontWeight: '600', letterSpacing: 1.5 },

@@ -5,7 +5,7 @@ import {
   Text,
   Pressable,
   StyleSheet,
-  Dimensions,
+  useWindowDimensions,
   NativeSyntheticEvent,
   NativeScrollEvent,
 } from 'react-native';
@@ -13,8 +13,6 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SPACING, BORDER_RADIUS, STORAGE_KEYS } from '../../src/config/constants';
-
-const { width: SW, height: SH } = Dimensions.get('window');
 
 const SLIDES = [
   {
@@ -51,6 +49,7 @@ const SLIDES = [
 export default function IntroScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  const { width: SW, height: SH } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);
 
@@ -93,6 +92,8 @@ export default function IntroScreen() {
             style={[
               styles.slide,
               {
+                width: SW,
+                height: SH,
                 backgroundColor: slide.bg,
                 paddingTop: insets.top + 96,
                 paddingBottom: insets.bottom + 180,
@@ -144,8 +145,8 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   slide: {
-    width: SW,
-    height: SH,
+    // width and height are applied inline from useWindowDimensions so the
+    // slides re-flow on window resize / device rotation.
     alignItems: 'center',
     justifyContent: 'center',
     paddingHorizontal: SPACING.xl,

@@ -20,11 +20,13 @@ import MealCard from '../../src/components/dish/MealCard';
 import GestureTutorial from '../../src/components/shared/GestureTutorial';
 import NeverModal from '../../src/components/dish/NeverModal';
 import NotTodayModal from '../../src/components/dish/NotTodayModal';
-import { LoadingScreen, ErrorState, EmptyState } from './HomeScreen.helpers';
-import { useHomeScreen } from './useHomeScreen';
+import { LoadingScreen, ErrorState, EmptyState } from './_HomeScreen.helpers';
+import { useHomeScreen } from './_useHomeScreen';
+import { useResponsive } from '../../src/utils/responsive';
 
 export default function HomeScreen() {
   const insets = useSafeAreaInsets();
+  const { contentWidth } = useResponsive();
   const {
     planDate, plan, carousels, lockedSlots,
     loading, refreshing, error, showTutorial, userId,
@@ -43,6 +45,7 @@ export default function HomeScreen() {
 
   return (
     <View style={[styles.container, { paddingTop: insets.top }]}>
+     <View style={[styles.contentColumn, { maxWidth: contentWidth }]}>
       {/* Top bar */}
       <View style={styles.topBar}>
         <Pressable onPress={handleTitlePress} hitSlop={8}>
@@ -111,6 +114,8 @@ export default function HomeScreen() {
         )}
       </ScrollView>
 
+     </View>
+
       {showTutorial && (
         <GestureTutorial
           onDismiss={async () => {
@@ -146,7 +151,8 @@ export default function HomeScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: COLORS.background },
+  container: { flex: 1, backgroundColor: COLORS.background, alignItems: 'center' },
+  contentColumn: { width: '100%', flex: 1 },
   topBar: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
@@ -161,7 +167,7 @@ const styles = StyleSheet.create({
   dateArrow: { fontSize: 14, color: COLORS.textSecondary },
   dateText: { fontSize: 15, fontWeight: '600', color: COLORS.textPrimary },
   scroll: { flex: 1 },
-  scrollContent: { gap: SPACING.md, paddingTop: SPACING.sm, paddingHorizontal: SPACING.md },
-  cardWrapper: { gap: 6 },
+  scrollContent: { gap: SPACING.md, paddingTop: SPACING.sm, paddingHorizontal: SPACING.md, alignItems: 'center' },
+  cardWrapper: { gap: 6, alignItems: 'center' },
   carouselHint: { textAlign: 'center', fontSize: 11, color: COLORS.textSecondary },
 });

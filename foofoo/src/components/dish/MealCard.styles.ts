@@ -1,17 +1,13 @@
-import { StyleSheet, Dimensions } from 'react-native';
-import { COLORS, BORDER_RADIUS, SPACING } from '../../config/constants';
+import { StyleSheet } from 'react-native';
+import { COLORS, BORDER_RADIUS } from '../../config/constants';
 
 // Doc 09 §5.1: 200px height, 24px side margins, 20–24px corner radius.
-const HORIZONTAL_INSET = SPACING.lg; // 24px each side
-
+// Width is applied at render time from useResponsive() — see MealCard.tsx.
 export const CARD_HEIGHT = 200;
-export const SCREEN_WIDTH = Dimensions.get('window').width;
-export const CARD_WIDTH = SCREEN_WIDTH - HORIZONTAL_INSET * 2;
 export const CARD_RADIUS = BORDER_RADIUS.lg; // 24
 
 export const styles = StyleSheet.create({
   card: {
-    width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: CARD_RADIUS,
     overflow: 'hidden',
@@ -60,9 +56,9 @@ export const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: '700',
     marginBottom: 4,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
+    // Gradient overlay (see styles.gradient) already provides legibility; no
+    // per-text shadow needed. RN dropped textShadow* in favour of the
+    // single `textShadow` shorthand and the old keys now warn.
   },
   metaRow: {
     flexDirection: 'row',
@@ -98,7 +94,6 @@ export const styles = StyleSheet.create({
     fontSize: 18,
   },
   skeleton: {
-    width: CARD_WIDTH,
     height: CARD_HEIGHT,
     borderRadius: CARD_RADIUS,
     backgroundColor: '#e0e0e0',

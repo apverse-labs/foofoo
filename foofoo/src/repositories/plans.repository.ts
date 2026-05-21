@@ -54,21 +54,39 @@ export async function generateDailyPlan(planDate: string, forceRegenerate = fals
  */
 export async function getCarouselForSlot(planId: string, mealSlot: string): Promise<Dish[]> {
   try {
-    const { data, error } = await supabase
+    // planner_carousel.ref_id is polymorphic (dish | combo), so there's no FK
+    // to dishes that PostgREST can auto-embed. Fetch in two steps and
+    // reassemble in carousel order. Combo support comes in RE v2.
+    const { data: rows, error: rowsErr } = await supabase
       .from('planner_carousel')
-      .select(`
-        position,
-        dishes:ref_id(id, name, slug, cuisine_id, diet_type, spice_level,
-                     cook_time_mins, difficulty, calories, meal_types,
-                     dish_role, hero_image_url, blurhash,
-                     cuisines(id, code, name))
-      `)
+      .select('ref_id, position')
       .eq('planner_id', planId)
       .eq('meal_slot', mealSlot)
+      .eq('ref_type', 'dish')
       .order('position');
 
-    if (error) throw new Error('Failed to fetch carousel: ' + error.message);
-    return (data?.map((row: any) => row.dishes).filter(Boolean) ?? []) as Dish[];
+    if (rowsErr) throw new Error('Failed to fetch carousel rows: ' + rowsErr.message);
+    if (!rows?.length) return [];
+
+    const dishIds = rows.map((r: any) => r.ref_id).filter((id: any) => id != null);
+    if (dishIds.length === 0) return [];
+
+    const { data: dishes, error: dishesErr } = await supabase
+      .from('dishes')
+      .select(`id, name, slug, cuisine_id, diet_type, spice_level,
+               cook_time_mins, difficulty, calories, meal_types,
+               dish_role, hero_image_url, blurhash,
+               cuisines(id, code, name)`)
+      .in('id', dishIds);
+
+    if (dishesErr) throw new Error('Failed to fetch carousel dishes: ' + dishesErr.message);
+
+    const byId = new Map<number, Dish>(
+      (dishes ?? []).map((d: any) => [d.id as number, d as Dish]),
+    );
+    return rows
+      .map((r: any) => byId.get(r.ref_id))
+      .filter((d: Dish | undefined): d is Dish => Boolean(d));
   } catch (err: any) {
     Logger.error('PLANS-REPO', 'getCarouselForSlot failed', { error: err?.message, planId, mealSlot });
     throw err;

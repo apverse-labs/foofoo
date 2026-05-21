@@ -91,27 +91,41 @@ export async function fetchCarousel(
   supabase: any,
   planId: string
 ): Promise<{ breakfast: any; lunch: any; dinner: any }> {
-  const { data } = await supabase
+  // planner_carousel.ref_id is polymorphic — no FK to dishes — so PostgREST
+  // can't auto-embed. Do two queries and assemble.
+  const { data: rows } = await supabase
     .from('planner_carousel')
-    .select(`
-      ref_id, ref_type, meal_slot, position,
-      dishes:ref_id(id, name, slug, cuisine_id, diet_type, spice_level,
-                   cook_time_mins, difficulty, calories, meal_types,
-                   dish_role, hero_image_url, blurhash,
-                   cuisines(id, code, name))
-    `)
+    .select('ref_id, ref_type, meal_slot, position')
     .eq('planner_id', planId)
+    .eq('ref_type', 'dish')
     .order('position');
 
+  const dishIds: number[] = ((rows || []) as any[])
+    .map((r) => r.ref_id)
+    .filter((id) => id != null);
+
+  let dishesById = new Map<number, any>();
+  if (dishIds.length > 0) {
+    const { data: dishes } = await supabase
+      .from('dishes')
+      .select(`id, name, slug, cuisine_id, diet_type, spice_level,
+               cook_time_mins, difficulty, calories, meal_types,
+               dish_role, hero_image_url, blurhash,
+               cuisines(id, code, name)`)
+      .in('id', dishIds);
+    dishesById = new Map(((dishes || []) as any[]).map((d) => [d.id as number, d]));
+  }
+
   const bySlot: Record<string, any[]> = { breakfast: [], lunch: [], dinner: [] };
-  for (const row of data || []) {
-    if (bySlot[row.meal_slot]) bySlot[row.meal_slot].push(row);
+  for (const row of (rows || []) as any[]) {
+    const dish = dishesById.get(row.ref_id);
+    if (dish && bySlot[row.meal_slot]) bySlot[row.meal_slot].push(dish);
   }
 
   return {
-    breakfast: { dish: bySlot.breakfast[0]?.dishes, carouselCount: bySlot.breakfast.length },
-    lunch: { dish: bySlot.lunch[0]?.dishes, carouselCount: bySlot.lunch.length },
-    dinner: { dish: bySlot.dinner[0]?.dishes, carouselCount: bySlot.dinner.length },
+    breakfast: { dish: bySlot.breakfast[0], carouselCount: bySlot.breakfast.length },
+    lunch: { dish: bySlot.lunch[0], carouselCount: bySlot.lunch.length },
+    dinner: { dish: bySlot.dinner[0], carouselCount: bySlot.dinner.length },
   };
 }
 

@@ -10,6 +10,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
+import { CONTENT_MAX_WIDTH } from '../../utils/responsive';
 
 interface OnboardingLayoutProps {
   step: number;
@@ -154,6 +155,10 @@ const styles = StyleSheet.create({
   scrollContent: {
     paddingHorizontal: SPACING.lg,
     paddingBottom: SPACING.xl,
+    // Center the column on tablet/desktop so text doesn't stretch full-width
+    maxWidth: CONTENT_MAX_WIDTH,
+    width: '100%',
+    alignSelf: 'center',
   },
   title: {
     fontSize: 26,
@@ -175,6 +180,9 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     borderTopColor: COLORS.border,
     backgroundColor: COLORS.background,
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: 'center',
   },
   nextBtn: {
     backgroundColor: COLORS.primary,

@@ -1,5 +1,6 @@
-import { useEffect, useRef } from 'react';
-import { StyleSheet, View, Animated } from 'react-native';
+import { useEffect } from 'react';
+import { StyleSheet, View, Platform } from 'react-native';
+import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
 import { COLORS, APP_NAME } from '../src/config/constants';
 
@@ -13,25 +14,21 @@ import { COLORS, APP_NAME } from '../src/config/constants';
  */
 export default function Splash() {
   const router = useRouter();
-  const opacity = useRef(new Animated.Value(0)).current;
+  const opacity = useSharedValue(0);
 
   useEffect(() => {
-    Animated.timing(opacity, {
-      toValue: 1,
-      duration: 300,
-      useNativeDriver: true,
-    }).start();
-
+    opacity.value = withTiming(1, { duration: 300 });
     const timer = setTimeout(() => {
       router.replace('/(intro)/intro-1');
     }, 2000);
-
     return () => clearTimeout(timer);
   }, []);
 
+  const fadeStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
   return (
     <View style={styles.container}>
-      <Animated.Text style={[styles.logo, { opacity }]}>{APP_NAME}</Animated.Text>
+      <Animated.Text style={[styles.logo, fadeStyle]}>{APP_NAME}</Animated.Text>
     </View>
   );
 }

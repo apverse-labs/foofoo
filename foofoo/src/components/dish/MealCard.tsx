@@ -33,6 +33,7 @@ import type { Dish } from '../../types';
 import { cookTimeLabel } from './MealCard.helpers';
 import { TIMING } from '../../config/constants';
 import { UserJourneyLogger } from '../../utils/userJourneyLogger';
+import { useResponsive } from '../../utils/responsive';
 import { styles } from './MealCard.styles';
 
 interface MealCardProps {
@@ -74,6 +75,7 @@ export default function MealCard({
   onNever,
   onNotToday,
 }: MealCardProps) {
+  const { cardWidth } = useResponsive();
   const [currentIndex, setCurrentIndex] = useState(0);
   const currentDish = carouselDishes[currentIndex] ?? dish;
 
@@ -216,7 +218,7 @@ export default function MealCard({
   // run together so a long-hold + drag can be classified.
   const composed = Gesture.Race(tap, Gesture.Simultaneous(longPress, pan));
 
-  if (!currentDish) return <SkeletonCard mealSlot={mealSlot} />;
+  if (!currentDish) return <SkeletonCard mealSlot={mealSlot} width={cardWidth} />;
 
   const position = currentIndex + 1;
   const total = carouselDishes.length || 1;
@@ -224,7 +226,7 @@ export default function MealCard({
 
   return (
     <GestureDetector gesture={composed}>
-      <Animated.View style={[styles.card, isLocked && styles.cardLocked, animatedStyle]}>
+      <Animated.View style={[styles.card, { width: cardWidth }, isLocked && styles.cardLocked, animatedStyle]}>
         <Image
           source={{ uri: currentDish.hero_image_url ?? `https://picsum.photos/seed/${currentDish.slug}/400/300` }}
           placeholder={currentDish.blurhash ?? PLACEHOLDER_HASH}
@@ -268,9 +270,9 @@ export default function MealCard({
   );
 }
 
-function SkeletonCard({ mealSlot }: { mealSlot: string }) {
+function SkeletonCard({ mealSlot, width }: { mealSlot: string; width: number }) {
   return (
-    <View style={styles.skeleton}>
+    <View style={[styles.skeleton, { width }]}>
       <Text style={styles.skeletonLabel}>{SLOT_LABELS[mealSlot]}</Text>
     </View>
   );
