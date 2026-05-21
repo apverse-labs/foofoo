@@ -2,21 +2,17 @@
  * @summary Confirmation modal for 'Never suggest this dish again'.
  *
  * @description
- * Bottom-sheet-style modal. On confirm: writes to never_list + suggestion_logs.
- * Triggered by long press + drag down on MealCard.
+ * Bottom-sheet-style modal. On confirm: writes to never_list + suggestion_logs
+ * via repository functions. Triggered by long press + drag down on MealCard.
  *
- * @param dish - The dish being dismissed
- * @param userId - Auth user ID
- * @param planDate - YYYY-MM-DD
- * @param onConfirm - Called after DB write — Home screen regenerates slot
- * @param onCancel - Dismisses modal, no action
  * @calledBy app/(tabs)/index.tsx
  */
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { supabase } from '../../services/supabase';
+import { addToNeverList, logSuggestionAction } from '../../repositories/plans.repository';
+import { Logger } from '../../utils/systemLogger';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
 import type { Dish } from '../../types';
 
@@ -29,32 +25,25 @@ interface NeverModalProps {
   onCancel: () => void;
 }
 
+/**
+ * @summary Handles the Never confirmation — writes never_list + suggestion_logs then calls onConfirm.
+ *
+ * @description Non-fatal on DB error: the modal still dismisses so the user isn't blocked.
+ *   Errors are logged to systemLogger for debugging.
+ */
 export default function NeverModal({ dish, userId, planDate, mealSlot, onConfirm, onCancel }: NeverModalProps) {
   const [loading, setLoading] = useState(false);
 
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      await supabase.from('never_list').insert({
-        user_id: userId,
-        dish_id: dish.id,
-        ref_type: 'dish',
-        is_active: true,
-      });
-      await supabase.from('suggestion_logs').insert({
-        user_id: userId,
-        dish_id: dish.id,
-        plan_date: planDate,
-        meal_slot: mealSlot,
-        action: 'never',
-        position: 0,
-        re_version: 'v1',
-      });
+      await addToNeverList(userId, dish.id);
+      await logSuggestionAction(userId, dish.id, planDate, mealSlot, 'never', 0);
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
       onConfirm();
-    } catch {
-      // Still dismiss — non-fatal
-      onConfirm();
+    } catch (err: any) {
+      Logger.error('NEVER-MODAL', 'Failed to write never list entry', { error: err?.message, dishId: dish.id });
+      onConfirm(); // Still dismiss — non-fatal
     } finally {
       setLoading(false);
     }
@@ -105,7 +94,7 @@ const styles = StyleSheet.create({
   },
   cancelText: { fontSize: 15, fontWeight: '600', color: COLORS.textSecondary },
   neverBtn: {
-    flex: 1, backgroundColor: '#D84315',
+    flex: 1, backgroundColor: COLORS.never,
     borderRadius: BORDER_RADIUS.full, paddingVertical: 14, alignItems: 'center',
   },
   neverText: { fontSize: 15, fontWeight: '700', color: '#fff' },

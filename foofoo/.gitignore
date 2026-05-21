@@ -41,3 +41,8 @@ yarn-error.*
 /android
 .env.local
 .env.staging
+
+# Log exports — keep folder structure (.gitkeep) but not content
+logs/users/**/*.txt
+logs/re_decisions/**/*.txt
+logs/system/**/*.txt

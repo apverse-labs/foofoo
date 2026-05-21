@@ -25,13 +25,25 @@ interface OnboardingLayoutProps {
 }
 
 /**
- * @summary Shared wrapper for all 7 onboarding steps.
+ * @summary Shared wrapper for all 7 onboarding steps: progress bar, header, scroll area, Next button.
  *
- * @description Renders progress bar, step counter, back arrow, title/subtitle,
- *   scrollable content area, and Next button. Wraps children in KeyboardAvoidingView
- *   so text inputs don't get obscured by the soft keyboard.
+ * @description Renders a progress bar (step/7), step counter, optional back arrow, title/subtitle,
+ *   scrollable content area, and a Next button. Wraps children in KeyboardAvoidingView so text
+ *   inputs are never obscured by the soft keyboard. Pass hideFooter=true for bucket steps that
+ *   render their own bottom bar.
  *
- * @calledBy All app/(onboarding)/step-*.tsx screens
+ * @param {number} step - Current step number (1–7), used to calculate progress bar width
+ * @param {string} title - Large heading shown at the top of the content area
+ * @param {string} [subtitle] - Optional descriptive text below the title
+ * @param {React.ReactNode} children - Step-specific content rendered in the scroll area
+ * @param {() => void} onNext - Called when the Next button is pressed
+ * @param {() => void} [onBack] - Called when the back arrow is pressed (hidden if omitted or step 1)
+ * @param {boolean} [nextDisabled=false] - Disables the Next button and shows it greyed out
+ * @param {string} [nextLabel='Next'] - Button label override (e.g. 'Start Using Foofoo')
+ * @param {boolean} [hideFooter=false] - Hides the built-in footer; use for steps with a custom bottom bar
+ * @returns {JSX.Element} Full-screen safe-area layout with consistent onboarding chrome
+ *
+ * @calledBy All `app/(onboarding)/step-*.tsx` screens
  */
 export function OnboardingLayout({
   step,

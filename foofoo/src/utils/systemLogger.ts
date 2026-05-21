@@ -38,6 +38,10 @@ const ANSI: Record<LogLevel, string> = {
 };
 const RESET = '\x1b[0m';
 
+/**
+ * @summary Returns the current time in IST as HH:MM:SS string.
+ * @returns {string} Time formatted as 'HH:MM:SS' in IST
+ */
 function nowISTTime(): string {
   // Adds 5.5hr offset so UTC methods give IST values
   const d = new Date(Date.now() + 5.5 * 60 * 60 * 1000);
@@ -47,11 +51,21 @@ function nowISTTime(): string {
   return `${h}:${m}:${s}`;
 }
 
+/**
+ * @summary Formats a LogEntry into a single human-readable line.
+ * @param {LogEntry} e - The log entry to format
+ * @returns {string} Formatted line: '[HH:MM:SS] [LEVEL] [MODULE] message {meta}'
+ */
 function formatLine(e: LogEntry): string {
   const meta = e.meta ? ` ${JSON.stringify(e.meta)}` : '';
   return `[${e.ts}] [${e.level}] [${e.module}] ${e.message}${meta}`;
 }
 
+/**
+ * @summary Appends a log entry to the AsyncStorage circular buffer (max 500 entries).
+ * @param {LogEntry} entry - The entry to persist
+ * @returns {Promise<void>}
+ */
 async function persist(entry: LogEntry): Promise<void> {
   try {
     const raw = await AsyncStorage.getItem(STORAGE_KEY);
@@ -64,6 +78,13 @@ async function persist(entry: LogEntry): Promise<void> {
   }
 }
 
+/**
+ * @summary Forwards ERROR entries to Sentry.captureException and WARN entries to Sentry breadcrumbs.
+ * @param {LogLevel} level - Log level to determine Sentry action
+ * @param {string} module - Module name for the Sentry context
+ * @param {string} message - Log message
+ * @param {object} [meta] - Optional metadata attached as Sentry extra/data
+ */
 function sendToSentry(level: LogLevel, module: string, message: string, meta?: object): void {
   try {
     // eslint-disable-next-line @typescript-eslint/no-var-requires
@@ -78,6 +99,13 @@ function sendToSentry(level: LogLevel, module: string, message: string, meta?: o
   }
 }
 
+/**
+ * @summary Core log dispatcher — formats, prints to console in dev, persists, and routes to Sentry in prod.
+ * @param {LogLevel} level - Severity level
+ * @param {string} module - SCREAMING_SNAKE_CASE module name (e.g. 'PLANS-REPO')
+ * @param {string} message - Past-tense description of what happened
+ * @param {object} [meta] - Structured metadata relevant to this event
+ */
 function log(level: LogLevel, module: string, message: string, meta?: object): void {
   if (level === 'DEBUG' && !__DEV__) return;
 

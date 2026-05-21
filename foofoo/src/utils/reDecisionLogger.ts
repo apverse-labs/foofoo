@@ -14,6 +14,11 @@ import { supabase } from '../services/supabase';
 const DIVIDER_HEAVY = '═══════════════════════════════════════════════════════';
 const DIVIDER_LIGHT = '───────────────────────────────────────────────────────';
 
+/**
+ * @summary Formats a UTC ISO string as a human-readable IST date-time.
+ * @param {string} isoStr - UTC ISO string from Supabase created_at
+ * @returns {string} Locale-formatted date-time in Asia/Kolkata timezone
+ */
 function formatIST(isoStr: string): string {
   try {
     const d = new Date(isoStr);
@@ -33,8 +38,12 @@ function formatIST(isoStr: string): string {
 export const REDecisionLogger = {
   /**
    * @summary Fetches and formats recent RE decision logs from Supabase.
-   * @param limit - Max rows to fetch (default 30)
-   * @returns Formatted multi-line string suitable for monospace display
+   *
+   * @param {number} [limit=30] - Maximum number of rows to fetch
+   * @returns {Promise<string>} Formatted multi-line string suitable for monospace display
+   *
+   * @throws Never — errors are caught and returned as a human-readable error string
+   *
    * @calledBy DevToolsScreen — RE Decisions tab
    */
   async getRecentLogs(limit = 30): Promise<string> {

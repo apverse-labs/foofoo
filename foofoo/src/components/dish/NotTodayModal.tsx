@@ -2,20 +2,16 @@
  * @summary Confirmation modal for 'Not today — skip this dish today only'.
  *
  * @description
- * Bottom-sheet-style modal. On confirm: logs not_today action. The calling
- * screen then regenerates the plan for that slot.
+ * Bottom-sheet-style modal. On confirm: logs not_today action via repository.
+ * The calling screen then regenerates the plan for that slot.
  *
- * @param dish - The dish being skipped
- * @param userId - Auth user ID
- * @param planDate - YYYY-MM-DD
- * @param onConfirm - Called after log — Home screen regenerates slot
- * @param onCancel - Dismisses modal
  * @calledBy app/(tabs)/index.tsx
  */
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, ActivityIndicator } from 'react-native';
-import { supabase } from '../../services/supabase';
+import { logSuggestionAction } from '../../repositories/plans.repository';
+import { Logger } from '../../utils/systemLogger';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
 import type { Dish } from '../../types';
 
@@ -28,24 +24,23 @@ interface NotTodayModalProps {
   onCancel: () => void;
 }
 
+/**
+ * @summary Handles the Not Today confirmation — logs the skip action then calls onConfirm.
+ *
+ * @description Non-fatal on DB error: the modal still dismisses so the user isn't blocked.
+ *   Errors are logged to systemLogger for debugging.
+ */
 export default function NotTodayModal({ dish, userId, planDate, mealSlot, onConfirm, onCancel }: NotTodayModalProps) {
   const [loading, setLoading] = useState(false);
 
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      await supabase.from('suggestion_logs').insert({
-        user_id: userId,
-        dish_id: dish.id,
-        plan_date: planDate,
-        meal_slot: mealSlot,
-        action: 'not_today',
-        position: 0,
-        re_version: 'v1',
-      });
+      await logSuggestionAction(userId, dish.id, planDate, mealSlot, 'not_today', 0);
       onConfirm();
-    } catch {
-      onConfirm();
+    } catch (err: any) {
+      Logger.error('NOT-TODAY-MODAL', 'Failed to log not_today action', { error: err?.message, dishId: dish.id });
+      onConfirm(); // Still dismiss — non-fatal
     } finally {
       setLoading(false);
     }
@@ -96,7 +91,7 @@ const styles = StyleSheet.create({
   },
   cancelText: { fontSize: 15, fontWeight: '600', color: COLORS.textSecondary },
   skipBtn: {
-    flex: 1, backgroundColor: '#FF8F00',
+    flex: 1, backgroundColor: COLORS.warning,
     borderRadius: BORDER_RADIUS.full, paddingVertical: 14, alignItems: 'center',
   },
   skipText: { fontSize: 15, fontWeight: '700', color: '#fff' },

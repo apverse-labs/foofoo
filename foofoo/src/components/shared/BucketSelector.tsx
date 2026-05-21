@@ -1,9 +1,10 @@
 import React, { useState, useMemo } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, ScrollView, Modal, TouchableOpacity,
+  View, Text, Pressable, ScrollView, Modal, TouchableOpacity,
 } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
+import { COLORS, TIMING } from '../../config/constants';
 import type { BucketItem, BucketMap, BucketType } from '../../types';
+import { styles } from './BucketSelector.styles';
 
 interface BucketSelectorProps {
   items: BucketItem[];
@@ -45,10 +46,19 @@ export function BucketSelector({ items, onComplete, initialBuckets }: BucketSele
 
   const [pickerChipId, setPickerChipId] = useState<string | null>(null);
 
+  /**
+   * @summary Directly assigns a chip to a specific bucket (used by the long-press picker sheet).
+   * @param {string} id - Item ID to assign
+   * @param {BucketType | null} bucket - Target bucket, or null to leave unsorted
+   */
   const assignBucket = (id: string, bucket: BucketType | null) => {
     setBucketMap((prev) => ({ ...prev, [id]: bucket }));
   };
 
+  /**
+   * @summary Cycles a chip through the bucket sequence: null → F → O → N → null.
+   * @param {string} id - Item ID to cycle
+   */
   const cycleItem = (id: string) => {
     setBucketMap((prev) => {
       const current = prev[id];
@@ -74,7 +84,10 @@ export function BucketSelector({ items, onComplete, initialBuckets }: BucketSele
     return { unsorted, sorted, buckets };
   }, [items, bucketMap]);
 
-  // Unsorted items default to Occasional so nothing is ever lost.
+  /**
+   * @summary Builds the final BucketMap (defaulting unsorted to O) and calls onComplete.
+   * @description Unsorted items default to Occasional so nothing is silently lost.
+   */
   const handleNext = () => {
     const finalBuckets: BucketMap = {
       F: [...buckets.F],
@@ -107,7 +120,7 @@ export function BucketSelector({ items, onComplete, initialBuckets }: BucketSele
                     key={item.id}
                     onPress={() => cycleItem(item.id)}
                     onLongPress={() => setPickerChipId(item.id)}
-                    delayLongPress={300}
+                    delayLongPress={TIMING.LONG_PRESS_MS}
                   >
                     <View style={[styles.bucketChip, { borderColor: cfg.color, backgroundColor: cfg.bgColor }]}>
                       <Text style={styles.chipText} numberOfLines={1}>
@@ -222,144 +235,3 @@ export function BucketSelector({ items, onComplete, initialBuckets }: BucketSele
   );
 }
 
-const styles = StyleSheet.create({
-  container: { flex: 1 },
-  bucketsRow: {
-    flexDirection: 'row',
-    gap: SPACING.sm,
-    marginBottom: SPACING.sm,
-  },
-  bucketCol: {
-    flex: 1,
-    borderRadius: BORDER_RADIUS.md,
-    borderTopWidth: 3,
-    backgroundColor: COLORS.surface,
-    minHeight: 160,
-    maxHeight: 220,
-    overflow: 'hidden',
-  },
-  bucketHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: SPACING.sm,
-    paddingVertical: SPACING.xs + 2,
-  },
-  bucketLabel: {
-    fontSize: 11,
-    fontWeight: '700',
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-    flexShrink: 1,
-  },
-  badge: {
-    borderRadius: BORDER_RADIUS.full,
-    minWidth: 20,
-    height: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-    paddingHorizontal: SPACING.xs,
-  },
-  badgeText: { fontSize: 11, color: '#fff', fontWeight: '700' },
-  bucketContent: { flex: 1, padding: SPACING.xs },
-  bucketChip: {
-    borderRadius: BORDER_RADIUS.full,
-    borderWidth: 1,
-    marginBottom: SPACING.xs,
-    height: 32,
-    justifyContent: 'center',
-    paddingHorizontal: SPACING.sm,
-  },
-  chipText: { fontSize: 12, fontWeight: '500', color: COLORS.textPrimary },
-  unsortedSection: {
-    flex: 1,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    paddingTop: SPACING.sm,
-  },
-  unsortedTitle: {
-    fontSize: 11,
-    fontWeight: '600',
-    color: COLORS.textSecondary,
-    marginBottom: SPACING.sm,
-    textTransform: 'uppercase',
-    letterSpacing: 0.3,
-  },
-  unsortedScroll: { flex: 1 },
-  chipGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: SPACING.sm,
-  },
-  unsortedChip: {
-    height: 48,
-    borderRadius: BORDER_RADIUS.full,
-    backgroundColor: COLORS.surface,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    paddingHorizontal: SPACING.md,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  unsortedChipText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '500' },
-  unsortedHint: {
-    fontSize: 12,
-    color: '#999999',
-    textAlign: 'center',
-    marginTop: SPACING.xs,
-  },
-  bottomBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingTop: SPACING.sm,
-    borderTopWidth: 1,
-    borderTopColor: COLORS.border,
-    marginTop: SPACING.sm,
-  },
-  progress: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500' },
-  nextBtn: {
-    backgroundColor: COLORS.primary,
-    borderRadius: BORDER_RADIUS.full,
-    paddingHorizontal: SPACING.lg,
-    height: 44,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  nextBtnText: { fontSize: 15, fontWeight: '700', color: '#fff' },
-  // Direct-picker modal
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.4)',
-    justifyContent: 'flex-end',
-  },
-  pickerSheet: {
-    backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    padding: SPACING.lg,
-    paddingBottom: SPACING.xl,
-    gap: SPACING.xs,
-  },
-  pickerTitle: {
-    fontSize: 16,
-    fontWeight: '700',
-    color: COLORS.textPrimary,
-    marginBottom: SPACING.sm,
-  },
-  pickerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: SPACING.md,
-    paddingVertical: SPACING.sm,
-  },
-  pickerDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-  },
-  pickerOptionLabel: {
-    fontSize: 16,
-    fontWeight: '500',
-  },
-});

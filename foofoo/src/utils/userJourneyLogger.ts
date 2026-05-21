@@ -29,11 +29,19 @@ interface JourneyEntry {
   body: string;
 }
 
-// Returns a Date whose UTC values equal current IST values
+/**
+ * @summary Returns a Date whose UTC methods yield current IST values.
+ * @returns {Date} Date shifted +5:30 so getUTC* calls return IST
+ */
 function nowIST(): Date {
   return new Date(Date.now() + 5.5 * 60 * 60 * 1000);
 }
 
+/**
+ * @summary Formats a shifted IST Date as short timestamp: '21 May 9:30 AM'.
+ * @param {Date} d - IST-shifted Date (from nowIST() or stored ISO string)
+ * @returns {string} Human-readable short date-time in IST
+ */
 function formatIST(d: Date): string {
   const day = d.getUTCDate();
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
@@ -45,6 +53,11 @@ function formatIST(d: Date): string {
   return `${day} ${month} ${h}:${m} ${ampm}`;
 }
 
+/**
+ * @summary Formats a shifted IST Date as full timestamp: '21 May 2026 9:30 AM IST'.
+ * @param {Date} d - IST-shifted Date (from nowIST() or stored ISO string)
+ * @returns {string} Human-readable full date-time with year and timezone label
+ */
 function formatISTFull(d: Date): string {
   const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
   const day = d.getUTCDate();
@@ -57,6 +70,12 @@ function formatISTFull(d: Date): string {
   return `${day} ${month} ${year} ${h}:${m} ${ampm} IST`;
 }
 
+/**
+ * @summary Appends one JourneyEntry to the user's AsyncStorage circular log (max 200 entries).
+ * @param {string} userId - User ID (first 8 chars used as storage key prefix)
+ * @param {JourneyEntry} entry - The entry to append
+ * @returns {Promise<void>}
+ */
 async function appendEntry(userId: string, entry: JourneyEntry): Promise<void> {
   try {
     const key = KEY_PREFIX + userId.slice(0, 8);

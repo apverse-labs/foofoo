@@ -9,12 +9,12 @@ const STRICT_DIETS: FoodPref[] = ['veg', 'vegan', 'jain'];
 /**
  * @summary Fetch breakfast dishes, filtered by cuisine preference and diet type.
  *
- * @param {number[]} cuisineIds - Integer IDs of F+O cuisines from Step 4
- * @param {FoodPref | null} [foodPref] - User's food preference; filters diet for strict diets
- * @returns {Promise<DishRow[]>} Up to 20 breakfast dishes
- *
  * @description Falls back to all cuisines if the filtered set has fewer than 5 results,
  *   keeping the diet filter so strict-diet users never see excluded dishes.
+ *
+ * @param {number[]} cuisineIds - Integer IDs of F+O cuisines from Step 4
+ * @param {FoodPref | null} [foodPref] - User's food preference; strictly filters diet for veg/vegan/jain
+ * @returns {Promise<DishRow[]>} Up to 20 breakfast dishes; empty array on error
  *
  * @calledBy `app/(onboarding)/step-5.tsx` — on mount
  */
@@ -46,20 +46,21 @@ export async function fetchBreakfastDishes(cuisineIds: number[], foodPref?: Food
     }
 
     return (data ?? []) as DishRow[];
-  } catch (err) {
-    Logger.error('MEAL-PREFS', 'fetchBreakfastDishes failed', { message: (err as any)?.message });
+  } catch (err: any) {
+    Logger.error('MEAL-PREFS', 'fetchBreakfastDishes failed', { error: err?.message });
     return [];
   }
 }
 
 /**
- * @summary Fetch lunch/dinner dishes filtered by cuisine preference and diet type (top 30).
- *
- * @param {number[]} cuisineIds - Integer IDs of F+O cuisines from Step 4
- * @param {FoodPref | null} [foodPref] - User's food preference; filters diet for strict diets
- * @returns {Promise<DishRow[]>} Up to 30 unique lunch or dinner dishes
+ * @summary Fetch lunch/dinner dishes filtered by cuisine preference and diet type (top 30, deduped).
  *
  * @description Falls back to all cuisines if the filtered set has fewer than 5 results.
+ *   Deduplicates dishes that appear in both lunch and dinner meal_types arrays.
+ *
+ * @param {number[]} cuisineIds - Integer IDs of F+O cuisines from Step 4
+ * @param {FoodPref | null} [foodPref] - User's food preference; strictly filters diet for veg/vegan/jain
+ * @returns {Promise<DishRow[]>} Up to 30 unique lunch or dinner dishes; empty array on error
  *
  * @calledBy `app/(onboarding)/step-6.tsx` — on mount
  */
@@ -96,8 +97,8 @@ export async function fetchLunchDinnerDishes(cuisineIds: number[], foodPref?: Fo
     }
 
     return dedup((data ?? []) as DishRow[]);
-  } catch (err) {
-    Logger.error('MEAL-PREFS', 'fetchLunchDinnerDishes failed', { message: (err as any)?.message });
+  } catch (err: any) {
+    Logger.error('MEAL-PREFS', 'fetchLunchDinnerDishes failed', { error: err?.message });
     return [];
   }
 }
@@ -105,9 +106,15 @@ export async function fetchLunchDinnerDishes(cuisineIds: number[], foodPref?: Fo
 /**
  * @summary Save meal-item bucket preferences, replacing rows for the given dish IDs.
  *
+ * @description Scoped delete+insert: only replaces rows for the provided dishIds so
+ *   preferences from other steps are not disturbed.
+ *
  * @param {string} userId - Supabase auth UUID
  * @param {BucketMap} buckets - Dish IDs (as strings) sorted into F/O/N buckets
- * @param {string[]} dishIds - Full list of dish IDs being sorted (used to scope the delete)
+ * @param {string[]} dishIds - Full list of dish IDs shown on this step (used to scope the delete)
+ * @returns {Promise<void>}
+ *
+ * @throws {Error} When the delete or insert fails
  *
  * @calledBy Steps 5 and 6 — on Next press
  */
@@ -116,25 +123,30 @@ export async function saveMealBuckets(
   buckets: BucketMap,
   dishIds: string[]
 ): Promise<void> {
-  if (dishIds.length > 0) {
-    const { error: deleteError } = await supabase
-      .from('user_category_preferences')
-      .delete()
-      .eq('user_id', userId)
-      .eq('category_type', 'meal_item')
-      .in('category_id', dishIds);
-    if (deleteError) throw new Error('[meal-prefs.repository] saveMealBuckets delete failed: ' + deleteError.message);
+  try {
+    if (dishIds.length > 0) {
+      const { error: deleteError } = await supabase
+        .from('user_category_preferences')
+        .delete()
+        .eq('user_id', userId)
+        .eq('category_type', 'meal_item')
+        .in('category_id', dishIds);
+      if (deleteError) throw new Error('[meal-prefs.repository] saveMealBuckets delete failed: ' + deleteError.message);
+    }
+
+    const rows = [
+      ...buckets.F.map((id) => ({ user_id: userId, category_type: 'meal_item', category_id: id, bucket: 'F' })),
+      ...buckets.O.map((id) => ({ user_id: userId, category_type: 'meal_item', category_id: id, bucket: 'O' })),
+      ...buckets.N.map((id) => ({ user_id: userId, category_type: 'meal_item', category_id: id, bucket: 'N' })),
+    ];
+    if (rows.length === 0) return;
+
+    const { error } = await supabase.from('user_category_preferences').insert(rows);
+    if (error) throw error;
+  } catch (err: any) {
+    Logger.error('MEAL-PREFS', 'saveMealBuckets failed', { error: err?.message, userId });
+    throw err;
   }
-
-  const rows = [
-    ...buckets.F.map((id) => ({ user_id: userId, category_type: 'meal_item', category_id: id, bucket: 'F' })),
-    ...buckets.O.map((id) => ({ user_id: userId, category_type: 'meal_item', category_id: id, bucket: 'O' })),
-    ...buckets.N.map((id) => ({ user_id: userId, category_type: 'meal_item', category_id: id, bucket: 'N' })),
-  ];
-  if (rows.length === 0) return;
-
-  const { error } = await supabase.from('user_category_preferences').insert(rows);
-  if (error) throw error;
 }
 
 /**
@@ -144,9 +156,9 @@ export async function saveMealBuckets(
  *   so dish queries can filter by integer cuisine_id.
  *
  * @param {string} userId - Supabase auth UUID
- * @returns {Promise<number[]>} Array of integer cuisine IDs
+ * @returns {Promise<number[]>} Array of integer cuisine IDs; empty array on error
  *
- * @calledBy Steps 5 and 6 — on mount to build dish query
+ * @calledBy Steps 5 and 6 — on mount to build the dish query
  */
 export async function fetchFOCuisineIds(userId: string): Promise<number[]> {
   try {
@@ -168,8 +180,8 @@ export async function fetchFOCuisineIds(userId: string): Promise<number[]> {
     if (cErr) throw cErr;
 
     return (cuisines ?? []).map((c) => c.id as number);
-  } catch (err) {
-    Logger.error('MEAL-PREFS', 'fetchFOCuisineIds failed', { message: (err as any)?.message });
+  } catch (err: any) {
+    Logger.error('MEAL-PREFS', 'fetchFOCuisineIds failed', { error: err?.message, userId });
     return [];
   }
 }
@@ -178,26 +190,36 @@ export async function fetchFOCuisineIds(userId: string): Promise<number[]> {
  * @summary Record user data consent timestamp in user_consent table.
  *
  * @param {string} userId - Supabase auth UUID
+ * @returns {Promise<void>}
+ *
+ * @throws {Error} When the Supabase upsert fails
  *
  * @calledBy `app/(onboarding)/step-7.tsx` — on "Start Using Foofoo" press
  */
 export async function recordConsent(userId: string): Promise<void> {
-  const { error } = await supabase
-    .from('user_consent')
-    .upsert(
-      { user_id: userId, data_consent_at: new Date().toISOString(), data_consent_version: 'v1.0' },
-      { onConflict: 'user_id' }
-    );
-  if (error) throw error;
+  try {
+    const { error } = await supabase
+      .from('user_consent')
+      .upsert(
+        { user_id: userId, data_consent_at: new Date().toISOString(), data_consent_version: 'v1.0' },
+        { onConflict: 'user_id' }
+      );
+    if (error) throw error;
+  } catch (err: any) {
+    Logger.error('MEAL-PREFS', 'recordConsent failed', { error: err?.message, userId });
+    throw err;
+  }
 }
 
 /**
  * @summary Fetch existing meal-item bucket preferences for the given dish IDs.
- * Used to pre-populate BucketSelector on back navigation (Fix 5 — step persistence).
+ *
+ * @description Used to pre-populate BucketSelector on back navigation so prior
+ *   selections are not lost.
  *
  * @param {string} userId - Supabase auth UUID
- * @param {string[]} dishIds - String IDs of dishes currently shown
- * @returns {Promise<BucketMap>} Prior bucket assignments scoped to these dishes
+ * @param {string[]} dishIds - String IDs of the dishes currently shown on this step
+ * @returns {Promise<BucketMap>} Prior bucket assignments scoped to these dishes; empty map on error
  *
  * @calledBy Steps 5 and 6 — on mount to restore prior selections
  */
@@ -217,8 +239,8 @@ export async function fetchUserMealBuckets(userId: string, dishIds: string[]): P
       if (defaultMap[b]) defaultMap[b].push(row.category_id as string);
     });
     return defaultMap;
-  } catch (err) {
-    Logger.error('MEAL-PREFS', 'fetchUserMealBuckets failed', { message: (err as any)?.message });
+  } catch (err: any) {
+    Logger.error('MEAL-PREFS', 'fetchUserMealBuckets failed', { error: err?.message, userId });
     return defaultMap;
   }
 }

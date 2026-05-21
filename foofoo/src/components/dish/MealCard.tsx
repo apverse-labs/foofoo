@@ -11,16 +11,17 @@
 
 import React, { useState, useRef } from 'react';
 import {
-  View, Text, StyleSheet, Pressable, PanResponder,
-  Dimensions, GestureResponderEvent, PanResponderGestureState,
+  View, Text, Pressable, PanResponder,
+  GestureResponderEvent, PanResponderGestureState,
 } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import type { Dish } from '../../types';
 import { cookTimeLabel } from './MealCard.helpers';
-import { COLORS, BORDER_RADIUS, TIMING } from '../../config/constants';
+import { TIMING } from '../../config/constants';
 import { UserJourneyLogger } from '../../utils/userJourneyLogger';
+import { styles, CARD_HEIGHT, SCREEN_WIDTH } from './MealCard.styles';
 
 interface MealCardProps {
   dish: Dish | null;
@@ -38,9 +39,8 @@ interface MealCardProps {
 
 const SWIPE_THRESHOLD = TIMING.SWIPE_THRESHOLD;
 const LONG_PRESS_MS = TIMING.LONG_PRESS_MS;
+// Minimum vertical drag distance (px) before a long-press is classified as Never or Not Today
 const DRAG_DIRECTION_THRESHOLD = 30;
-const CARD_HEIGHT = 220;
-const SCREEN_WIDTH = Dimensions.get('window').width;
 const PLACEHOLDER_HASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 
 const SLOT_LABELS: Record<string, string> = {
@@ -68,6 +68,10 @@ export default function MealCard({
   const dragStart = useRef({ x: 0, y: 0 });
   const currentDish = carouselDishes[currentIndex] ?? dish;
 
+  /**
+   * @summary Advances or retreats the carousel index and notifies the parent of the new dish.
+   * @param {'left' | 'right'} direction - 'left' moves to the next option, 'right' goes back
+   */
   const navigateCarousel = (direction: 'left' | 'right') => {
     if (isLocked || carouselDishes.length === 0) return;
     let next = currentIndex + (direction === 'left' ? 1 : -1);
@@ -131,6 +135,9 @@ export default function MealCard({
     },
   });
 
+  /**
+   * @summary Triggers haptic feedback and calls the parent's onLock handler.
+   */
   const handleLock = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onLock();
@@ -149,7 +156,7 @@ export default function MealCard({
         placeholder={currentDish.blurhash ?? PLACEHOLDER_HASH}
         contentFit="cover"
         style={styles.image}
-        transition={300}
+        transition={TIMING.IMAGE_TRANSITION_MS}
       />
 
       <LinearGradient
@@ -191,6 +198,10 @@ export default function MealCard({
   );
 }
 
+/**
+ * @summary Placeholder card shown while the dish data is loading.
+ * @param {{ mealSlot: string }} props - The slot label to display (BREAKFAST / LUNCH / DINNER)
+ */
 function SkeletonCard({ mealSlot }: { mealSlot: string }) {
   return (
     <View style={styles.skeleton}>
@@ -199,107 +210,3 @@ function SkeletonCard({ mealSlot }: { mealSlot: string }) {
   );
 }
 
-const styles = StyleSheet.create({
-  card: {
-    width: SCREEN_WIDTH - 32,
-    height: CARD_HEIGHT,
-    borderRadius: BORDER_RADIUS.md,
-    overflow: 'hidden',
-    alignSelf: 'center',
-    backgroundColor: '#1a1a1a',
-  },
-  cardLocked: {
-    borderWidth: 2,
-    borderColor: '#5C6BC0',
-  },
-  image: {
-    width: '100%',
-    height: '100%',
-    borderRadius: BORDER_RADIUS.md,
-  },
-  gradient: {
-    ...StyleSheet.absoluteFillObject,
-    top: '40%',
-    borderRadius: BORDER_RADIUS.md,
-  },
-  slotLabel: {
-    position: 'absolute',
-    top: 12,
-    left: 12,
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 10,
-    fontWeight: '700',
-    letterSpacing: 1.5,
-  },
-  positionLabel: {
-    position: 'absolute',
-    top: 12,
-    right: 12,
-    color: 'rgba(255,255,255,0.7)',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  infoContainer: {
-    position: 'absolute',
-    bottom: 12,
-    left: 12,
-    right: 88,
-  },
-  dishName: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '700',
-    marginBottom: 4,
-    textShadowColor: 'rgba(0,0,0,0.5)',
-    textShadowOffset: { width: 0, height: 1 },
-    textShadowRadius: 3,
-  },
-  metaRow: {
-    flexDirection: 'row',
-    gap: 8,
-    flexWrap: 'wrap',
-  },
-  tag: {
-    color: '#fff',
-    fontSize: 11,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 6,
-    paddingVertical: 2,
-    borderRadius: 4,
-  },
-  metaText: {
-    color: 'rgba(255,255,255,0.85)',
-    fontSize: 11,
-  },
-  actions: {
-    position: 'absolute',
-    bottom: 12,
-    right: 12,
-    flexDirection: 'row',
-    gap: 8,
-  },
-  iconBtn: {
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  iconText: {
-    fontSize: 18,
-  },
-  skeleton: {
-    width: SCREEN_WIDTH - 32,
-    height: CARD_HEIGHT,
-    borderRadius: BORDER_RADIUS.md,
-    backgroundColor: '#e0e0e0',
-    alignSelf: 'center',
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  skeletonLabel: {
-    color: '#9e9e9e',
-    fontSize: 12,
-    fontWeight: '600',
-    letterSpacing: 1.5,
-  },
-});
