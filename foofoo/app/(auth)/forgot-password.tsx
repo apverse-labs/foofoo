@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../src/services/supabase';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import { Logger } from '../../src/utils/systemLogger';
 
 /**
  * @summary Forgot-password screen that dispatches a Supabase password reset email.
@@ -37,7 +38,7 @@ export default function ForgotPassword() {
       if (error) throw error;
       setSent(true);
     } catch (err) {
-      console.error('[AUTH] Password reset email failed', err);
+      Logger.error('AUTH', 'Password reset email failed', { message: (err as any)?.message });
     } finally {
       setLoading(false);
     }

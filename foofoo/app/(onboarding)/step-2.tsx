@@ -6,6 +6,8 @@ import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
 import { saveFoodPref, fetchUserDietRules } from '../../src/repositories/onboarding.repository';
 import { updateOnboardingStep } from '../../src/repositories/profiles.repository';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
+import { Logger } from '../../src/utils/systemLogger';
 import type { FoodPref } from '../../src/types';
 
 interface PrefOption {
@@ -54,9 +56,18 @@ export default function OnboardingStep2() {
     try {
       await saveFoodPref(userId, selected);
       await updateOnboardingStep(userId, 2);
+      const label = OPTIONS.find(o => o.value === selected)?.label ?? selected;
+      await UserJourneyLogger.logOnboardingStep(userId, 2, 'Food Preference', {
+        'Selected preference': label,
+        'Impact': selected === 'veg' ? 'Only veg, vegan, and jain dishes — non-veg permanently excluded'
+          : selected === 'vegan' ? 'Only vegan dishes — all animal products excluded'
+          : selected === 'jain' ? 'Only veg and jain dishes — root vegetables, onion, garlic excluded'
+          : selected === 'egg' ? 'Veg + egg dishes — meat and poultry excluded'
+          : 'All dishes including meat, poultry, and seafood',
+      });
       router.replace('/(onboarding)/step-3' as never);
-    } catch (err) {
-      console.error('[STEP2] save failed:', err);
+    } catch (err: any) {
+      Logger.error('STEP2', 'save failed', { message: err?.message });
       Alert.alert('Save failed', 'Could not save your food preference. Please check your connection and try again.');
     } finally {
       setSaving(false);

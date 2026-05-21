@@ -1,4 +1,5 @@
 import { supabase } from '../services/supabase';
+import { Logger } from '../utils/systemLogger';
 import type { DishRow, BucketMap, FoodPref } from '../types';
 
 // Diets that must see ONLY matching dishes (veg/vegan/jain are strict).
@@ -46,7 +47,7 @@ export async function fetchBreakfastDishes(cuisineIds: number[], foodPref?: Food
 
     return (data ?? []) as DishRow[];
   } catch (err) {
-    console.error('[MEAL-PREFS] fetchBreakfastDishes failed:', err);
+    Logger.error('MEAL-PREFS', 'fetchBreakfastDishes failed', { message: (err as any)?.message });
     return [];
   }
 }
@@ -96,7 +97,7 @@ export async function fetchLunchDinnerDishes(cuisineIds: number[], foodPref?: Fo
 
     return dedup((data ?? []) as DishRow[]);
   } catch (err) {
-    console.error('[MEAL-PREFS] fetchLunchDinnerDishes failed:', err);
+    Logger.error('MEAL-PREFS', 'fetchLunchDinnerDishes failed', { message: (err as any)?.message });
     return [];
   }
 }
@@ -168,7 +169,7 @@ export async function fetchFOCuisineIds(userId: string): Promise<number[]> {
 
     return (cuisines ?? []).map((c) => c.id as number);
   } catch (err) {
-    console.error('[MEAL-PREFS] fetchFOCuisineIds failed:', err);
+    Logger.error('MEAL-PREFS', 'fetchFOCuisineIds failed', { message: (err as any)?.message });
     return [];
   }
 }
@@ -217,7 +218,7 @@ export async function fetchUserMealBuckets(userId: string, dishIds: string[]): P
     });
     return defaultMap;
   } catch (err) {
-    console.error('[MEAL-PREFS] fetchUserMealBuckets failed:', err);
+    Logger.error('MEAL-PREFS', 'fetchUserMealBuckets failed', { message: (err as any)?.message });
     return defaultMap;
   }
 }

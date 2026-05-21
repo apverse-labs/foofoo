@@ -1,4 +1,5 @@
 export type FoodPref = 'veg' | 'non_veg' | 'egg' | 'vegan' | 'jain';
+export type SuggestionAction = 'viewed' | 'swiped' | 'locked' | 'unlocked' | 'tapped_detail' | 'not_today' | 'never';
 export type DietType = 'veg' | 'non_veg' | 'egg' | 'vegan' | 'jain';
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type DishRole = 'main' | 'side' | 'accompaniment' | 'dessert' | 'snack';
@@ -69,6 +70,12 @@ export interface UserProfile {
   created_at: string;
 }
 
+export interface Cuisine {
+  id: number;
+  code: string;
+  name: string;
+}
+
 export interface Dish {
   id: number;
   name: string;
@@ -84,6 +91,50 @@ export interface Dish {
   hero_image_url: string | null;
   blurhash: string | null;
   is_active: boolean;
+  cuisines?: Cuisine | null;
+}
+
+export interface PlannerSlot {
+  dish: Dish | null;
+  carouselCount: number;
+}
+
+export interface RESummaryAlternative {
+  dish_name: string;
+  final_score: number;
+  why_not_first: string;
+}
+
+export interface RESummarySlot {
+  winner: { name: string; score: number; cuisine: string };
+  alternatives: RESummaryAlternative[];
+  reasoning: string;
+}
+
+export interface RESummary {
+  breakfast: RESummarySlot | null;
+  lunch: RESummarySlot | null;
+  dinner: RESummarySlot | null;
+}
+
+export interface GeneratedPlan {
+  planId: string;
+  planDate: string;
+  reVersion: string;
+  generatedInMs?: number;
+  breakfast: PlannerSlot;
+  lunch: PlannerSlot;
+  dinner: PlannerSlot;
+  cached: boolean;
+  reSummary?: RESummary;
+}
+
+export interface CarouselDish {
+  ref_id: number;
+  ref_type: string;
+  meal_slot: string;
+  position: number;
+  dishes: Dish;
 }
 
 export interface DailyPlan {

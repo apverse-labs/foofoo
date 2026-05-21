@@ -5,6 +5,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../src/services/supabase';
 import { resetOnboardingProgress } from '../src/repositories/profiles.repository';
 import { COLORS, APP_NAME } from '../src/config/constants';
+import { Logger } from '../src/utils/systemLogger';
 
 const INTRO_SEEN_KEY = 'foofoo_has_seen_intro';
 
@@ -57,7 +58,7 @@ export default function Index() {
       const step = Math.min(Math.max((profile?.onboarding_step ?? 0) + 1, 1), 7);
       router.replace(`/(onboarding)/step-${step}` as never);
     } catch {
-      console.error('[INDEX] Route resolution failed — defaulting to auth-gate');
+      Logger.error('INDEX', 'Route resolution failed — defaulting to auth-gate');
       router.replace('/(auth)/auth-gate' as never);
     }
   }

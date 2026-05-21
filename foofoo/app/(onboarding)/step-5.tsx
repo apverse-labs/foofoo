@@ -9,6 +9,8 @@ import {
 } from '../../src/repositories/meal-prefs.repository';
 import { updateOnboardingStep, fetchProfile } from '../../src/repositories/profiles.repository';
 import { COLORS, SPACING } from '../../src/config/constants';
+import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
+import { Logger } from '../../src/utils/systemLogger';
 import type { BucketItem, BucketMap } from '../../src/types';
 
 /**
@@ -65,9 +67,19 @@ export default function OnboardingStep5() {
     try {
       await saveMealBuckets(userId, buckets, dishIds);
       await updateOnboardingStep(userId, 5);
+      const getDishNames = (ids: string[]) =>
+        ids.map(id => items.find(i => i.id === id)?.label ?? id).join(', ') || '(none)';
+      await UserJourneyLogger.logOnboardingStep(userId, 5, 'Breakfast Preferences', {
+        'Frequently': getDishNames(buckets.F),
+        'Occasionally': getDishNames(buckets.O),
+        'Never': getDishNames(buckets.N),
+        'Unselected (default Occasional)': getDishNames(
+          dishIds.filter(id => !buckets.F.includes(id) && !buckets.O.includes(id) && !buckets.N.includes(id))
+        ),
+      });
       router.replace('/(onboarding)/step-6' as never);
-    } catch (err) {
-      console.error('[STEP5] save failed:', err);
+    } catch (err: any) {
+      Logger.error('STEP5', 'save failed', { message: err?.message });
       Alert.alert('Save failed', 'Could not save your breakfast preferences. Please check your connection and try again.');
     } finally {
       setSaving(false);

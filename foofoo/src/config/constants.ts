@@ -19,6 +19,25 @@ export const RE_CONFIG = {
   RANDOM_FACTOR_WEIGHT: 0.05,
   PLAN_CACHE_HOURS: 12,
   WEATHER_CACHE_HOURS: 12,
+  // RE v1 scoring weights — change these to tune recommendations
+  CUISINE_BOOST_FREQUENT: 0.3,      // F bucket cuisine match
+  CUISINE_BOOST_OCCASIONAL: 0.1,    // O bucket cuisine match
+  MEAL_ITEM_BOOST_FREQUENT: 0.25,   // F bucket dish match
+  MEAL_ITEM_BOOST_OCCASIONAL: 0.05, // O bucket dish match
+  VARIETY_PENALTY: -0.5,            // Dish seen in last 3 days
+  WEATHER_SPICY_BOOST: 0.15,        // Spicy dish on cold/rainy day
+  WEATHER_BOOST: 0.1,               // Heavy/light dish on cold/hot day
+  WEEKDAY_QUICK_BOOST: 0.1,         // Quick dish (≤20 min) on a weekday
+  WEEKEND_SLOW_BOOST: 0.05,         // Slow dish (>30 min) on a weekend
+  RANDOM_MAX: 0.15,                 // Max random noise added per dish
+  // Dish classification thresholds
+  TEMP_HOT_CELSIUS: 32,
+  TEMP_COLD_CELSIUS: 18,
+  CALORIES_HEAVY: 400,
+  CALORIES_LIGHT: 350,
+  SPICE_LEVEL_SPICY: 3,
+  COOK_TIME_QUICK_MINS: 20,
+  COOK_TIME_SLOW_MINS: 30,
 } as const;
 
 export const COLORS = {
@@ -31,6 +50,9 @@ export const COLORS = {
   border: '#E8E8E6',
   error: '#D62828',
   success: '#2D6A4F',
+  locked: '#5C6BC0',   // Indigo — locked meal slot border
+  never: '#D84315',    // Deep orange-red — Never action destructive button
+  warning: '#FF8F00',  // Amber — Not Today action button
 } as const;
 
 export const SPACING = {
@@ -54,6 +76,7 @@ export const TIMING = {
   SWIPE_THRESHOLD: 50,
   ANIMATION_FAST: 200,
   ANIMATION_NORMAL: 350,
+  IMAGE_TRANSITION_MS: 300, // Expo Image crossfade duration
 } as const;
 
 export const API = {

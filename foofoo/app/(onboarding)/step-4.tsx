@@ -9,6 +9,8 @@ import {
 } from '../../src/repositories/onboarding.repository';
 import { updateOnboardingStep } from '../../src/repositories/profiles.repository';
 import { COLORS, SPACING } from '../../src/config/constants';
+import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
+import { Logger } from '../../src/utils/systemLogger';
 import type { BucketItem, BucketMap } from '../../src/types';
 
 /**
@@ -60,9 +62,17 @@ export default function OnboardingStep4() {
     try {
       await saveCuisineBuckets(userId, buckets);
       await updateOnboardingStep(userId, 4);
+      await UserJourneyLogger.logOnboardingStep(userId, 4, 'Cuisine Preferences', {
+        'Frequently (strong preference)': buckets.F.join(', ') || '(none)',
+        'Occasionally (open to it)': buckets.O.join(', ') || '(none)',
+        'Never (exclude completely)': buckets.N.join(', ') || '(none)',
+        'Unselected (default Occasional)': items
+          .filter(i => !buckets.F.includes(i.id) && !buckets.O.includes(i.id) && !buckets.N.includes(i.id))
+          .map(i => i.label).join(', ') || '(none)',
+      });
       router.replace('/(onboarding)/step-5' as never);
-    } catch (err) {
-      console.error('[STEP4] save failed:', err);
+    } catch (err: any) {
+      Logger.error('STEP4', 'save failed', { message: err?.message });
       Alert.alert('Save failed', 'Could not save your cuisine preferences. Please check your connection and try again.');
     } finally {
       setSaving(false);

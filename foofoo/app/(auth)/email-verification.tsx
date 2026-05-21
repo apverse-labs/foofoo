@@ -3,6 +3,7 @@ import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import { Logger } from '../../src/utils/systemLogger';
 
 const POLL_MS = 5_000;
 const RESEND_COOLDOWN_S = 60;
@@ -47,7 +48,7 @@ export default function EmailVerification() {
         router.replace('/(onboarding)/step-1');
       }
     } catch {
-      console.warn('[AUTH] Email verification poll failed — will retry');
+      Logger.warn('AUTH', 'Email verification poll failed — will retry');
     }
   };
 
@@ -67,7 +68,7 @@ export default function EmailVerification() {
       await supabase.auth.resend({ type: 'signup', email: session.user.email });
       startCooldown();
     } catch {
-      console.warn('[AUTH] Resend confirmation email failed');
+      Logger.warn('AUTH', 'Resend confirmation email failed');
     } finally {
       setResending(false);
     }

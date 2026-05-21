@@ -11,6 +11,8 @@ import {
 } from '../../src/repositories/onboarding.repository';
 import { updateOnboardingStep } from '../../src/repositories/profiles.repository';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
+import { Logger } from '../../src/utils/systemLogger';
 import type { IngredientAlias } from '../../src/types';
 
 interface SelectedAllergen {
@@ -89,9 +91,17 @@ export default function OnboardingStep3() {
       const ids = noAllergies ? [] : selected.map((s) => s.ingredient_id);
       await saveAllergens(userId, ids);
       await updateOnboardingStep(userId, 3);
+      await UserJourneyLogger.logOnboardingStep(userId, 3, 'Allergies', noAllergies
+        ? { 'Allergies': 'None declared', 'Impact': 'All ingredients eligible' }
+        : {
+          'Allergens declared': selected.map(s => s.alias).join(', '),
+          'Ingredient IDs excluded': ids.join(', '),
+          'Impact': `Dishes containing these ${ids.length} ingredient(s) will be hard-filtered out`,
+        }
+      );
       router.replace('/(onboarding)/step-4' as never);
-    } catch (err) {
-      console.error('[STEP3] save failed:', err);
+    } catch (err: any) {
+      Logger.error('STEP3', 'save failed', { message: err?.message });
       Alert.alert('Save failed', 'Could not save your allergens. Please check your connection and try again.');
     } finally {
       setSaving(false);

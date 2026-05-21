@@ -1,4 +1,5 @@
 import { supabase } from '../services/supabase';
+import { Logger } from '../utils/systemLogger';
 import type { FoodPref, CuisineRow, IngredientAlias, BucketMap } from '../types';
 
 /**
@@ -62,7 +63,7 @@ export async function searchIngredients(query: string): Promise<IngredientAlias[
     if (error) throw error;
     return (data ?? []) as IngredientAlias[];
   } catch (err) {
-    console.error('[ONBOARDING] searchIngredients failed:', err);
+    Logger.error('ONBOARDING', 'searchIngredients failed', { message: (err as any)?.message });
     return [];
   }
 }
@@ -85,7 +86,7 @@ export async function fetchUserDietRules(userId: string) {
     if (error) throw error;
     return data;
   } catch (err) {
-    console.error('[ONBOARDING] fetchUserDietRules failed:', err);
+    Logger.error('ONBOARDING', 'fetchUserDietRules failed', { message: (err as any)?.message });
     return null;
   }
 }
@@ -109,7 +110,7 @@ export async function fetchCuisines(): Promise<CuisineRow[]> {
     if (error) throw error;
     return (data ?? []) as CuisineRow[];
   } catch (err) {
-    console.error('[ONBOARDING] fetchCuisines failed:', err);
+    Logger.error('ONBOARDING', 'fetchCuisines failed', { message: (err as any)?.message });
     return [];
   }
 }
@@ -164,7 +165,7 @@ export async function fetchUserCuisineBuckets(userId: string): Promise<BucketMap
     });
     return defaultMap;
   } catch (err) {
-    console.error('[ONBOARDING] fetchUserCuisineBuckets failed:', err);
+    Logger.error('ONBOARDING', 'fetchUserCuisineBuckets failed', { message: (err as any)?.message });
     return defaultMap;
   }
 }
@@ -203,7 +204,7 @@ export async function searchIngredientsByName(
     if (error) throw error;
     return (data ?? []) as Array<{ id: number; name: string; is_allergen: boolean }>;
   } catch (err) {
-    console.error('[ONBOARDING] searchIngredientsByName failed:', err);
+    Logger.error('ONBOARDING', 'searchIngredientsByName failed', { message: (err as any)?.message });
     return [];
   }
 }

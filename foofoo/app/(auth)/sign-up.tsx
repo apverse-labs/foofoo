@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import { Logger } from '../../src/utils/systemLogger';
 
 type PasswordStrength = 'weak' | 'medium' | 'strong';
 
@@ -53,7 +54,7 @@ async function recordConsent(userId: string): Promise<void> {
       { onConflict: 'user_id', ignoreDuplicates: true }
     );
   } catch {
-    console.warn('[AUTH] DPDP consent record failed — non-blocking');
+    Logger.warn('AUTH', 'DPDP consent record failed — non-blocking');
   }
 }
 

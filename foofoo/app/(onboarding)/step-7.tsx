@@ -12,6 +12,8 @@ import {
 } from '../../src/repositories/profiles.repository';
 import { recordConsent } from '../../src/repositories/meal-prefs.repository';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
+import { Logger } from '../../src/utils/systemLogger';
 import type { UserRole } from '../../src/types';
 
 type RoleOption = { value: UserRole; label: string; description: string };
@@ -55,8 +57,8 @@ export default function OnboardingStep7() {
       const Notifications = await import('expo-notifications');
       const { status } = await Notifications.requestPermissionsAsync();
       setNotifGranted(status === ('granted' as PermissionStatus));
-    } catch (err) {
-      console.error('[STEP7] notification permission failed:', err);
+    } catch (err: any) {
+      Logger.warn('STEP7', 'notification permission failed', { message: err?.message });
     }
   };
 
@@ -84,9 +86,15 @@ export default function OnboardingStep7() {
         saveNotificationSettings(userId, time, notifGranted),
         recordConsent(userId),
       ]);
+      await UserJourneyLogger.logOnboardingStep(userId, 7, 'Role & Notifications', {
+        'Role': role === 'cook' ? 'I cook (decides what to make)' : 'I get told what to cook (suggests to someone else)',
+        'Notifications': notifGranted ? `Enabled — daily reminder at ${time}` : 'Not granted (can enable in Settings)',
+        'Consent': 'Data usage consent recorded',
+        'Status': 'Onboarding complete — navigating to Home screen',
+      });
       router.replace('/(tabs)' as never);
-    } catch (err) {
-      console.error('[STEP7] completion failed:', err);
+    } catch (err: any) {
+      Logger.error('STEP7', 'completion failed', { message: err?.message });
       Alert.alert('Setup failed', 'Could not complete your setup. Please check your connection and try again.');
     } finally {
       setSaving(false);

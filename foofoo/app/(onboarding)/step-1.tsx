@@ -11,6 +11,8 @@ import {
 } from '../../src/repositories/profiles.repository';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { INDIAN_STATES } from '../../src/utils/indian-states';
+import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
+import { Logger } from '../../src/utils/systemLogger';
 
 /**
  * @summary Onboarding Step 1 — collects name, username, and location.
@@ -78,15 +80,22 @@ export default function OnboardingStep1() {
     if (!isValid || saving) return;
     setSaving(true);
     try {
-      await saveProfileStep1(userId, {
+      const profileData = {
         name: name.trim(),
         username: username.trim().toLowerCase(),
         home_state: state,
         current_city: city.trim(),
+      };
+      await saveProfileStep1(userId, profileData);
+      await UserJourneyLogger.logOnboardingStep(userId, 1, 'Profile Setup', {
+        Name: profileData.name,
+        Username: `@${profileData.username}`,
+        City: profileData.current_city,
+        State: profileData.home_state,
       });
       router.replace('/(onboarding)/step-2' as never);
-    } catch (err) {
-      console.error('[STEP1] save failed:', err);
+    } catch (err: any) {
+      Logger.error('STEP1', 'save failed', { message: err?.message });
       Alert.alert('Save failed', 'Could not save your profile. Please check your connection and try again.');
     } finally {
       setSaving(false);
