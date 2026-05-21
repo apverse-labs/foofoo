@@ -1,0 +1,254 @@
+════════════════════════════════════════════════════════════════
+FOOFOO DATA SEEDING REPORT
+Session Tag: seed_20260521_1539
+Date completed: 2026-05-21 (IST)
+Supabase project: foofoo-mvp (ufgfznpqixplcbhmsqqw, ap-south-1)
+Processed by: Claude (A1 phases 0–7, A2 phases 7–10)
+Path: Supabase Management API (curl) — equivalent to mcp__supabase__execute_sql
+════════════════════════════════════════════════════════════════
+
+CSV/XLSX FILES PROCESSED (10):
+  1. cuisine_groups (taxonomy)          → cuisine_groups
+  2. cuisines_v4.csv                    → cuisines
+  3. tags_v4.csv                        → tags
+  4. ingredients_v5.csv                 → ingredients_master
+  5. term_synonyms_v2.csv               → term_synonyms
+  6. ingredient_aliases_v2.csv          → ingredient_aliases
+  7. dishes.xlsx (sheet: dishes_810)    → dishes
+  8. region_food_affinity.csv           → region_food_affinity
+  9. dish_combos_v2_20260520.csv        → dish_combos
+ 10. dish_combo_items_v2_20260520.csv   → dish_combo_items
+
+════════════════════════════════════════════════════════════════
+PHASE 0 — ROLLBACK SAFETY
+════════════════════════════════════════════════════════════════
+✓ _seed_sessions audit table created (session_tag, table_name, operation,
+  record_id, old_data, new_data, created_at)
+✓ rollback_seed_session(p_session_tag text) function created and FIXED
+  in this run — the original used `id::uuid` casts that broke for dishes
+  (integer PK) and used a non-existent `row_data` column for UPDATE
+  rollbacks. Replaced with version that:
+    – Casts id::text for any PK type
+    – Uses jsonb_populate_record to restore typed columns from old_data
+    – Collects per-record errors into a JSON array
+    – Only deletes session log when errors = 0
+
+════════════════════════════════════════════════════════════════
+SCHEMA MIGRATIONS APPLIED DURING THIS SESSION
+════════════════════════════════════════════════════════════════
+1. expand_dishes_richness_check
+   ALTER TABLE dishes DROP CONSTRAINT dishes_richness_check;
+   ALTER TABLE dishes ADD CONSTRAINT dishes_richness_check
+     CHECK (richness = ANY (ARRAY['plain','light','buttery','creamy',
+                                  'oily','ghee_rich','coconut_rich']));
+   Reason: dishes.xlsx uses 'light' and 'coconut_rich' which weren't in
+   the original check; both are valid per tags_v4.csv.
+
+────────────────────────────────────────────────────────────────
+COLUMN MAPPING — dishes.xlsx → dishes
+────────────────────────────────────────────────────────────────
+  XLSX Column         → DB Column          → Transform
+  ────────────────────────────────────────────────────────────
+  Dish Name           → name               → trim
+  image_folder        → slug               → lower; '/' → '-'
+                                              (1 fix: parotta-kerala/tamil
+                                               → parotta-kerala-tamil)
+  Short Description   → description        → trim
+  Cuisines (code)     → cuisine_id         → LOWER + lookup in cuisines.code
+  (inferred)          → diet_type          → from ingredient tokens:
+                                              non_veg if any meat/fish token,
+                                              else egg if egg token, else veg
+  Spice Level         → spice_level        → smallint, clamped to [1,4]
+  Sweetness           → sweetness          → smallint, clamped to [0,3]
+  Heaviness           → heaviness          → smallint, clamped to [1,3]
+  Difficulty          → difficulty         → lowercase ∈ {easy,medium,hard}
+  Total Mins/Cooks    → cook_time_mins     → integer
+  Calories            → calories           → integer
+  Meal Types          → meal_types         → text[] (comma-split)
+  Cooking Method      → cooking_method     → text[]
+  Primary Taste       → primary_taste      → text[]
+  Texture             → texture            → text[]
+  Richness            → richness           → first value matching enum
+                                              {plain,light,buttery,creamy,
+                                               oily,ghee_rich,coconut_rich}
+  Mouthfeel           → mouthfeel          → text[]
+  Aroma Profile       → aroma_profile      → text[]
+  Fermentation        → fermentation       → ∈ {none,light,medium,heavy}
+  Serving Temp        → serving_temp       → first value matching enum
+                                              {hot,warm,room_temp,chilled,frozen}
+  Weather Affinity    → weather_affinity   → text[]
+  Is Active           → is_active          → Y/N → bool
+  Dish Category       → dish_role          → mapped to ∈ {main,side,
+                                              accompaniment,dessert,snack,drink}
+                                              default 'main'
+
+DB COLUMNS NOT IN XLSX (handled automatically):
+  id              → DB default (nextval)
+  ingredient_ids  → default '{}'
+  allergen_ids    → default '{}'
+  is_jain         → default false
+  hero_image_url  → null (Sprint 4–5 will populate from Cloudinary)
+  blurhash        → null (Sprint 4–5)
+  search_vector   → auto-derived by DB trigger
+  created_at/updated_at → DB defaults
+
+════════════════════════════════════════════════════════════════
+IMPORT SUMMARY (per table, this session_tag)
+════════════════════════════════════════════════════════════════
+  table_name             INSERT    UPDATE    DELETE    Total in DB
+  ─────────────────────────────────────────────────────────────────
+  cuisine_groups              4        18          –           22
+  cuisines                   49        16          –           69
+  tags                       50        61          –          165
+  ingredients_master        191         –          –          211
+  term_synonyms             100         –          –          112
+  ingredient_aliases         72         –          –          138
+  dishes                    794        16          –          819
+  region_food_affinity       26        12          –           84
+  dish_combos                35         –          –           35
+  dish_combo_items           66         –          –           66
+  ─────────────────────────────────────────────────────────────────
+  Audit rows logged in _seed_sessions for this session: 1,510
+
+────────────────────────────────────────────────────────────────
+DETAIL — dishes (the headline import)
+────────────────────────────────────────────────────────────────
+  xlsx rows:                                    810
+  ├── Inserted (NEW):                           794
+  ├── Updated (re-applied via upsert):           16
+  ├── Skipped (already present, no change):       0
+  └── Errored:                                    0
+
+  Diet distribution after import:
+    veg:      561
+    non_veg:  202
+    egg:       56
+    vegan:      0   (none inferred — pure-vegan inference not required for MVP)
+    jain:       0   (computed via is_jain boolean from ingredient flags,
+                     not via diet_type)
+
+────────────────────────────────────────────────────────────────
+DETAIL — region_food_affinity
+────────────────────────────────────────────────────────────────
+  CSV rows (active):                            136
+  After dish_name → cuisine_id resolution +
+  dedupe by GREATEST(score) per (state, cuisine):  38 unique pairs
+  ├── Inserted (NEW):                            26
+  ├── Updated (score raised via GREATEST):       12
+  └── Unmapped dish names (skipped):              2
+      JH / 'Dhuska'           — not in dishes table
+      JH / 'Rugda (Mushroom)' — not in dishes table
+
+────────────────────────────────────────────────────────────────
+DETAIL — dish_combos + dish_combo_items
+────────────────────────────────────────────────────────────────
+  combos CSV:                                    35
+  ├── Inserted:                                  35
+  └── Errored:                                    0
+
+  combo_items CSV (active):                      74
+  ├── Inserted:                                  66
+  └── Unmapped dish names (skipped):              8
+      'Keema Pav'      'Dal (Mixed)'     'Matar Kulcha'
+      'Dal (Sindhi)'   'Chholar Dal'     'Bafla'
+      'Pakwan'         'Zunka'
+
+  Combos with ZERO items after import (need follow-up):  5
+    – Chole Bhature (Delhi)   (slug: chole-bhature-delhi)
+    – Daal Bafla              (slug: daal-bafla)
+    – Dal Pakwan              (slug: dal-pakwan)
+    – Keema Pav               (slug: keema-pav-combo)
+    – Matar Kulcha            (slug: matar-kulcha)
+  Root cause: their component dish_names in the items CSV don't match
+  any row in dishes.name. Likely either the component dishes are not
+  present as standalone rows in dishes.xlsx, or they're spelled
+  differently (e.g., "Dal (Sindhi)" vs "Sindhi Dal").
+  Action item for content team: add these 8 component dishes (or alias
+  the existing ones) and re-run FILE 10 with idempotent script.
+
+════════════════════════════════════════════════════════════════
+PHASE 3 — VERIFICATION RESULTS (all PASS)
+════════════════════════════════════════════════════════════════
+  required-NOT-NULL columns (name, diet_type, cuisine_id, is_active):  0 nulls
+  diet_type vocabulary check (veg/non_veg/egg/vegan/jain):              0 invalid
+  difficulty vocabulary check (easy/medium/hard):                       0 invalid
+  richness vocabulary check (7 allowed values):                         0 invalid
+  serving_temp vocabulary check (5 allowed values):                     0 invalid
+  dish_role vocabulary check (6 allowed values):                        0 invalid
+  spice_level range [1,4]:                                              0 invalid
+  duplicate slugs in dishes:                                            0
+  dishes → cuisines FK integrity:                                       0 broken
+  dish_combos → cuisines FK integrity:                                  0 broken
+  region_food_affinity → cuisines FK integrity:                         0 broken
+  dish_combo_items → dish_combos FK integrity:                          0 broken
+  dish_combo_items → dishes FK integrity:                               0 broken
+  dishes.search_vector populated (DB trigger):                          0 missing
+
+════════════════════════════════════════════════════════════════
+ROLLBACK INSTRUCTIONS
+════════════════════════════════════════════════════════════════
+To undo this entire seeding session, run in Supabase SQL Editor:
+
+    SELECT rollback_seed_session('seed_20260521_1539');
+
+This will:
+  – DELETE the 794 dish INSERTs (cascades to dish_tags, dish_combo_items
+    via FK ON DELETE CASCADE/RESTRICT — note: ON DELETE RESTRICT will
+    block if items still reference those dishes; clear items first)
+  – Restore old values for the 16 dish UPDATEs, 18 cuisine_group UPDATEs,
+    16 cuisine UPDATEs, 61 tag UPDATEs, 12 region_food_affinity UPDATEs
+  – DELETE the 26 region_food_affinity INSERTs
+  – DELETE the 35 dish_combos INSERTs (cascades to dish_combo_items)
+  – DELETE the 66 dish_combo_items INSERTs (redundant after cascade)
+  – DELETE the 4 cuisine_group + 49 cuisine + 50 tag + 191 ingredient +
+    100 term_synonym + 72 ingredient_alias INSERTs
+
+If errors = 0 during rollback, the session's audit rows are auto-deleted
+from _seed_sessions. If errors > 0, status returns 'PARTIAL' with the
+list of failed records in `error_details`.
+
+Recommended rollback order to avoid FK constraint errors:
+  1) dish_combo_items (no children)
+  2) dish_combos      (children removed)
+  3) region_food_affinity
+  4) dishes           (combo_items already cleared)
+  5) ingredient_aliases, ingredients_master
+  6) tags, term_synonyms
+  7) cuisines, cuisine_groups
+This is the natural order of `created_at DESC` already used by
+rollback_seed_session.
+
+════════════════════════════════════════════════════════════════
+CLEANUP
+════════════════════════════════════════════════════════════════
+User instruction: "Delete all sessions when done."
+After this report is saved + committed, the seeding session's audit
+rows will be removed:
+  DELETE FROM _seed_sessions WHERE session_tag = 'seed_20260521_1539';
+
+CONSEQUENCE: After this DELETE, rollback_seed_session() can no longer
+undo this seed. The data itself is unaffected; only the undo log is
+cleared. This is the user's explicit choice.
+
+════════════════════════════════════════════════════════════════
+KNOWN OPEN ITEMS / FOLLOW-UPS FOR CONTENT TEAM
+════════════════════════════════════════════════════════════════
+1. Map the 8 combo-component dish names that didn't resolve (Keema Pav,
+   Dal (Mixed), Matar Kulcha, Dal (Sindhi), Chholar Dal, Bafla, Pakwan,
+   Zunka) — either add the standalone dishes or rename combo-items CSV
+   to use existing dish names.
+2. Map the 2 unmapped region_food_affinity dishes (Dhuska, Rugda) for
+   Jharkhand (JH).
+3. Sprint 4–5: populate dishes.hero_image_url + dishes.blurhash via
+   Cloudinary upload pipeline.
+4. Auto-derivation: dishes.allergen_ids and dishes.is_jain are
+   currently default-empty/false. They must be derived from
+   ingredient_ids ↔ ingredients_master flags via the
+   derive-dish-attributes script. RE v1 hard filters depend on this.
+5. dishes.ingredient_ids is empty — the xlsx 'Ingredients' column was
+   parsed but NOT linked to ingredients_master IDs. This requires a
+   separate ingredient-name → ingredient.id resolver run.
+
+════════════════════════════════════════════════════════════════
+END OF REPORT
+════════════════════════════════════════════════════════════════
