@@ -11,6 +11,7 @@ import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { Logger } from '../../src/utils/systemLogger';
+import { isValidEmail } from '../../src/utils/validators';
 
 type PasswordStrength = 'weak' | 'medium' | 'strong';
 
@@ -78,7 +79,7 @@ export default function SignUp() {
 
   const { strength, missing } = evaluatePassword(password);
   const canSubmit =
-    fullName.trim().length > 0 && email.includes('@') && strength === 'strong';
+    fullName.trim().length > 0 && isValidEmail(email) && strength === 'strong';
 
   /**
    * @summary Creates a Supabase account and routes to email verification.

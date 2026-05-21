@@ -1,17 +1,22 @@
 import { StyleSheet, Dimensions } from 'react-native';
-import { COLORS, BORDER_RADIUS } from '../../config/constants';
+import { COLORS, BORDER_RADIUS, SPACING } from '../../config/constants';
 
-export const CARD_HEIGHT = 220;
+// Doc 09 §5.1: 200px height, 24px side margins, 20–24px corner radius.
+const HORIZONTAL_INSET = SPACING.lg; // 24px each side
+
+export const CARD_HEIGHT = 200;
 export const SCREEN_WIDTH = Dimensions.get('window').width;
+export const CARD_WIDTH = SCREEN_WIDTH - HORIZONTAL_INSET * 2;
+export const CARD_RADIUS = BORDER_RADIUS.lg; // 24
 
 export const styles = StyleSheet.create({
   card: {
-    width: SCREEN_WIDTH - 32,
+    width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: CARD_RADIUS,
     overflow: 'hidden',
     alignSelf: 'center',
-    backgroundColor: '#1a1a1a',
+    backgroundColor: COLORS.textPrimary, // #1A1A1A — shows behind image during load
   },
   cardLocked: {
     borderWidth: 2,
@@ -20,12 +25,12 @@ export const styles = StyleSheet.create({
   image: {
     width: '100%',
     height: '100%',
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: CARD_RADIUS,
   },
   gradient: {
     ...StyleSheet.absoluteFillObject,
     top: '40%',
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: CARD_RADIUS,
   },
   slotLabel: {
     position: 'absolute',
@@ -93,16 +98,16 @@ export const styles = StyleSheet.create({
     fontSize: 18,
   },
   skeleton: {
-    width: SCREEN_WIDTH - 32,
+    width: CARD_WIDTH,
     height: CARD_HEIGHT,
-    borderRadius: BORDER_RADIUS.md,
+    borderRadius: CARD_RADIUS,
     backgroundColor: '#e0e0e0',
     alignSelf: 'center',
     justifyContent: 'center',
     alignItems: 'center',
   },
   skeletonLabel: {
-    color: '#9e9e9e',
+    color: COLORS.textSecondary,
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 1.5,

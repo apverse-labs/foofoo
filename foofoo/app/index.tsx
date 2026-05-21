@@ -4,10 +4,10 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../src/services/supabase';
 import { resetOnboardingProgress } from '../src/repositories/profiles.repository';
-import { COLORS, APP_NAME } from '../src/config/constants';
+import { COLORS, APP_NAME, STORAGE_KEYS } from '../src/config/constants';
 import { Logger } from '../src/utils/systemLogger';
 
-const INTRO_SEEN_KEY = 'foofoo_has_seen_intro';
+const INTRO_SEEN_KEY = STORAGE_KEYS.INTRO_SEEN;
 
 /**
  * @summary App entry point — resolves the correct initial screen on every mount.
@@ -33,7 +33,9 @@ export default function Index() {
     try {
       const hasSeenIntro = await AsyncStorage.getItem(INTRO_SEEN_KEY);
       if (!hasSeenIntro) {
-        await AsyncStorage.setItem(INTRO_SEEN_KEY, 'true');
+        // Do NOT mark intro as seen here — the user hasn't actually seen it yet.
+        // The flag is written in the intro screen's exit handler instead, so a
+        // force-quit during splash/intro re-shows the flow on the next launch.
         router.replace('/splash' as never);
         return;
       }

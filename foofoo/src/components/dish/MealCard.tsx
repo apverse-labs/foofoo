@@ -1,27 +1,39 @@
 /**
- * @summary Swipeable meal card showing one dish per meal slot with carousel navigation.
+ * @summary Swipeable meal card showing one dish per slot with carousel navigation.
  *
  * @description
- * Core UI component of FooFoo. Shows hero photo with gradient overlay, dish name,
- * cuisine tag, cook time + calories, and 3 action icons. Supports horizontal swipe
- * to browse carousel and long-press for Never/Not Today flows.
+ * Core UI. Renders the hero photo + gradient overlay, dish name, cuisine tag,
+ * cook time + calories, and three action icons. Gestures run on the UI thread
+ * via react-native-gesture-handler v2 + Reanimated 3 — see Doc 09 §7 (60fps
+ * non-negotiable). PanResponder was previously used here and dropped frames on
+ * mid-range Android; do not bring it back without re-reading that section.
  *
- * @calledBy app/(tabs)/index.tsx — 3 instances, one per meal slot
+ * Gesture model (race of three):
+ *   Tap (≤250ms, ≤8px movement)  → onOpenDetail
+ *   LongPress (≥300ms) + drag    → drag ≥30px down: Never; up: Not Today
+ *   Pan (>10px translation)      → carousel swipe (≥50px left/right)
+ *
+ * @calledBy app/(tabs)/index.tsx — three instances, one per meal slot
  */
 
-import React, { useState, useRef } from 'react';
-import {
-  View, Text, Pressable, PanResponder,
-  GestureResponderEvent, PanResponderGestureState,
-} from 'react-native';
+import React, { useRef, useState } from 'react';
+import { View, Text, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
+import { GestureDetector, Gesture } from 'react-native-gesture-handler';
+import Animated, {
+  useSharedValue,
+  useAnimatedStyle,
+  withSpring,
+  withTiming,
+  runOnJS,
+} from 'react-native-reanimated';
 import type { Dish } from '../../types';
 import { cookTimeLabel } from './MealCard.helpers';
 import { TIMING } from '../../config/constants';
 import { UserJourneyLogger } from '../../utils/userJourneyLogger';
-import { styles, CARD_HEIGHT, SCREEN_WIDTH } from './MealCard.styles';
+import { styles } from './MealCard.styles';
 
 interface MealCardProps {
   dish: Dish | null;
@@ -37,9 +49,9 @@ interface MealCardProps {
   onNotToday: (dish: Dish) => void;
 }
 
-const SWIPE_THRESHOLD = TIMING.SWIPE_THRESHOLD;
-const LONG_PRESS_MS = TIMING.LONG_PRESS_MS;
-// Minimum vertical drag distance (px) before a long-press is classified as Never or Not Today
+const SWIPE_THRESHOLD = TIMING.SWIPE_THRESHOLD; // px
+const LONG_PRESS_MS = TIMING.LONG_PRESS_MS; // 300ms
+// Minimum vertical drag distance (px) after long-press activation to classify Never (down) or Not Today (up)
 const DRAG_DIRECTION_THRESHOLD = 30;
 const PLACEHOLDER_HASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 
@@ -53,7 +65,7 @@ export default function MealCard({
   dish,
   carouselDishes,
   mealSlot,
-  planDate,
+  planDate: _planDate,
   userId,
   isLocked,
   onLock,
@@ -63,21 +75,38 @@ export default function MealCard({
   onNotToday,
 }: MealCardProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
-  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const longPressActive = useRef(false);
-  const dragStart = useRef({ x: 0, y: 0 });
   const currentDish = carouselDishes[currentIndex] ?? dish;
 
-  /**
-   * @summary Advances or retreats the carousel index and notifies the parent of the new dish.
-   * @param {'left' | 'right'} direction - 'left' moves to the next option, 'right' goes back
-   */
+  // Refs let worklet→JS callbacks always see the latest state without
+  // capturing it through a stale closure inside a gesture worklet.
+  const currentDishRef = useRef<Dish | null>(currentDish);
+  currentDishRef.current = currentDish;
+  const currentIndexRef = useRef(currentIndex);
+  currentIndexRef.current = currentIndex;
+  const isLockedRef = useRef(isLocked);
+  isLockedRef.current = isLocked;
+
+  // Shared values driven by the UI thread for GPU-accelerated transforms.
+  const translateX = useSharedValue(0);
+  const translateY = useSharedValue(0);
+  const scale = useSharedValue(1);
+  const isLongPressActive = useSharedValue(0);
+
+  const animatedStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: translateX.value },
+      { translateY: translateY.value },
+      { scale: scale.value },
+    ],
+  }));
+
   const navigateCarousel = (direction: 'left' | 'right') => {
-    if (isLocked || carouselDishes.length === 0) return;
-    let next = currentIndex + (direction === 'left' ? 1 : -1);
+    if (isLockedRef.current || carouselDishes.length === 0) return;
+    const i = currentIndexRef.current;
+    let next = i + (direction === 'left' ? 1 : -1);
     if (next < 0) next = 0;
     if (next >= carouselDishes.length) next = carouselDishes.length - 1;
-    if (next === currentIndex) return;
+    if (next === i) return;
     setCurrentIndex(next);
     const nextDish = carouselDishes[next];
     if (nextDish) {
@@ -88,60 +117,104 @@ export default function MealCard({
     }
   };
 
-  const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: () => true,
-    onMoveShouldSetPanResponder: (_, gs) =>
-      !longPressActive.current && (Math.abs(gs.dx) > 5 || Math.abs(gs.dy) > 5),
+  const handleOpenDetail = () => {
+    const d = currentDishRef.current;
+    if (d) onOpenDetail(d);
+  };
 
-    onPanResponderGrant: (e: GestureResponderEvent) => {
-      dragStart.current = { x: e.nativeEvent.pageX, y: e.nativeEvent.pageY };
-      longPressActive.current = false;
-      longPressTimer.current = setTimeout(() => {
-        longPressActive.current = true;
-        Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-      }, LONG_PRESS_MS);
-    },
+  const handleNever = () => {
+    const d = currentDishRef.current;
+    if (!d) return;
+    if (userId) {
+      UserJourneyLogger.logGestureAction(userId, 'never', d.name, mealSlot, currentIndexRef.current);
+    }
+    onNever(d);
+  };
 
-    onPanResponderMove: (_, gs: PanResponderGestureState) => {
-      if (longPressActive.current) {
-        if (gs.dy > DRAG_DIRECTION_THRESHOLD && currentDish) {
-          if (userId) UserJourneyLogger.logGestureAction(userId, 'never', currentDish.name, mealSlot, currentIndex);
-          onNever(currentDish);
-          longPressActive.current = false;
-        } else if (gs.dy < -DRAG_DIRECTION_THRESHOLD && currentDish) {
-          if (userId) UserJourneyLogger.logGestureAction(userId, 'not_today', currentDish.name, mealSlot, currentIndex);
-          onNotToday(currentDish);
-          longPressActive.current = false;
-        }
-      }
-    },
+  const handleNotToday = () => {
+    const d = currentDishRef.current;
+    if (!d) return;
+    if (userId) {
+      UserJourneyLogger.logGestureAction(userId, 'not_today', d.name, mealSlot, currentIndexRef.current);
+    }
+    onNotToday(d);
+  };
 
-    onPanResponderRelease: (_, gs: PanResponderGestureState) => {
-      if (longPressTimer.current) clearTimeout(longPressTimer.current);
+  const triggerLongPressHaptic = () => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+  };
 
-      if (!longPressActive.current) {
-        if (gs.dx < -SWIPE_THRESHOLD) navigateCarousel('left');
-        else if (gs.dx > SWIPE_THRESHOLD) navigateCarousel('right');
-        else if (Math.abs(gs.dx) < 5 && Math.abs(gs.dy) < 5 && currentDish) {
-          onOpenDetail(currentDish);
-        }
-      }
-      longPressActive.current = false;
-    },
-
-    onPanResponderTerminate: () => {
-      if (longPressTimer.current) clearTimeout(longPressTimer.current);
-      longPressActive.current = false;
-    },
-  });
-
-  /**
-   * @summary Triggers haptic feedback and calls the parent's onLock handler.
-   */
   const handleLock = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onLock();
   };
+
+  // --- Gesture definitions (all worklets unless wrapped in runOnJS) ---
+
+  const tap = Gesture.Tap()
+    .maxDuration(250)
+    .maxDistance(8)
+    .onEnd((_, success) => {
+      'worklet';
+      if (success) runOnJS(handleOpenDetail)();
+    });
+
+  const longPress = Gesture.LongPress()
+    .minDuration(LONG_PRESS_MS)
+    .maxDistance(1000) // don't cancel on drag — we use the drag direction post-activation
+    .onStart(() => {
+      'worklet';
+      isLongPressActive.value = 1;
+      scale.value = withTiming(0.97, { duration: 120 });
+      runOnJS(triggerLongPressHaptic)();
+    });
+
+  const pan = Gesture.Pan()
+    .activeOffsetX([-10, 10])
+    .activeOffsetY([-10, 10])
+    .onUpdate((e) => {
+      'worklet';
+      // When long-press is active, surface vertical drag for Never/Not Today
+      // hint. Otherwise track horizontal drag for carousel swipe.
+      if (isLongPressActive.value === 1) {
+        translateY.value = e.translationY;
+      } else {
+        translateX.value = e.translationX;
+      }
+    })
+    .onEnd((e) => {
+      'worklet';
+      if (isLongPressActive.value === 1) {
+        if (e.translationY > DRAG_DIRECTION_THRESHOLD) {
+          runOnJS(handleNever)();
+        } else if (e.translationY < -DRAG_DIRECTION_THRESHOLD) {
+          runOnJS(handleNotToday)();
+        }
+      } else {
+        if (e.translationX < -SWIPE_THRESHOLD) {
+          runOnJS(navigateCarousel)('left');
+        } else if (e.translationX > SWIPE_THRESHOLD) {
+          runOnJS(navigateCarousel)('right');
+        }
+      }
+      // Always settle the card back into place
+      translateX.value = withSpring(0, { damping: 18, stiffness: 220 });
+      translateY.value = withSpring(0, { damping: 18, stiffness: 220 });
+      scale.value = withTiming(1, { duration: 150 });
+      isLongPressActive.value = 0;
+    })
+    .onFinalize(() => {
+      'worklet';
+      // Safety net: if a gesture is interrupted mid-flight, reset visuals.
+      translateX.value = withSpring(0);
+      translateY.value = withSpring(0);
+      scale.value = withTiming(1, { duration: 150 });
+      isLongPressActive.value = 0;
+    });
+
+  // Race: a clean tap beats long-press/pan. Otherwise long-press and pan
+  // run together so a long-hold + drag can be classified.
+  const composed = Gesture.Race(tap, Gesture.Simultaneous(longPress, pan));
 
   if (!currentDish) return <SkeletonCard mealSlot={mealSlot} />;
 
@@ -150,58 +223,51 @@ export default function MealCard({
   const cuisineName = currentDish.cuisines?.name ?? '';
 
   return (
-    <View style={[styles.card, isLocked && styles.cardLocked]} {...panResponder.panHandlers}>
-      <Image
-        source={{ uri: currentDish.hero_image_url ?? `https://picsum.photos/seed/${currentDish.slug}/400/300` }}
-        placeholder={currentDish.blurhash ?? PLACEHOLDER_HASH}
-        contentFit="cover"
-        style={styles.image}
-        transition={TIMING.IMAGE_TRANSITION_MS}
-      />
+    <GestureDetector gesture={composed}>
+      <Animated.View style={[styles.card, isLocked && styles.cardLocked, animatedStyle]}>
+        <Image
+          source={{ uri: currentDish.hero_image_url ?? `https://picsum.photos/seed/${currentDish.slug}/400/300` }}
+          placeholder={currentDish.blurhash ?? PLACEHOLDER_HASH}
+          contentFit="cover"
+          style={styles.image}
+          transition={TIMING.IMAGE_TRANSITION_MS}
+        />
 
-      <LinearGradient
-        colors={['transparent', 'rgba(0,0,0,0.75)']}
-        style={styles.gradient}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 0, y: 1 }}
-      />
+        <LinearGradient
+          colors={['transparent', 'rgba(0,0,0,0.75)']}
+          style={styles.gradient}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 0, y: 1 }}
+        />
 
-      {/* Top-left: slot label */}
-      <Text style={styles.slotLabel}>{SLOT_LABELS[mealSlot]}</Text>
+        <Text style={styles.slotLabel}>{SLOT_LABELS[mealSlot]}</Text>
+        <Text style={styles.positionLabel}>{position}/{total}</Text>
 
-      {/* Top-right: position indicator */}
-      <Text style={styles.positionLabel}>{position}/{total}</Text>
-
-      {/* Bottom-left: dish info */}
-      <View style={styles.infoContainer}>
-        <Text style={styles.dishName} numberOfLines={2}>{currentDish.name}</Text>
-        <View style={styles.metaRow}>
-          {cuisineName ? <Text style={styles.tag}>{cuisineName}</Text> : null}
-          <Text style={styles.metaText}>⏱ {cookTimeLabel(currentDish.cook_time_mins)}</Text>
-          <Text style={styles.metaText}>🔥 {currentDish.calories} kcal</Text>
+        <View style={styles.infoContainer}>
+          <Text style={styles.dishName} numberOfLines={2}>{currentDish.name}</Text>
+          <View style={styles.metaRow}>
+            {cuisineName ? <Text style={styles.tag}>{cuisineName}</Text> : null}
+            <Text style={styles.metaText}>⏱ {cookTimeLabel(currentDish.cook_time_mins)}</Text>
+            <Text style={styles.metaText}>🔥 {currentDish.calories} kcal</Text>
+          </View>
         </View>
-      </View>
 
-      {/* Bottom-right: action icons */}
-      <View style={styles.actions}>
-        <Pressable style={styles.iconBtn} hitSlop={8} onPress={() => currentDish && onOpenDetail(currentDish)}>
-          <Text style={styles.iconText}>📋</Text>
-        </Pressable>
-        <Pressable style={styles.iconBtn} hitSlop={8} onPress={handleLock}>
-          <Text style={styles.iconText}>{isLocked ? '🔒' : '🔓'}</Text>
-        </Pressable>
-        <Pressable style={styles.iconBtn} hitSlop={8}>
-          <Text style={styles.iconText}>➕</Text>
-        </Pressable>
-      </View>
-    </View>
+        <View style={styles.actions}>
+          <Pressable style={styles.iconBtn} hitSlop={8} onPress={() => currentDish && onOpenDetail(currentDish)}>
+            <Text style={styles.iconText}>📋</Text>
+          </Pressable>
+          <Pressable style={styles.iconBtn} hitSlop={8} onPress={handleLock}>
+            <Text style={styles.iconText}>{isLocked ? '🔒' : '🔓'}</Text>
+          </Pressable>
+          <Pressable style={styles.iconBtn} hitSlop={8}>
+            <Text style={styles.iconText}>➕</Text>
+          </Pressable>
+        </View>
+      </Animated.View>
+    </GestureDetector>
   );
 }
 
-/**
- * @summary Placeholder card shown while the dish data is loading.
- * @param {{ mealSlot: string }} props - The slot label to display (BREAKFAST / LUNCH / DINNER)
- */
 function SkeletonCard({ mealSlot }: { mealSlot: string }) {
   return (
     <View style={styles.skeleton}>
@@ -209,4 +275,3 @@ function SkeletonCard({ mealSlot }: { mealSlot: string }) {
     </View>
   );
 }
-

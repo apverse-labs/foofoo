@@ -2,6 +2,14 @@ import { supabase } from '../services/supabase';
 import { Logger } from '../utils/systemLogger';
 import type { UserProfile, Step1Data, UserRole, FoodPref } from '../types';
 
+export class UsernameTakenError extends Error {
+  code = 'USERNAME_TAKEN' as const;
+  constructor(public username: string) {
+    super(`Username "${username}" is already taken`);
+    this.name = 'UsernameTakenError';
+  }
+}
+
 export interface ProfileUpdate {
   name?: string;
   username?: string;
@@ -143,7 +151,15 @@ export async function saveProfileStep1(userId: string, data: Step1Data): Promise
         current_city: data.current_city,
         onboarding_step: 1,
       }, { onConflict: 'id' });
-    if (error) throw error;
+    if (error) {
+      // Postgres unique_violation. The DB is the source of truth — the prior
+      // debounced checkUsernameAvailable is a UX hint, not a guarantee, because
+      // two concurrent signups can both pass the check and race to insert.
+      if (error.code === '23505' && /username/i.test(error.message)) {
+        throw new UsernameTakenError(data.username);
+      }
+      throw error;
+    }
   } catch (err: any) {
     Logger.error('PROFILES', 'saveProfileStep1 failed', { error: err?.message, userId });
     throw err;

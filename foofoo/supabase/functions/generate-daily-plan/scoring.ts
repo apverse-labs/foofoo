@@ -10,6 +10,7 @@
  */
 
 import { RE_V1 } from './re-config.ts';
+import { seededRandom } from './helpers.ts';
 
 export interface ScoreComponents {
   base: number;
@@ -60,6 +61,8 @@ export interface SlotResult {
  */
 export function scoreDish(
   dish: any,
+  userId: string,
+  planDate: string,
   neverDishIds: Set<number>,
   excludedIngredients: Set<number>,
   cuisineBuckets: Record<string, string>,
@@ -94,18 +97,19 @@ export function scoreDish(
   if (mealItemBuckets[dishKey] === 'F') components.mealItemBoost = RE_V1.MEAL_ITEM_BOOST_FREQUENT;
   else if (mealItemBuckets[dishKey] === 'O') components.mealItemBoost = RE_V1.MEAL_ITEM_BOOST_OCCASIONAL;
 
-  // Step 5: Weather boost
+  // Step 5: Weather boost — single coherent match, AND-gated (Doc 10 §6.5)
   if (weather) {
     const isRainy = weather.weatherCode >= 500 && weather.weatherCode < 600;
     const isHot = weather.tempCelsius > RE_V1.TEMP_HOT_CELSIUS;
     const isCold = weather.tempCelsius < RE_V1.TEMP_COLD_CELSIUS;
-    if (isRainy || isCold) {
-      if (dish.spice_level >= RE_V1.SPICE_LEVEL_SPICY) components.weatherBoost += RE_V1.WEATHER_SPICY_BOOST;
-      if (dish.calories > RE_V1.CALORIES_HEAVY) components.weatherBoost += RE_V1.WEATHER_BOOST;
-    }
-    if (isHot) {
-      if (dish.spice_level < RE_V1.SPICE_LEVEL_SPICY) components.weatherBoost += RE_V1.WEATHER_BOOST;
-      if (dish.calories < RE_V1.CALORIES_LIGHT) components.weatherBoost += RE_V1.WEATHER_BOOST;
+    const isSpicy = dish.spice_level >= RE_V1.SPICE_LEVEL_SPICY;
+    const isHeavy = dish.calories != null && dish.calories > RE_V1.CALORIES_HEAVY;
+    const isLight = dish.calories != null && dish.calories < RE_V1.CALORIES_LIGHT;
+
+    if ((isCold || isRainy) && (isSpicy || isHeavy)) {
+      components.weatherBoost = RE_V1.WEATHER_BOOST;
+    } else if (isHot && !isSpicy && isLight) {
+      components.weatherBoost = RE_V1.WEATHER_BOOST;
     }
   }
 
@@ -119,8 +123,10 @@ export function scoreDish(
   // Step 7: Variety guard
   if (recentDishIds.has(dish.id)) components.varietyPenalty = RE_V1.VARIETY_PENALTY;
 
-  // Step 8: Random factor
-  components.randomFactor = parseFloat((Math.random() * RE_V1.RANDOM_MAX).toFixed(3));
+  // Step 8: Deterministic random — same (user, day, dish) always produces the same noise
+  components.randomFactor = parseFloat(
+    (seededRandom(userId, planDate, dish.id) * RE_V1.RANDOM_MAX).toFixed(3),
+  );
 
   const score =
     components.base + components.cuisineBoost + components.mealItemBoost +
@@ -149,6 +155,8 @@ export function scoreDish(
  */
 export function generateSlot(
   mealSlot: string,
+  userId: string,
+  planDate: string,
   allDishes: any[],
   assignedDishIds: Set<number>,
   lockedDishId: number | undefined,
@@ -169,7 +177,7 @@ export function generateSlot(
   const eligible: ScoredDish[] = allDishes
     .filter(d => Array.isArray(d.meal_types) && d.meal_types.includes(mealSlot))
     .map(d => {
-      const r = scoreDish(d, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
+      const r = scoreDish(d, userId, planDate, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
       return { dish: d, score: r.score, components: r.components };
     })
     .filter(({ score }) => score > 0)

@@ -11,7 +11,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import { COLORS, SPACING, BORDER_RADIUS, STORAGE_KEYS } from '../../src/config/constants';
 
 const { width: SW, height: SH } = Dimensions.get('window');
 
@@ -54,9 +55,14 @@ export default function IntroScreen() {
   const [currentIndex, setCurrentIndex] = useState(0);
 
   /**
-   * @summary Routes user to the auth gate, bypassing remaining intro slides.
+   * @summary Marks the intro as seen and routes to the auth gate.
+   *
+   * @description Writing INTRO_SEEN here (not in app/index.tsx) means a
+   *   force-quit during splash or earlier slides will replay the intro on the
+   *   next launch — the flag only flips once the user has actually exited.
    */
-  const handleSkip = () => {
+  const handleSkip = async () => {
+    await AsyncStorage.setItem(STORAGE_KEYS.INTRO_SEEN, 'true');
     router.replace('/(auth)/auth-gate');
   };
 

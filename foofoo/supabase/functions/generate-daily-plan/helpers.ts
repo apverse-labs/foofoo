@@ -127,3 +127,45 @@ export function successResponse(data: any, headers: Record<string, string>): Res
     headers: { ...headers, 'Content-Type': 'application/json' },
   });
 }
+
+// xmur3 + mulberry32 — small, fast, deterministic PRNG.
+// Source: https://github.com/bryc/code/blob/master/jshash/PRNGs.md (MIT)
+function xmur3(str: string): () => number {
+  let h = 1779033703 ^ str.length;
+  for (let i = 0; i < str.length; i++) {
+    h = Math.imul(h ^ str.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  return function () {
+    h = Math.imul(h ^ (h >>> 16), 2246822507);
+    h = Math.imul(h ^ (h >>> 13), 3266489909);
+    h ^= h >>> 16;
+    return h >>> 0;
+  };
+}
+
+function mulberry32(seed: number): () => number {
+  let s = seed >>> 0;
+  return function () {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+/**
+ * @summary Deterministic pseudo-random number for (userId, planDate, dishId, salt).
+ *
+ * @description Same inputs always return the same number, so re-running plan
+ *   generation for the same user on the same day yields an identical carousel
+ *   order. Salt lets us request multiple decorrelated streams per (user, day,
+ *   dish) when needed (e.g. different slots).
+ *
+ * @returns Number in [0, 1)
+ */
+export function seededRandom(userId: string, planDate: string, dishId: number, salt: string = ''): number {
+  const seed = xmur3(`${userId}|${planDate}|${dishId}|${salt}`)();
+  return mulberry32(seed)();
+}

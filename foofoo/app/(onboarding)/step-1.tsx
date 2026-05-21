@@ -95,8 +95,13 @@ export default function OnboardingStep1() {
       });
       router.replace('/(onboarding)/step-2' as never);
     } catch (err: any) {
-      Logger.error('STEP1', 'save failed', { message: err?.message });
-      Alert.alert('Save failed', 'Could not save your profile. Please check your connection and try again.');
+      Logger.error('STEP1', 'save failed', { message: err?.message, code: err?.code });
+      if (err?.code === 'USERNAME_TAKEN') {
+        setUsernameStatus('taken');
+        Alert.alert('Username taken', 'Someone just claimed this username. Please pick another.');
+      } else {
+        Alert.alert('Save failed', 'Could not save your profile. Please check your connection and try again.');
+      }
     } finally {
       setSaving(false);
     }

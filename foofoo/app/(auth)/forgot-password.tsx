@@ -5,6 +5,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../src/services/supabase';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { Logger } from '../../src/utils/systemLogger';
+import { isValidEmail } from '../../src/utils/validators';
 
 /**
  * @summary Forgot-password screen that dispatches a Supabase password reset email.
@@ -31,7 +32,7 @@ export default function ForgotPassword() {
    * @calledBy Send Reset Link button and keyboard submit
    */
   const handleReset = async () => {
-    if (!email.trim().includes('@') || loading) return;
+    if (!isValidEmail(email) || loading) return;
     setLoading(true);
     try {
       const { error } = await supabase.auth.resetPasswordForEmail(email.trim());
@@ -63,7 +64,7 @@ export default function ForgotPassword() {
     );
   }
 
-  const canSubmit = email.trim().includes('@');
+  const canSubmit = isValidEmail(email);
 
   return (
     <View style={[styles.container, { paddingTop: insets.top + SPACING.xxl }]}>

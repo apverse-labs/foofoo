@@ -115,7 +115,8 @@ serve(async (req) => {
     let dishQuery = supabase
       .from('dishes')
       .select(`id, name, slug, cuisine_id, diet_type, spice_level, cook_time_mins, difficulty, calories, meal_types, dish_role, hero_image_url, blurhash, ingredient_ids, allergen_ids, cuisines(id, code, name)`)
-      .eq('is_active', true);
+      .eq('is_active', true)
+      .limit(2000);
 
     if (foodPref === 'veg') dishQuery = dishQuery.in('diet_type', ['veg', 'vegan', 'jain']);
     else if (foodPref === 'vegan') dishQuery = dishQuery.eq('diet_type', 'vegan');
@@ -147,11 +148,10 @@ serve(async (req) => {
 
     // --- SCORE AND GENERATE SLOTS ---
     const assignedDishIds = new Set<number>();
-    const scoreArgs = [allDishes as any[], assignedDishIds, undefined as any, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds] as const;
 
-    const breakfastResult = generateSlot('breakfast', allDishes as any[], assignedDishIds, lockedSlots.includes('breakfast') ? existingForLocks?.breakfast_ref_id : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
-    const lunchResult     = generateSlot('lunch',     allDishes as any[], assignedDishIds, lockedSlots.includes('lunch')     ? existingForLocks?.lunch_ref_id     : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
-    const dinnerResult    = generateSlot('dinner',    allDishes as any[], assignedDishIds, lockedSlots.includes('dinner')    ? existingForLocks?.dinner_ref_id    : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
+    const breakfastResult = generateSlot('breakfast', user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('breakfast') ? existingForLocks?.breakfast_ref_id : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
+    const lunchResult     = generateSlot('lunch',     user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('lunch')     ? existingForLocks?.lunch_ref_id     : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
+    const dinnerResult    = generateSlot('dinner',    user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('dinner')    ? existingForLocks?.dinner_ref_id    : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
 
     const breakfast = { top: breakfastResult.top, carousel: breakfastResult.carousel };
     const lunch     = { top: lunchResult.top,     carousel: lunchResult.carousel };
@@ -195,16 +195,27 @@ serve(async (req) => {
       if (carouselError) console.error('[RE-v1] Carousel write error:', carouselError.message);
     }
 
-    // --- LOG VIEWED EVENTS ---
-    const logRows = [
-      breakfast.top && { user_id: user.id, dish_id: breakfast.top.id, plan_date: planDate, meal_slot: 'breakfast', action: 'viewed', position: 0, re_version: 'v1' },
-      lunch.top     && { user_id: user.id, dish_id: lunch.top.id,     plan_date: planDate, meal_slot: 'lunch',     action: 'viewed', position: 0, re_version: 'v1' },
-      dinner.top    && { user_id: user.id, dish_id: dinner.top.id,    plan_date: planDate, meal_slot: 'dinner',    action: 'viewed', position: 0, re_version: 'v1' },
-    ].filter(Boolean);
+    // --- LOG SUGGESTION EVENTS (full carousel, not just position 0) ---
+    // 'shown' for every dish surfaced; RE v2 learns from positions 1-7, not just the winner.
+    const slotCarousels: Array<[string, any[]]> = [
+      ['breakfast', breakfast.carousel],
+      ['lunch', lunch.carousel],
+      ['dinner', dinner.carousel],
+    ];
+    const logRows = slotCarousels.flatMap(([slot, carousel]) =>
+      carousel.map((d: any, i: number) => ({
+        user_id: user.id,
+        dish_id: d.id,
+        plan_date: planDate,
+        meal_slot: slot,
+        action: 'shown',
+        position: i,
+        re_version: 'v1',
+      })),
+    );
     if (logRows.length > 0) {
-      await supabase.from('suggestion_logs').insert(logRows).then((r: any) => {
-        if (r.error) console.error('[RE-v1] suggestion_logs error:', r.error.message);
-      });
+      const { error: logErr } = await supabase.from('suggestion_logs').insert(logRows);
+      if (logErr) console.error('[RE-v1] suggestion_logs error:', logErr.message);
     }
 
     const elapsed = Date.now() - startTime;
@@ -242,9 +253,8 @@ serve(async (req) => {
     ].filter(r => r.dish_id !== null);
 
     if (debugRows.length > 0) {
-      supabase.from('recommendation_debug_log').insert(debugRows).then((r: any) => {
-        if (r.error) console.error('[RE-v1] recommendation_debug_log error:', r.error.message);
-      });
+      const { error: debugErr } = await supabase.from('recommendation_debug_log').insert(debugRows);
+      if (debugErr) console.error('[RE-v1] recommendation_debug_log error:', debugErr.message);
     }
 
     // --- BUILD reSummary for client-side UserJourneyLogger ---

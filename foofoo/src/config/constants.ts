@@ -25,11 +25,10 @@ export const RE_CONFIG = {
   MEAL_ITEM_BOOST_FREQUENT: 0.25,   // F bucket dish match
   MEAL_ITEM_BOOST_OCCASIONAL: 0.05, // O bucket dish match
   VARIETY_PENALTY: -0.5,            // Dish seen in last 3 days
-  WEATHER_SPICY_BOOST: 0.15,        // Spicy dish on cold/rainy day
-  WEATHER_BOOST: 0.1,               // Heavy/light dish on cold/hot day
+  WEATHER_BOOST: 0.15,              // Single coherent weather match (Doc 10 §6.5)
   WEEKDAY_QUICK_BOOST: 0.1,         // Quick dish (≤20 min) on a weekday
   WEEKEND_SLOW_BOOST: 0.05,         // Slow dish (>30 min) on a weekend
-  RANDOM_MAX: 0.15,                 // Max random noise added per dish
+  RANDOM_MAX: 0.05,                 // Max random noise per dish (Doc 10: 5%)
   // Dish classification thresholds
   TEMP_HOT_CELSIUS: 32,
   TEMP_COLD_CELSIUS: 18,
@@ -82,4 +81,8 @@ export const TIMING = {
 export const API = {
   OPENWEATHERMAP_BASE: 'https://api.openweathermap.org/data/2.5',
   ONESIGNAL_APP_ID: 'YOUR_ONESIGNAL_APP_ID',
+} as const;
+
+export const STORAGE_KEYS = {
+  INTRO_SEEN: 'foofoo_has_seen_intro',
 } as const;
