@@ -1,6 +1,9 @@
 import { StyleSheet } from 'react-native';
 import { COLORS, BORDER_RADIUS } from '../../config/constants';
 
+// Drag-direction tint colours — must match COLORS.never / COLORS.warning so the
+// preview matches the destructive Never modal and the amber Not Today modal.
+
 // Doc 09 §5.1: 200px height, 24px side margins, 20–24px corner radius.
 // Width is applied at render time from useResponsive() — see MealCard.tsx.
 export const CARD_HEIGHT = 200;
@@ -106,5 +109,15 @@ export const styles = StyleSheet.create({
     fontSize: 12,
     fontWeight: '600',
     letterSpacing: 1.5,
+  },
+  tintOverlayNever: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.never,
+    borderRadius: CARD_RADIUS,
+  },
+  tintOverlayNotToday: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: COLORS.warning,
+    borderRadius: CARD_RADIUS,
   },
 });

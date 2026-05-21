@@ -11,7 +11,8 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, ActivityIndicator } from 'react-native';
 import * as Haptics from 'expo-haptics';
-import { addToNeverList, logSuggestionAction } from '../../repositories/plans.repository';
+import { addToNeverList, regenerateSlot } from '../../repositories/plans.repository';
+import { logSuggestionAction, logFeatureTap } from '../../repositories/feedback.repository';
 import { Logger } from '../../utils/systemLogger';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
 import type { Dish } from '../../types';
@@ -37,12 +38,28 @@ export default function NeverModal({ dish, userId, planDate, mealSlot, onConfirm
   const handleConfirm = async () => {
     setLoading(true);
     try {
+      // 1. Add to never_list and log the user's choice (these must succeed
+      //    even if the slot regen below fails — the user's preference is
+      //    captured regardless).
       await addToNeverList(userId, dish.id);
-      await logSuggestionAction(userId, dish.id, planDate, mealSlot, 'never', 0);
-      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy);
+      logSuggestionAction(userId, dish.id, planDate, mealSlot, 'never', 0).catch(() => {});
+      logFeatureTap(userId, 'never_confirm', { screen: 'home', dishId: dish.id, mealSlot });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
+
+      // 2. Regenerate this slot, excluding the dismissed dish from the new
+      //    carousel. Non-fatal: if regen fails, the Home screen still reloads
+      //    via onConfirm and falls back to the existing carousel.
+      try {
+        await regenerateSlot(planDate, mealSlot as 'breakfast' | 'lunch' | 'dinner', 'never', dish.id);
+      } catch (regenErr: unknown) {
+        const msg = regenErr instanceof Error ? regenErr.message : 'Unknown error';
+        Logger.warn('NEVER-MODAL', 'regenerate-slot failed (non-fatal)', { error: msg, dishId: dish.id });
+      }
+
       onConfirm();
-    } catch (err: any) {
-      Logger.error('NEVER-MODAL', 'Failed to write never list entry', { error: err?.message, dishId: dish.id });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      Logger.error('NEVER-MODAL', 'Failed to write never list entry', { error: msg, dishId: dish.id });
       onConfirm(); // Still dismiss — non-fatal
     } finally {
       setLoading(false);

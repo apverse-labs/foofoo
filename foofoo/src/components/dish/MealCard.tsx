@@ -28,11 +28,15 @@ import Animated, {
   withSpring,
   withTiming,
   runOnJS,
+  interpolate,
+  Extrapolation,
 } from 'react-native-reanimated';
 import type { Dish } from '../../types';
 import { cookTimeLabel } from './MealCard.helpers';
 import { TIMING } from '../../config/constants';
 import { UserJourneyLogger } from '../../utils/userJourneyLogger';
+import { logSuggestionAction } from '../../repositories/feedback.repository';
+import DatePickerModal from './DatePickerModal';
 import { useResponsive } from '../../utils/responsive';
 import { styles } from './MealCard.styles';
 
@@ -66,7 +70,7 @@ export default function MealCard({
   dish,
   carouselDishes,
   mealSlot,
-  planDate: _planDate,
+  planDate,
   userId,
   isLocked,
   onLock,
@@ -77,6 +81,7 @@ export default function MealCard({
 }: MealCardProps) {
   const { cardWidth } = useResponsive();
   const [currentIndex, setCurrentIndex] = useState(0);
+  const [showDatePicker, setShowDatePicker] = useState(false);
   const currentDish = carouselDishes[currentIndex] ?? dish;
 
   // Refs let worklet→JS callbacks always see the latest state without
@@ -87,6 +92,17 @@ export default function MealCard({
   currentIndexRef.current = currentIndex;
   const isLockedRef = useRef(isLocked);
   isLockedRef.current = isLocked;
+  const viewedLoggedRef = useRef<Set<number>>(new Set());
+
+  // Log 'viewed' once per (dish.id) seen by this user — captures
+  // every dish the user actually paused on, not just the carousel-shown set
+  // that the Edge Function logs server-side.
+  React.useEffect(() => {
+    if (!userId || !currentDish) return;
+    if (viewedLoggedRef.current.has(currentDish.id)) return;
+    viewedLoggedRef.current.add(currentDish.id);
+    logSuggestionAction(userId, currentDish.id, planDate, mealSlot, 'viewed', currentIndex).catch(() => {});
+  }, [userId, currentDish, planDate, mealSlot, currentIndex]);
 
   // Shared values driven by the UI thread for GPU-accelerated transforms.
   const translateX = useSharedValue(0);
@@ -102,6 +118,19 @@ export default function MealCard({
     ],
   }));
 
+  // Visual tint overlays during the drag.
+  // Red on downward drag (Never warning), orange on upward (Not Today).
+  const neverOverlayStyle = useAnimatedStyle(() => ({
+    opacity: isLongPressActive.value === 1
+      ? interpolate(translateY.value, [0, 80], [0, 0.35], Extrapolation.CLAMP)
+      : 0,
+  }));
+  const notTodayOverlayStyle = useAnimatedStyle(() => ({
+    opacity: isLongPressActive.value === 1
+      ? interpolate(translateY.value, [-80, 0], [0.35, 0], Extrapolation.CLAMP)
+      : 0,
+  }));
+
   const navigateCarousel = (direction: 'left' | 'right') => {
     if (isLockedRef.current || carouselDishes.length === 0) return;
     const i = currentIndexRef.current;
@@ -109,11 +138,19 @@ export default function MealCard({
     if (next < 0) next = 0;
     if (next >= carouselDishes.length) next = carouselDishes.length - 1;
     if (next === i) return;
+
+    const prevDish = carouselDishes[i];
     setCurrentIndex(next);
     const nextDish = carouselDishes[next];
     if (nextDish) {
       onDishChange(nextDish, next);
       if (userId) {
+        // Split-action logging: 'swiped_past' for the dish we left, 'swiped_to'
+        // for the one we landed on. RE v2 reads these as a paired signal.
+        if (prevDish) {
+          logSuggestionAction(userId, prevDish.id, planDate, mealSlot, 'swiped_past', i).catch(() => {});
+        }
+        logSuggestionAction(userId, nextDish.id, planDate, mealSlot, 'swiped_to', next).catch(() => {});
         UserJourneyLogger.logGestureAction(userId, 'swiped', nextDish.name, mealSlot, next);
       }
     }
@@ -149,6 +186,12 @@ export default function MealCard({
   const handleLock = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
     onLock();
+  };
+
+  const handlePlus = () => {
+    if (!currentDishRef.current) return;
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light).catch(() => {});
+    setShowDatePicker(true);
   };
 
   // --- Gesture definitions (all worklets unless wrapped in runOnJS) ---
@@ -225,6 +268,7 @@ export default function MealCard({
   const cuisineName = currentDish.cuisines?.name ?? '';
 
   return (
+    <>
     <GestureDetector gesture={composed}>
       <Animated.View style={[styles.card, { width: cardWidth }, isLocked && styles.cardLocked, animatedStyle]}>
         <Image
@@ -261,13 +305,25 @@ export default function MealCard({
           <Pressable style={styles.iconBtn} hitSlop={8} onPress={handleLock}>
             <Text style={styles.iconText}>{isLocked ? '🔒' : '🔓'}</Text>
           </Pressable>
-          <Pressable style={styles.iconBtn} hitSlop={8}>
+          <Pressable style={styles.iconBtn} hitSlop={8} onPress={handlePlus}>
             <Text style={styles.iconText}>➕</Text>
           </Pressable>
         </View>
+
+        <Animated.View pointerEvents="none" style={[styles.tintOverlayNever, neverOverlayStyle]} />
+        <Animated.View pointerEvents="none" style={[styles.tintOverlayNotToday, notTodayOverlayStyle]} />
       </Animated.View>
     </GestureDetector>
-  );
+    {showDatePicker && currentDish && (
+      <DatePickerModal
+        dish={currentDish}
+        userId={userId}
+        currentSlot={mealSlot}
+        onConfirm={() => setShowDatePicker(false)}
+        onCancel={() => setShowDatePicker(false)}
+      />
+    )}
+  </>);
 }
 
 function SkeletonCard({ mealSlot, width }: { mealSlot: string; width: number }) {

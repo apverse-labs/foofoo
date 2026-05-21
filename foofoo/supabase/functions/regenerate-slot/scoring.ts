@@ -1,0 +1,118 @@
+/**
+ * @summary RE v1 dish scoring — single-slot variant for regenerate-slot Edge Function.
+ *
+ * @description
+ * Mirrors the scoring pipeline in supabase/functions/generate-daily-plan/scoring.ts
+ * but operates on a single slot at a time. Excluded dishes are filtered out
+ * before scoring (skipping the just-dismissed dish + the user's never_list).
+ *
+ * @calledBy supabase/functions/regenerate-slot/index.ts
+ */
+
+import { RE_V1 } from './re-config.ts';
+import { seededRandom } from './helpers.ts';
+
+export interface ScoreComponents {
+  base: number;
+  cuisineBoost: number;
+  mealItemBoost: number;
+  weatherBoost: number;
+  dayBoost: number;
+  varietyPenalty: number;
+  randomFactor: number;
+}
+
+export interface ScoreResult {
+  score: number;
+  components: ScoreComponents;
+}
+
+/**
+ * @summary Scores a single dish against the full RE v1 pipeline.
+ *
+ * @description Returns score=-1 for hard-filtered dishes (never list,
+ *   allergens, N-bucket cuisine). All weight constants come from RE_V1 in
+ *   re-config.ts.
+ *
+ * @param {any} dish - Dish row
+ * @param {string} userId - Supabase user UUID (for seeded random)
+ * @param {string} planDate - YYYY-MM-DD plan date (for seeded random)
+ * @param {Set<number>} neverDishIds - Set of dish IDs on the user's never list
+ * @param {Set<number>} excludedIngredients - Set of ingredient IDs excluded by allergens
+ * @param {Record<string, string>} cuisineBuckets - cuisine code → 'F'|'O'|'N'
+ * @param {Record<string, string>} mealItemBuckets - dish ID (string) → 'F'|'O'|'N'
+ * @param {Record<number, string>} cuisineIdToCode - cuisine id → code
+ * @param {{ weatherCode: number; tempCelsius: number } | null} weather
+ * @param {boolean} isWeekend
+ * @param {Set<number>} recentDishIds
+ * @returns {ScoreResult} score + components; score=-1 means hard-filtered
+ */
+export function scoreDish(
+  dish: any,
+  userId: string,
+  planDate: string,
+  neverDishIds: Set<number>,
+  excludedIngredients: Set<number>,
+  cuisineBuckets: Record<string, string>,
+  mealItemBuckets: Record<string, string>,
+  cuisineIdToCode: Record<number, string>,
+  weather: { weatherCode: number; tempCelsius: number } | null,
+  isWeekend: boolean,
+  recentDishIds: Set<number>,
+): ScoreResult {
+  const components: ScoreComponents = {
+    base: 1.0, cuisineBoost: 0, mealItemBoost: 0,
+    weatherBoost: 0, dayBoost: 0, varietyPenalty: 0, randomFactor: 0,
+  };
+
+  if (neverDishIds.has(dish.id)) return { score: -1, components };
+  if (dish.allergen_ids?.length && excludedIngredients.size) {
+    if ((dish.allergen_ids as number[]).some((id) => excludedIngredients.has(id))) {
+      return { score: -1, components };
+    }
+  }
+  const cuisineCode = cuisineIdToCode[dish.cuisine_id];
+  if (cuisineCode && cuisineBuckets[cuisineCode] === 'N') return { score: -1, components };
+
+  if (cuisineCode) {
+    if (cuisineBuckets[cuisineCode] === 'F') components.cuisineBoost = RE_V1.CUISINE_BOOST_FREQUENT;
+    else if (cuisineBuckets[cuisineCode] === 'O') components.cuisineBoost = RE_V1.CUISINE_BOOST_OCCASIONAL;
+  }
+
+  const dishKey = String(dish.id);
+  if (mealItemBuckets[dishKey] === 'F') components.mealItemBoost = RE_V1.MEAL_ITEM_BOOST_FREQUENT;
+  else if (mealItemBuckets[dishKey] === 'O') components.mealItemBoost = RE_V1.MEAL_ITEM_BOOST_OCCASIONAL;
+
+  if (weather) {
+    const isRainy = weather.weatherCode >= 500 && weather.weatherCode < 600;
+    const isHot = weather.tempCelsius > RE_V1.TEMP_HOT_CELSIUS;
+    const isCold = weather.tempCelsius < RE_V1.TEMP_COLD_CELSIUS;
+    const isSpicy = dish.spice_level >= RE_V1.SPICE_LEVEL_SPICY;
+    const isHeavy = dish.calories != null && dish.calories > RE_V1.CALORIES_HEAVY;
+    const isLight = dish.calories != null && dish.calories < RE_V1.CALORIES_LIGHT;
+
+    if ((isCold || isRainy) && (isSpicy || isHeavy)) components.weatherBoost = RE_V1.WEATHER_BOOST;
+    else if (isHot && !isSpicy && isLight) components.weatherBoost = RE_V1.WEATHER_BOOST;
+  }
+
+  if (!isWeekend && dish.cook_time_mins && dish.cook_time_mins <= RE_V1.COOK_TIME_QUICK_MINS) {
+    components.dayBoost = RE_V1.WEEKDAY_QUICK_BOOST;
+  } else if (isWeekend && dish.cook_time_mins && dish.cook_time_mins > RE_V1.COOK_TIME_SLOW_MINS) {
+    components.dayBoost = RE_V1.WEEKEND_SLOW_BOOST;
+  }
+
+  if (recentDishIds.has(dish.id)) components.varietyPenalty = RE_V1.VARIETY_PENALTY;
+
+  // Salt with 'regen' so the same (user, day, dish) gets a different random
+  // value when regenerated, avoiding identical scores from the first run.
+  components.randomFactor = parseFloat(
+    (seededRandom(userId, planDate, dish.id, 'regen') * RE_V1.RANDOM_MAX).toFixed(3),
+  );
+
+  const score =
+    components.base + components.cuisineBoost + components.mealItemBoost +
+    components.weatherBoost + components.dayBoost + components.varietyPenalty +
+    components.randomFactor;
+
+  return { score: parseFloat(score.toFixed(3)), components };
+}

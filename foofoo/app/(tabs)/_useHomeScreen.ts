@@ -19,6 +19,7 @@ import {
 } from '../../src/repositories/plans.repository';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
+import { logScreenView, logFeatureTap } from '../../src/repositories/feedback.repository';
 import type { GeneratedPlan, Dish } from '../../src/types';
 
 declare const __DEV__: boolean;
@@ -61,6 +62,12 @@ export function useHomeScreen() {
     loadPlan(false);
   }, [planDate]);
 
+  // Log a screen_view for Home whenever userId resolves or date changes.
+  useEffect(() => {
+    if (!userId) return;
+    logScreenView(userId, 'home', { planDate });
+  }, [userId, planDate]);
+
   /**
    * @summary Reads AsyncStorage to decide whether to show the gesture tutorial overlay.
    */
@@ -95,6 +102,18 @@ export function useHomeScreen() {
       const result = await generateDailyPlan(planDate, forceRegenerate);
       setPlan(result);
       setPlanId(result.planId);
+
+      // Seed locked_slots so the lock icon reflects DB state across sessions /
+      // navigation. The Edge Function returns it inside the planner row, but
+      // GeneratedPlan today only carries slot dishes — fetch lock state once.
+      try {
+        const { data: pl } = await supabase
+          .from('planner')
+          .select('locked_slots')
+          .eq('id', result.planId)
+          .maybeSingle();
+        if (pl?.locked_slots) setLockedSlots(pl.locked_slots);
+      } catch { /* non-fatal */ }
 
       if (userId && result.reSummary) {
         const slots = ['breakfast', 'lunch', 'dinner'] as const;
@@ -169,12 +188,17 @@ export function useHomeScreen() {
       if (lockedSlots.includes(slot)) {
         await unlockSlot(planId, slot);
         setLockedSlots(prev => prev.filter(s => s !== slot));
-        if (userId) UserJourneyLogger.logGestureAction(userId, 'unlocked', dish.name, slot, 0);
+        if (userId) {
+          logSuggestionAction(userId, dish.id, planDate, slot, 'unlocked', 0);
+          logFeatureTap(userId, 'unlock', { screen: 'home', slot, dishId: dish.id });
+          UserJourneyLogger.logGestureAction(userId, 'unlocked', dish.name, slot, 0);
+        }
       } else {
         await lockSlot(planId, slot, dish.id);
         setLockedSlots(prev => [...prev, slot]);
         if (userId) {
           logSuggestionAction(userId, dish.id, planDate, slot, 'locked', 0);
+          logFeatureTap(userId, 'lock', { screen: 'home', slot, dishId: dish.id });
           UserJourneyLogger.logGestureAction(userId, 'locked', dish.name, slot, 0);
         }
       }
@@ -185,13 +209,20 @@ export function useHomeScreen() {
   };
 
   /**
-   * @summary Opens a native alert with brief dish details on card tap.
-   * @param {Dish} dish - The dish the user tapped
+   * @summary Navigates to the Meal Detail screen for the tapped dish.
+   *
+   * @description Also fires a tapped_detail suggestion log + UserJourneyLogger
+   *   entry so Sprint 4 passive feedback is captured at the call site (the
+   *   Detail screen also logs on mount, but logging here preserves the
+   *   originating meal_slot — Detail doesn't know which slot the user came from).
+   *
+   * @param {Dish} dish - Dish to open
    */
   const handleOpenDetail = (dish: Dish) => {
-    if (!userId) return;
-    logSuggestionAction(userId, dish.id, planDate, '', 'tapped_detail', 0);
-    Alert.alert(dish.name, `${dish.cuisines?.name ?? ''} • ${dish.calories} kcal • ${dish.cook_time_mins}m`);
+    if (userId) {
+      logSuggestionAction(userId, dish.id, planDate, '', 'tapped_detail', 0);
+    }
+    router.push(`/dish/${dish.id}` as never);
   };
 
   /**
@@ -206,8 +237,11 @@ export function useHomeScreen() {
     setPlan(null);
   };
 
-  const handleNeverConfirmed = () => { setNeverDish(null); setNeverSlot(''); loadPlan(true); };
-  const handleNotTodayConfirmed = () => { setNotTodayDish(null); setNotTodaySlot(''); loadPlan(true); };
+  // After Never/NotToday: the modal already invoked regenerate-slot, so the
+  // planner row is up-to-date for that slot. Reload the cached plan (no force)
+  // so other slots aren't reshuffled — only the regenerated slot changes.
+  const handleNeverConfirmed = () => { setNeverDish(null); setNeverSlot(''); loadPlan(false); };
+  const handleNotTodayConfirmed = () => { setNotTodayDish(null); setNotTodaySlot(''); loadPlan(false); };
 
   const displayDate = new Date(planDate + 'T00:00:00').toLocaleDateString('en-IN', {
     weekday: 'short', day: 'numeric', month: 'short',

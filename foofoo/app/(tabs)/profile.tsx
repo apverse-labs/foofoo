@@ -1,8 +1,17 @@
+import { useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
 import { COLORS, BORDER_RADIUS, SPACING } from '../../src/config/constants';
 import { supabase } from '../../src/services/supabase';
+import { logScreenView } from '../../src/repositories/feedback.repository';
 
 export default function ProfileTab() {
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getUser();
+      if (data.user) logScreenView(data.user.id, 'profile');
+    })();
+  }, []);
+
   const handleSignOut = async () => {
     await supabase.auth.signOut();
   };

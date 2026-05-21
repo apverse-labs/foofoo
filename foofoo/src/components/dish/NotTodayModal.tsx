@@ -10,8 +10,10 @@
 
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, Pressable, Modal, ActivityIndicator } from 'react-native';
-import { logSuggestionAction } from '../../repositories/plans.repository';
+import { regenerateSlot } from '../../repositories/plans.repository';
+import { logSuggestionAction, logFeatureTap } from '../../repositories/feedback.repository';
 import { Logger } from '../../utils/systemLogger';
+import * as Haptics from 'expo-haptics';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
 import type { Dish } from '../../types';
 
@@ -36,10 +38,21 @@ export default function NotTodayModal({ dish, userId, planDate, mealSlot, onConf
   const handleConfirm = async () => {
     setLoading(true);
     try {
-      await logSuggestionAction(userId, dish.id, planDate, mealSlot, 'not_today', 0);
+      logSuggestionAction(userId, dish.id, planDate, mealSlot, 'not_today', 0).catch(() => {});
+      logFeatureTap(userId, 'not_today_confirm', { screen: 'home', dishId: dish.id, mealSlot });
+      Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
+
+      try {
+        await regenerateSlot(planDate, mealSlot as 'breakfast' | 'lunch' | 'dinner', 'not_today', dish.id);
+      } catch (regenErr: unknown) {
+        const msg = regenErr instanceof Error ? regenErr.message : 'Unknown error';
+        Logger.warn('NOT-TODAY-MODAL', 'regenerate-slot failed (non-fatal)', { error: msg, dishId: dish.id });
+      }
+
       onConfirm();
-    } catch (err: any) {
-      Logger.error('NOT-TODAY-MODAL', 'Failed to log not_today action', { error: err?.message, dishId: dish.id });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      Logger.error('NOT-TODAY-MODAL', 'Failed to log not_today action', { error: msg, dishId: dish.id });
       onConfirm(); // Still dismiss — non-fatal
     } finally {
       setLoading(false);

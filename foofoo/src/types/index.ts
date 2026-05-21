@@ -1,5 +1,18 @@
 export type FoodPref = 'veg' | 'non_veg' | 'egg' | 'vegan' | 'jain';
-export type SuggestionAction = 'viewed' | 'swiped' | 'locked' | 'unlocked' | 'tapped_detail' | 'not_today' | 'never';
+export type SuggestionAction =
+  | 'viewed'
+  | 'shown'
+  | 'swiped'
+  | 'swiped_to'
+  | 'swiped_past'
+  | 'locked'
+  | 'unlocked'
+  | 'tapped_detail'
+  | 'tapped_ingredients'
+  | 'not_today'
+  | 'never'
+  | 'added_to_date'
+  | 'refresh';
 export type DietType = 'veg' | 'non_veg' | 'egg' | 'vegan' | 'jain';
 export type MealSlot = 'breakfast' | 'lunch' | 'dinner' | 'snack';
 export type DishRole = 'main' | 'side' | 'accompaniment' | 'dessert' | 'snack';
@@ -74,6 +87,7 @@ export interface Cuisine {
   id: number;
   code: string;
   name: string;
+  display_name?: string | null;
 }
 
 export interface Dish {
@@ -91,7 +105,78 @@ export interface Dish {
   hero_image_url: string | null;
   blurhash: string | null;
   is_active: boolean;
+  allergen_ids?: number[] | null;
+  is_jain?: boolean | null;
+  description?: string | null;
   cuisines?: Cuisine | null;
+}
+
+export interface DishTagRow {
+  tag_id: number;
+  tags: {
+    id: number;
+    category: string;
+    value: string;
+    display_name: string;
+    tier: number | null;
+  } | null;
+}
+
+export interface IngredientRow {
+  id: number;
+  name: string;
+  slug: string;
+  category: string;
+  is_veg: boolean | null;
+  is_vegan: boolean | null;
+  is_jain_compatible: boolean | null;
+  is_gluten: boolean | null;
+  is_dairy: boolean | null;
+  is_nut: boolean | null;
+  is_egg: boolean | null;
+}
+
+export interface MealIngredientRow {
+  display_order: number | null;
+  ingredients: IngredientRow | null;
+}
+
+export interface FullDish extends Dish {
+  description: string | null;
+  allergen_ids: number[] | null;
+  is_jain: boolean | null;
+  dish_tags: DishTagRow[];
+  meal_ingredients: MealIngredientRow[];
+}
+
+export interface SimilarDishRow {
+  similar_dish_id: number;
+  dishes: {
+    id: number;
+    name: string;
+    hero_image_url: string | null;
+    blurhash: string | null;
+    diet_type: DietType;
+    cook_time_mins: number;
+    cuisines?: { name: string } | null;
+  } | null;
+}
+
+export interface GroceryIngredient {
+  id: number;
+  name: string;
+  slug: string;
+  category: string;
+  is_veg: boolean | null;
+  is_vegan: boolean | null;
+  is_jain_compatible: boolean | null;
+}
+
+export interface GroceryCategory {
+  category: string;
+  displayName: string;
+  emoji: string;
+  ingredients: GroceryIngredient[];
 }
 
 export interface PlannerSlot {

@@ -240,3 +240,54 @@ export async function addToNeverList(userId: string, dishId: number): Promise<vo
 export function getTodayIST(): string {
   return new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().split('T')[0];
 }
+
+export interface RegenerateSlotResult {
+  slot: string;
+  newDish: Dish;
+  carouselCount: number;
+  carousel: Dish[];
+  action: string;
+  excludedDishId: number | null;
+  generatedInMs: number;
+  reVersion: string;
+}
+
+/**
+ * @summary Calls the regenerate-slot Edge Function to replace one slot's dish.
+ *
+ * @description Used by Never / Not Today modals (to exclude the dismissed dish)
+ *   and by Lock-unlock refresh. Locked slots are server-side rejected — caller
+ *   must surface that error to the user.
+ *
+ * @param {string} planDate - YYYY-MM-DD plan date
+ * @param {'breakfast' | 'lunch' | 'dinner'} slot - Slot to regenerate
+ * @param {string} action - 'not_today' | 'never' | 'refresh'
+ * @param {number | null} [excludeDishId] - Dish to exclude from new carousel
+ * @returns {Promise<RegenerateSlotResult>} New dish + carousel + metadata
+ * @throws {Error} 'Not authenticated' or function error message
+ * @calledBy NeverModal, NotTodayModal, MealCard unlock handler
+ */
+export async function regenerateSlot(
+  planDate: string,
+  slot: 'breakfast' | 'lunch' | 'dinner',
+  action: 'not_today' | 'never' | 'refresh',
+  excludeDishId?: number | null,
+): Promise<RegenerateSlotResult> {
+  try {
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) throw new Error('Not authenticated');
+
+    const response = await supabase.functions.invoke('regenerate-slot', {
+      body: { planDate, slot, action, excludeDishId: excludeDishId ?? null },
+    });
+    if (response.error) throw new Error(response.error.message);
+    if (!response.data?.success) {
+      throw new Error(response.data?.error?.message || 'Slot regeneration failed');
+    }
+    return response.data.data as RegenerateSlotResult;
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    Logger.error('PLANS-REPO', 'regenerateSlot failed', { error: msg, slot, action });
+    throw err;
+  }
+}
