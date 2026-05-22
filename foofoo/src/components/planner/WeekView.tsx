@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
   dashText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '700' },
   plusText: { fontSize: 18, color: COLORS.primary, fontWeight: '700' },
   loadingOverlay: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     alignItems: 'center', justifyContent: 'center',
   },
 });

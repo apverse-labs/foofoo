@@ -228,7 +228,7 @@ function Pill({ label, active, onPress }: { label: string; active: boolean; onPr
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'flex-end' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.5)' },
   sheet: {
     backgroundColor: '#fff',
     borderTopLeftRadius: 24,

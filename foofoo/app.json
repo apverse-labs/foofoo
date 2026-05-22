@@ -2,6 +2,7 @@
   "expo": {
     "name": "Foofoo",
     "slug": "foofoo",
+    "owner": "apverse-labs",
     "version": "0.1.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
@@ -48,7 +49,28 @@
       "expo-localization"
     ],
     "extra": {
-      "oneSignalAppId": "83860a1b-1cb9-4982-8a61-d8acc2c4680a"
+      "oneSignalAppId": "83860a1b-1cb9-4982-8a61-d8acc2c4680a",
+      "router": {},
+      "eas": {
+        "build": {
+          "experimental": {
+            "ios": {
+              "appExtensions": [
+                {
+                  "targetName": "OneSignalNotificationServiceExtension",
+                  "bundleIdentifier": "com.foofoo.app.OneSignalNotificationServiceExtension",
+                  "entitlements": {
+                    "com.apple.security.application-groups": [
+                      "group.com.foofoo.app.onesignal"
+                    ]
+                  }
+                }
+              ]
+            }
+          }
+        },
+        "projectId": "407c854c-bb29-4ca5-9193-ce80955b5c49"
+      }
     },
     "experiments": {
       "typedRoutes": true

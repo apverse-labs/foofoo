@@ -67,7 +67,7 @@ export default function DishDetailHeader({ dish, onBack }: Props) {
 
 const styles = StyleSheet.create({
   hero: { width: '100%', backgroundColor: '#1a1a1a', overflow: 'hidden' },
-  gradient: { ...StyleSheet.absoluteFillObject },
+  gradient: { ...StyleSheet.absoluteFill },
   backBtn: {
     position: 'absolute', top: SPACING.md, left: SPACING.md,
     width: 44, height: 44, borderRadius: 22,

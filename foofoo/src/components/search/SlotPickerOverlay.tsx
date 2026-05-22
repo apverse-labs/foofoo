@@ -113,7 +113,7 @@ export default function SlotPickerOverlay({ dish, userId, planDate, onClose, onS
 
 const styles = StyleSheet.create({
   overlay: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  backdrop: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0,0,0,0.5)' },
+  backdrop: { ...StyleSheet.absoluteFill, backgroundColor: 'rgba(0,0,0,0.5)' },
   card: {
     width: '85%', maxWidth: 400,
     backgroundColor: '#fff',

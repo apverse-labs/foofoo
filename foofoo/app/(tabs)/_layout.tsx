@@ -1,4 +1,5 @@
 import { Tabs } from 'expo-router';
+import type { ColorValue } from 'react-native';
 import { COLORS } from '../../src/config/constants';
 
 export default function TabsLayout() {
@@ -31,7 +32,7 @@ export default function TabsLayout() {
   );
 }
 
-function TabIcon({ label, color }: { label: string; color: string }) {
+function TabIcon({ label, color }: { label: string; color: ColorValue }) {
   const { Text } = require('react-native');
   return <Text style={{ fontSize: 20, opacity: color === COLORS.primary ? 1 : 0.5 }}>{label}</Text>;
 }

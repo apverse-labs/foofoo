@@ -27,7 +27,7 @@ export const styles = StyleSheet.create({
     borderRadius: CARD_RADIUS,
   },
   gradient: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     top: '40%',
     borderRadius: CARD_RADIUS,
   },
@@ -111,12 +111,12 @@ export const styles = StyleSheet.create({
     letterSpacing: 1.5,
   },
   tintOverlayNever: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: COLORS.never,
     borderRadius: CARD_RADIUS,
   },
   tintOverlayNotToday: {
-    ...StyleSheet.absoluteFillObject,
+    ...StyleSheet.absoluteFill,
     backgroundColor: COLORS.warning,
     borderRadius: CARD_RADIUS,
   },
