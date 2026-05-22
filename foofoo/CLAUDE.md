@@ -290,9 +290,15 @@ Secrets in Edge Functions go in **Supabase Vault** (Dashboard → Settings → V
 
 ## Current Sprint Status
 
-**Sprint:** 2 — Onboarding Flow
-**Week:** 3
-**Status:** All 7 onboarding steps built. Testing + Supabase verification required.
+**Sprint:** 5 — DISCOVERY — COMPLETE (2026-05-22)
+**Next:** Sprint 6 — Push notifications, RE v2, Analytics
+
+**Sprint 5 — DISCOVERY — COMPLETED:**
+- [x] Section 1 — Full-text search: SearchBar, SearchResultCard, FilterBottomSheet, EmptySearchState, SlotPickerOverlay; src/repositories/search.repository.ts; synonym expansion via term_synonyms; pre-personalised cuisine chips
+- [x] Section 2 — dish_similar populated (4,898 pairs across all 818 dishes); on_dish_inserted trigger queues derive-dish-attributes; populate_dish_similar() SQL function
+- [x] Section 3 — Day/Week toggle on Home; src/components/planner/WeekView.tsx (7×3 grid); src/repositories/week.repository.ts; generate-daily-plans-batch Edge Function deployed; 5AM IST CRON scheduled via pg_cron + pg_net + vault-stored service_role_key
+- [x] Section 4 — Profile screen: avatar with initials, food prefs summary card, notification toggle + 12h time picker, change-password form, premium placeholder, sign out
+- [x] Section 5 — All MCP-verifiable tests green; TypeScript clean
 
 **Sprint 1 — COMPLETED:**
 - [x] Expo project + TypeScript + React Native Web

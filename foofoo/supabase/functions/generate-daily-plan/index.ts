@@ -45,18 +45,35 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) throw new Error('No authorization header');
 
+    const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    const isServiceRole = SERVICE_ROLE_KEY.length > 0 && authHeader === `Bearer ${SERVICE_ROLE_KEY}`;
+
+    // Service role calls (5AM CRON batch) use elevated privileges with explicit
+    // targetUserId in body. User calls go through normal auth.getUser().
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
-      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
-      { global: { headers: { Authorization: authHeader } } }
+      isServiceRole ? SERVICE_ROLE_KEY : (Deno.env.get('SUPABASE_ANON_KEY') ?? ''),
+      isServiceRole
+        ? { auth: { persistSession: false, autoRefreshToken: false } }
+        : { global: { headers: { Authorization: authHeader } } }
     );
-
-    const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) throw new Error('Unauthorized');
 
     const body = await req.json().catch(() => ({}));
     const planDate = body.planDate || getTodayIST();
     const forceRegenerate = body.forceRegenerate || false;
+
+    let user: { id: string };
+    if (isServiceRole) {
+      const targetUserId = body.targetUserId;
+      if (!targetUserId || typeof targetUserId !== 'string') {
+        throw new Error('Service-role call requires targetUserId');
+      }
+      user = { id: targetUserId };
+    } else {
+      const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
+      if (authError || !authUser) throw new Error('Unauthorized');
+      user = authUser;
+    }
 
     if (!/^\d{4}-\d{2}-\d{2}$/.test(planDate)) {
       return new Response(JSON.stringify({

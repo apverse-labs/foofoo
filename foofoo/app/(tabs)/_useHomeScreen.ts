@@ -245,12 +245,24 @@ export function useHomeScreen() {
     weekday: 'short', day: 'numeric', month: 'short',
   });
 
+  /**
+   * @summary Jumps Day View directly to a specific date (used by Week → Day switch).
+   * @param {string} date - YYYY-MM-DD target date
+   */
+  const setPlanDateExternal = (date: string) => {
+    if (date === planDate) return;
+    setPlanDate(date);
+    setLoading(true);
+    setPlan(null);
+  };
+
   return {
     planDate, plan, planId, carousels, lockedSlots,
     loading, refreshing, error, showTutorial, userId,
     neverDish, neverSlot, notTodayDish, notTodaySlot,
     displayDate,
     setShowTutorial, setNeverDish, setNeverSlot, setNotTodayDish, setNotTodaySlot,
+    setPlanDateExternal,
     handleTitlePress, loadPlan, onRefresh,
     handleDishChange, handleLock, handleOpenDetail, navigateDate,
     handleNeverConfirmed, handleNotTodayConfirmed,
