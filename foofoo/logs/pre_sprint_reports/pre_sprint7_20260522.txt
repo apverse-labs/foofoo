@@ -1,0 +1,193 @@
+════════════════════════════════════════════════════════════════
+🍽️  FOOFOO PRE-SPRINT 7 READINESS REPORT  —  2026-05-22
+════════════════════════════════════════════════════════════════
+Branch: main
+Last commit: d873325 Sprint 6 Intelligence + smoke test fixes
+Mode: diagnosis + fix (issues fixed inline before report)
+
+────────────────────────────────────────────────────────────────
+BUILD HEALTH
+────────────────────────────────────────────────────────────────
+TypeScript errors           : 0
+Expo export (android)       : ✅ success — bundle 6.98 MB (hbc)
+                              First run FAILED with Hermes parser
+                              error on `import(OTEL_PKG)` from
+                              @supabase/supabase-js@2.106 — FIXED
+                              (see "Fixes applied" below).
+Bundle size concern         : No (≤10 MB target)
+Export warnings             : Hermes non-fatal "var undeclared"
+                              warnings on browser globals (Promise,
+                              URL, fetch, etc.) — expected, ignore.
+
+────────────────────────────────────────────────────────────────
+FEATURE COMPLETENESS — 26 / 26
+────────────────────────────────────────────────────────────────
+[✓]  1. Email + password auth          → app/(auth)/sign-{up,in}.tsx
+[✓]  2. Email verification             → app/(auth)/email-verification.tsx
+[✓]  3. 7-step onboarding + allergens  → app/(onboarding)/step-1..7
+[✓]  4. Food preference                → step-2
+[✓]  5. Cuisine bucket selector        → step-4 + BucketSelector
+[✓]  6. Breakfast / L+D buckets        → step-5, step-6
+[✓]  7. Home Day View 3 meal cards     → app/(tabs)/index.tsx
+[✓]  8. Carousel of 8 per slot         → RE_V1.CAROUSEL_SIZE = 8
+[✓]  9. Swipe L/R gesture              → src/components/dish/MealCard
+[✓] 10. LongPress + Down = Never       → MealCard + NeverModal
+[✓] 11. LongPress + Up = Not Today     → MealCard + NotTodayModal
+[✓] 12. Lock gesture (icon tap)        → MealCard isLocked + locked_slots
+[✓] 13. Plus gesture → add to date     → DatePickerModal in dish detail
+[✓] 14. Meal Detail + Food DNA chips   → app/dish/[id].tsx + FoodDNAChips
+[✓] 15. Simple ingredient list (L2)    → IngredientList component
+[✓] 16. Auto-derived dietary badges    → DietaryBadges (meal_ingredients)
+[✓] 17. Full-text search + synonyms    → search.repository (term_synonyms)
+[✓] 18. Basic filters                  → FilterBottomSheet
+[✓] 19. Grocery list from plan         → app/(tabs)/grocery.tsx
+[✓] 20. Profile + prefs + notifs       → app/(tabs)/profile.tsx
+[✓] 21. Week View (7-day grid)         → WeekView.tsx + week.repository
+[✓] 22. RE v1 scoring pipeline         → supabase/functions/generate-daily-plan
+[✓] 23. RE v2 inferred preferences     → calculate-inferred-prefs + v2 scoring
+[✓] 24. Passive feedback (sugg_logs)   → feedback.repository + MealCard.helpers
+[✓] 25. Morning push notification      → send-morning-notification + CRON
+[✓] 26. Offline plan caching           → OfflineService + useNetworkStatus
+
+────────────────────────────────────────────────────────────────
+NAVIGATION
+────────────────────────────────────────────────────────────────
+Unique router targets       : 21
+Targets verified            : 21 / 21 (all map to existing files)
+Broken routes               : 0
+Dead-end screens            : 0  (every screen is a tab or has a
+                                  back-arrow / replace pattern)
+
+────────────────────────────────────────────────────────────────
+PERFORMANCE BASELINE  (etl_jobs, last 30 days)
+────────────────────────────────────────────────────────────────
+generate-daily-plans-batch  : runs=4  avg=1420 ms  max=2064 ms
+generate-daily-plan         : no etl_jobs rows (single-user path
+                              not instrumented through etl_jobs —
+                              tracked in recommendation_debug_log)
+recommendation_debug_log    : 6 rows / 1 user (synthetic seed cohort)
+Target avg < 2000 ms, max < 5000 ms : ✅ within target
+Concern                     : No
+
+────────────────────────────────────────────────────────────────
+APP STORE READINESS
+────────────────────────────────────────────────────────────────
+5A — App assets
+  [✓] App icon 1024×1024 PNG          → assets/icon.png
+  [✓] Splash screen image             → assets/splash-icon.png (1024×1024)
+  [✓] Adaptive icon (Android)         → assets/android-icon-foreground.png (512×512)
+                                         + android-icon-background.png + monochrome
+  [ ] Notification icon (white 96×96) → MISSING (expo-notifications falls back to
+                                         tinted app icon — acceptable but a dedicated
+                                         monochrome PNG is recommended for Android 13+)
+
+5B — App metadata (app.json)
+  [✓] name = "Foofoo"
+  [✓] version = "1.0.0"               (was "0.1.0" — FIXED)
+  [✓] android.package = "com.foofoo.app"
+  [✓] android.versionCode = 1         (was missing — FIXED)
+  [✓] ios.bundleIdentifier = "com.foofoo.app"
+  [✓] scheme = "foofoo"
+  [✓] description present             (was missing — FIXED)
+  [—] minSdkVersion / targetSdkVersion: not declared in app.json; Expo SDK 56
+       defaults are min=24 / target=35 (above Play Store 2026 floor of target=34).
+
+5C — Legal requirements
+  [✗] Privacy Policy URL              : not hosted yet — Profile shows "coming soon"
+                                         toast; auth-gate references the link as plain
+                                         text. MUST be live before Play Store review.
+  [✗] Terms of Service URL            : same as above.
+  [⚠] In-app T&C link tappable        : auth-gate.tsx renders the text but currently
+                                         has no `onPress` handler — needs a Linking.openURL
+                                         once the hosted URLs exist.
+
+5D — Play Store requirements
+  [—] minSdkVersion 21+               : Expo SDK 56 default = 24 ✓
+  [—] targetSdkVersion 34+            : Expo SDK 56 default = 35 ✓
+  [—] Category "Food & Drink"         : declared in Play Console at submission time
+  [—] Content rating                  : declared in Play Console at submission time
+
+5E — Critical pre-launch features
+  [✓] Password reset                  : app/(auth)/forgot-password.tsx
+                                         (supabase.auth.resetPasswordForEmail)
+  [✓] Account deletion                : ADDED THIS PASS — Edge Function
+                                         `delete-account` (deployed v1) +
+                                         "Delete Account" button on Profile with
+                                         destructive confirmation dialog.
+  [✗] Sentry DSN configured           : `EXPO_PUBLIC_SENTRY_DSN` not set in
+                                         `.env.local`; init code is present in
+                                         app/_layout.tsx but skipped at runtime.
+
+────────────────────────────────────────────────────────────────
+DATA INTEGRITY (MCP safety run)
+────────────────────────────────────────────────────────────────
+Diet violations (last 7d)   : 0
+Never violations (last 3d)  : 0
+Jain violations             : 0
+Orphaned planner rows       : 0
+Active dishes w/o cuisine   : 0
+
+────────────────────────────────────────────────────────────────
+FIXES APPLIED THIS PASS
+────────────────────────────────────────────────────────────────
+1. Hermes bytecode failure on supabase-js@2.106 OTEL dynamic import
+     - Replaced `import(OTEL_PKG)` with `Promise.resolve(null)` in
+       node_modules/@supabase/supabase-js/dist/index.{cjs,mjs}
+     - Installed patch-package + postinstall-postinstall, generated
+       patches/@supabase+supabase-js+2.106.0.patch (persists across npm i)
+     - Added `"postinstall": "patch-package"` to package.json
+     - Re-ran `expo export --platform android` → success (6.98 MB hbc)
+
+2. Account deletion (Play Store 2023 requirement)
+     - Created supabase/functions/delete-account/index.ts
+       (anonymises suggestion_logs + user_feedback → deletes auth.users
+        → writes audit_log entry for DPDP retention)
+     - Deployed as edge function `delete-account` v1
+     - Added `deleteAccount()` to src/repositories/profile-settings.repository
+     - Added "Delete Account" button + confirmation flow on Profile tab
+     - Added `account_deleted` event to FooFooEvent union
+
+3. app.json metadata for Play Store
+     - version: 0.1.0 → 1.0.0
+     - android.versionCode: <missing> → 1
+     - description: <missing> → "AI-powered meal decision assistant for India…"
+
+────────────────────────────────────────────────────────────────
+SPRINT 7 PRIORITY ITEMS  (open after this pass)
+────────────────────────────────────────────────────────────────
+P1 — MUST land before Play Store submission
+  • Privacy Policy: host a real document, surface URL via Linking.openURL
+    from Profile + auth-gate (currently shows "coming soon" toast).
+  • Terms of Service: same.
+  • Set `RESEND_API_KEY` + `RESEND_FROM` in Supabase Edge secrets so
+    daily-analytics-email actually sends (4 partial runs in last week).
+  • Set `EXPO_PUBLIC_SENTRY_DSN` in .env.local + Vault → production
+    crash reporting on day 1.
+  • On-device verification: run an EAS dev client and confirm push,
+    delete-account, and offline banner end-to-end (carry-over from S6).
+
+P2 — Should land before submission
+  • Dedicated monochrome notification icon (96×96) for Android 13+.
+  • Play Console listing assets: feature graphic (1024×500), 2–8
+    screenshots, short description (≤80 chars), full description (≤4000).
+  • Apply the two staged DB migrations on prod (atomic_carousel_replace,
+    widen_suggestion_logs_action_check) — carry-over from S5 post-QA.
+  • Inferred-prefs threshold: confirm real-cohort users cross ≥20 actions
+    / ≥14 days organically (only one seeded test user qualifies today).
+
+P3 — Nice to have
+  • Wire `target/minSdkVersion` explicitly in app.json (currently using
+    Expo SDK 56 defaults — fine, but explicit is auditable).
+  • Smoke test for delete-account on a throwaway user (test cascade fans
+    out correctly into all 14 user-owned tables).
+  • Re-baseline performance after the live cohort grows beyond 1 user.
+
+────────────────────────────────────────────────────────────────
+SPRINT 7 GREEN LIGHT:  CONDITIONAL
+────────────────────────────────────────────────────────────────
+Reason: build + features + RE + data are all clean.
+Remaining gates for actual Play Store submission are non-code
+artifacts (Privacy Policy URL, ToS URL, Resend/Sentry env, Play
+Console listing assets) — none of these block starting Sprint 7,
+they block the submit-button. Safe to begin Polish + Launch sprint.
+════════════════════════════════════════════════════════════════

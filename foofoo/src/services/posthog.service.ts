@@ -49,6 +49,7 @@ export type FooFooEvent =
   | 'sign_up'
   | 'sign_in'
   | 'sign_out'
+  | 'account_deleted'
   | 'premium_upsell_viewed';
 
 export const PostHogService = {

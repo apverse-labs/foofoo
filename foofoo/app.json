@@ -3,7 +3,8 @@
     "name": "Foofoo",
     "slug": "foofoo",
     "owner": "apverse-labs",
-    "version": "0.1.0",
+    "version": "1.0.0",
+    "description": "AI-powered meal decision assistant for India. Every morning, see a personalised Breakfast / Lunch / Dinner plan. Swipe to browse, lock what you love, cook or order.",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "scheme": "foofoo",
@@ -22,7 +23,8 @@
         "foregroundImage": "./assets/android-icon-foreground.png",
         "backgroundColor": "#2D6A4F"
       },
-      "package": "com.foofoo.app"
+      "package": "com.foofoo.app",
+      "versionCode": 1
     },
     "web": {
       "bundler": "metro",

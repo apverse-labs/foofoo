@@ -29,7 +29,7 @@ import { Logger } from '../../src/utils/systemLogger';
 import { logScreenView, logFeatureTap } from '../../src/repositories/feedback.repository';
 import { PostHogService } from '../../src/services/posthog.service';
 import {
-  getProfileSummary, updateProfileSettings, changePassword, signOut,
+  getProfileSummary, updateProfileSettings, changePassword, signOut, deleteAccount,
   formatNotificationTime, formatMemberSince, initialsFromName, dietLabel,
   type ProfileSummary,
 } from '../../src/repositories/profile-settings.repository';
@@ -127,6 +127,38 @@ export default function ProfileTab() {
 
   const handleEditPrefs = () => {
     router.push('/(onboarding)/step-2' as never);
+  };
+
+  const handleDeleteAccount = () => {
+    const title = 'Delete account?';
+    const message =
+      'This permanently deletes your profile, preferences, meal plans, and history. ' +
+      'You will be signed out immediately. This cannot be undone.';
+    if (Platform.OS === 'web') {
+      const ok = (globalThis as { confirm?: (m: string) => boolean }).confirm?.(`${title}\n\n${message}`);
+      if (ok) confirmDeleteAccount();
+      return;
+    }
+    Alert.alert(title, message, [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Delete', style: 'destructive', onPress: confirmDeleteAccount },
+    ]);
+  };
+
+  const confirmDeleteAccount = async () => {
+    if (busySection === 'delete') return;
+    setBusySection('delete');
+    try {
+      if (summary) logFeatureTap(summary.id, 'account_delete');
+      await deleteAccount();
+      router.replace('/' as never);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : 'Unknown error';
+      Logger.error('PROFILE', 'deleteAccount failed', { error: msg });
+      Alert.alert('Could not delete account', msg);
+    } finally {
+      setBusySection(null);
+    }
   };
 
   if (loading) {
@@ -272,6 +304,21 @@ export default function ProfileTab() {
         <Pressable style={styles.signOutBtn} onPress={handleSignOut}>
           <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
+
+        <Pressable
+          style={styles.deleteBtn}
+          onPress={handleDeleteAccount}
+          disabled={busySection === 'delete'}
+        >
+          {busySection === 'delete' ? (
+            <ActivityIndicator color="#B00020" />
+          ) : (
+            <Text style={styles.deleteText}>Delete Account</Text>
+          )}
+        </Pressable>
+        <Text style={styles.deleteNote}>
+          Permanently removes your profile, preferences, meal history, and saved plans.
+        </Text>
       </ScrollView>
 
       {toast && (
@@ -521,6 +568,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   signOutText: { color: COLORS.error, fontSize: 14, fontWeight: '700' },
+
+  deleteBtn: {
+    marginHorizontal: SPACING.md,
+    marginTop: SPACING.md,
+    paddingVertical: 12,
+    alignItems: 'center',
+  },
+  deleteText: { color: '#B00020', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
+  deleteNote: {
+    color: COLORS.textSecondary,
+    fontSize: 11,
+    textAlign: 'center',
+    paddingHorizontal: SPACING.lg,
+    marginTop: SPACING.xs,
+  },
 
   toast: {
     position: 'absolute', left: SPACING.lg, right: SPACING.lg,

@@ -157,6 +157,35 @@ export async function signOut(): Promise<void> {
 }
 
 /**
+ * @summary Permanently deletes the authenticated user's account.
+ *
+ * @description Invokes the `delete-account` Edge Function which (a) anonymises
+ *   suggestion_logs + user_feedback, (b) deletes the auth.users row via the
+ *   service role (cascades wipe every public.* row), and (c) writes an
+ *   audit_log entry. On success this function signs the local session out so
+ *   the root layout routes to the auth gate. Required by Google Play (2023+).
+ *
+ * @returns {Promise<void>}
+ * @throws {Error} if the Edge Function returns success=false
+ * @calledBy app/(tabs)/profile.tsx Delete Account confirmation
+ */
+export async function deleteAccount(): Promise<void> {
+  PostHogService.capture('account_deleted');
+  const { data, error } = await supabase.functions.invoke('delete-account', { body: {} });
+  if (error) {
+    Logger.error('PROFILE-SETTINGS', 'deleteAccount invoke failed', { error: error.message });
+    throw new Error(error.message);
+  }
+  if (!data?.success) {
+    const msg = data?.error?.message ?? 'Delete failed';
+    Logger.error('PROFILE-SETTINGS', 'deleteAccount returned failure', { msg });
+    throw new Error(msg);
+  }
+  PostHogService.reset();
+  await supabase.auth.signOut();
+}
+
+/**
  * @summary Formats a Postgres `time` value (HH:MM:SS) into a human label.
  *
  * @description Returns "08:30 AM" / "07:00 PM" style. Falls back to "—" for null.

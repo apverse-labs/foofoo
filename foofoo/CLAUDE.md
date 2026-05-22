@@ -290,8 +290,13 @@ Secrets in Edge Functions go in **Supabase Vault** (Dashboard → Settings → V
 
 ## Current Sprint Status
 
-**Sprint:** 6 — INTELLIGENCE — COMPLETE (2026-05-22)
-**Next:** Sprint 7 — Polish + Google Play Launch
+**Sprint:** 7 — Polish + Google Play Launch — STARTING (2026-05-22)
+**Pre-Sprint 7 readiness check:** see `logs/pre_sprint_reports/pre_sprint7_20260522.txt`
+  - Build, features (26/26), navigation, performance, data integrity: all green
+  - Hermes export blocker (supabase-js OTEL dynamic import) → patched via patch-package
+  - Account deletion (Play Store 2023 requirement) → `delete-account` Edge Function + Profile UI shipped
+  - app.json bumped to v1.0.0 + versionCode 1 + description
+  - Open before submit: Privacy Policy URL, ToS URL, RESEND_API_KEY, EXPO_PUBLIC_SENTRY_DSN
 
 **Sprint 6 — INTELLIGENCE — COMPLETED (2026-05-22, see Changelog.md):**
 - [x] Section 1 — Morning push notification (`send-morning-notification`

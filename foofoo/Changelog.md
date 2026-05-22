@@ -6,6 +6,33 @@
 ## [Unreleased]
 <!-- Add new changes here. Move to a version block when a sprint completes. -->
 
+### Pre-Sprint 7 readiness pass — 2026-05-22
+
+Diagnosis + fix pass before starting the Polish + Launch sprint.
+Full report: `logs/pre_sprint_reports/pre_sprint7_20260522.txt`.
+
+- **Build blocker fix — Hermes / supabase-js OTEL dynamic import.**
+  `@supabase/supabase-js@2.106` ships a dynamic `import("@opentelemetry/api")`
+  that the bundled Hermes compiler (Expo SDK 56) refuses to parse,
+  failing `expo export --platform android`. Replaced the call with
+  `Promise.resolve(null)` in both dist files, installed `patch-package`
+  + `postinstall-postinstall`, generated
+  `patches/@supabase+supabase-js+2.106.0.patch`, added
+  `"postinstall": "patch-package"` to package.json. Re-export: success
+  (6.98 MB hbc, 0 errors).
+- **Account deletion (Play Store 2023 requirement).** New Edge Function
+  `delete-account` (v1, JWT-verified). Anonymises `suggestion_logs` +
+  `user_feedback` (FK ON DELETE SET NULL) → calls
+  `supabase.auth.admin.deleteUser(user.id)` with the service role
+  (CASCADE on `profiles_id_fkey` removes every public.* row tied to
+  the user) → writes an `audit_log` entry (retained 3 years per DPDP).
+  Added `deleteAccount()` in `src/repositories/profile-settings.repository.ts`.
+  Profile tab now has a "Delete Account" button below Sign Out with a
+  destructive confirmation alert; mobile + web paths covered.
+- **app.json — Play Store metadata.** Bumped `version` 0.1.0 → 1.0.0,
+  added `android.versionCode: 1`, added `description`.
+- **PostHog event union.** Added `account_deleted` to `FooFooEvent`.
+
 ### Sprint 6 — INTELLIGENCE — 2026-05-22
 
 Milestone: RE learns from behaviour, push notifications live, founders
