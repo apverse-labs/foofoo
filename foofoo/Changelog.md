@@ -6,6 +6,29 @@
 ## [Unreleased]
 <!-- Add new changes here. Move to a version block when a sprint completes. -->
 
+### Pre-Sprint 5 Health Check — 2026-05-22
+
+- `logs/pre_sprint_reports/pre_sprint5_20260522.txt` — full read-only audit.
+  819 dishes (not 829 as the prompt anticipated). 5 critical issues identified.
+- `supabase/migrations/20260522000001_pre_sprint5_critical_fixes.sql` —
+  pending migration (not yet applied; Supabase MCP was read-only in this
+  session) covering:
+  - Patch `derive_dish_attributes()` so jain-safety fails closed: non_veg/egg
+    dishes are forced `is_jain=false`, and dishes with no ingredient links
+    default to `is_jain=false` instead of true. Also pins search_path.
+  - Bulk `UPDATE dishes SET is_jain=false WHERE diet_type IN ('non_veg','egg')`
+    — fixes 255 mismarked rows (199 non_veg + 56 egg).
+  - Deactivate duplicate "Parotta (Kerala/Tamil)" id=569 (kept id=282 canonical).
+  - DELETE the 7 planner rows for the affected Jain user
+    (7b53646c-1fd4-423a-96fe-ef2bf70c46af) so the RE regenerates with the
+    corrected filter.
+- Sprint 5 Day-0 backlog (NOT in this migration — requires content work):
+  - Backfill `meal_ingredients` for 799 dishes (currently 2.4% coverage)
+  - Backfill `dish_tags` for 799 dishes (currently 2.4% coverage)
+  - Then re-run `derive_dish_attributes()` for every dish.
+  - Populate `dish_similar` (currently empty).
+  - Replace 814 missing hero_image_url placeholders.
+
 ---
 
 ## [v0.1.0] — Sprint 1 Setup — 2026-05-19

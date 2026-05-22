@@ -1,0 +1,198 @@
+════════════════════════════════════════════════
+FOOFOO PRE-SPRINT 5 HEALTH REPORT
+Generated: 2026-05-22 10:45 IST (05:15 UTC)
+Total dishes in DB: 819 (NOTE: prompt expected 829 — actual count is 819)
+════════════════════════════════════════════════
+
+🍛 DISH DATA QUALITY
+  Total dishes:              819
+  Active:                    819 (100.0%)
+  Inactive / NULL status:    0 / 0                  — OK
+  Missing meal_types:        0                      — OK
+  breakfast_dishes:          131                    — OK (≥80)
+  lunch_dishes:              482                    — OK (≥200)
+  dinner_dishes:             522                    — OK (≥200)
+  snack_dishes ('snack'):    0                      — but 296 use 'snacks' (plural). Audit script bug — actual snack coverage is fine.
+  Missing cuisine_id:        0                      — OK
+  Unique cuisines used:      58 (of 69 in `cuisines`)
+  Cuisine FK target:         `cuisines` (69 rows), NOT `cuisines_master` (17 rows).
+                             Orphans vs `cuisines`: 0 — OK
+                             Orphans vs `cuisines_master`: 480 (expected — wrong join table; not a bug)
+  Diet types found:          veg (561, 68.5%), non_veg (202, 24.7%), egg (56, 6.8%)
+  Invalid diet_type values:  0                      — OK
+  NO jain or vegan diet_type rows exist in dishes.   — see Critical #2
+  Missing dish_role:         0                      — OK
+  dish_role distribution:    main 757 / side 25 / accompaniment 18 / snack 10 / drink 9
+  Duplicate slugs:           0                      — OK
+  Bad slugs (null/empty):    0                      — OK
+  Non-kebab slugs:           0                      — OK
+  Duplicate dish names:      1 — "Parotta (Kerala/Tamil)" (ids 282 & 569)  — see Critical #3
+  Has hero image:            5 / 819 (0.6%) — 5 picsum placeholders, 0 cloudinary
+  spice_level NULL / invalid: 0 / 0                 — OK
+  calories NULL / ≤0:        0 / 0                  — OK
+  cook_time_mins NULL / ≤0:  0 / 12                 — 12 no-cook items (Lassi, Shrikhand, Bhel Puri, Caesar Salad, etc.). Semantically valid but breaks `>0` filters. Sprint 5 LOW.
+  Calories avg / min / max:  287.6 / 30 / 800       — OK
+
+🔗 INGREDIENT LINKING
+  ingredients table:         78 rows (rich: is_veg/is_vegan/is_jain_compatible/is_dairy/etc., 14 categories)
+  ingredients_master table:  211 rows (lighter: is_allergen, diet_flag, is_jain_excluded)
+  meal_ingredients rows:     64 total
+  Distinct dishes linked:    20 / 819 (2.4%) — see Critical #4
+  Distinct ingredients used: 10 of 78
+  Avg ingredients per dish:  3.2 (range 2–4) — too thin for real grocery list
+
+  Orphan meal_ingredients.ingredient_id vs `ingredients`:        0
+  Orphan meal_ingredients.ingredient_id vs `ingredients_master`: 0
+
+  Auto-derivation readiness:
+    has_allergen_ids:        15 / 819 (1.8%)
+    has_ingredient_ids:      0 / 819
+    previously_derived:      0 — derive_dish_attributes() has never run
+
+⚡ RE v1 PERFORMANCE
+  Total plans generated:     11        (3 unique users)
+  Plan date range:           2026-05-16 → 2026-05-22
+  Incomplete plans:          0
+  Avg carousel depth:        breakfast 7.4 / lunch 8.0 / dinner 8.0 — EXCELLENT
+  suggestion_logs actions:   viewed (43), locked (3), not_today (2) — only 3 of 10 — see High #2
+  never_list entries:        0 — empty (can't verify never-in-plan rule; pass by N/A)
+
+  DIET VIOLATIONS:           18 active rows — ALL for user 7b53646c-1fd4-423a-96fe-ef2bf70c46af
+    Cause: food_pref='jain' but dishes had is_jain=false.
+    Examples: Aloo Paratha, Paneer Butter Masala, Rajma Chawal, Upma, Masala Dosa,
+              Palak Paneer, Idli Sambar — across plan dates 2026-05-16..22.
+    → CRITICAL #1 — must be 0 before Sprint 5
+
+  is_jain MISMARKING (root cause for both directions):
+    veg dishes marked jain:       544 / 561  (17 not jain)
+    NON-VEG dishes marked jain:   199 / 202  ← cannot be jain, false positive
+    EGG dishes marked jain:       56  / 56   ← cannot be jain, false positive
+    → CRITICAL #2 — 255 dishes (non_veg+egg) are silently flagged jain-safe.
+       Filter (udr.food_pref='jain' AND d.is_jain=false) only catches FALSE NEGATIVES
+       (jain user shown a non-jain dish via is_jain=false). The inverse — non-jain
+       dish reaching jain user via is_jain=true — is the larger safety hole.
+
+  Onion/garlic check on is_jain=true dishes: 0 rows (only because ingredient
+    linking covers 20/819 dishes — most jain-marked dishes have NO ingredients
+    to compare). Not a clean PASS — coverage is the bottleneck.
+
+📱 SPRINT 4 COMPLETENESS
+  All 11 expected files present:    11/11 ✓
+    supabase/functions/regenerate-slot/index.ts    ✓
+    app/dish/[id].tsx                              ✓
+    app/(tabs)/grocery.tsx                         ✓
+    src/repositories/dishes.repository.ts          ✓
+    src/repositories/grocery.repository.ts         ✓
+    src/repositories/feedback.repository.ts        ✓
+    src/components/dish/DishDetailHeader.tsx       ✓
+    src/components/dish/FoodDNAChips.tsx           ✓
+    src/components/dish/IngredientList.tsx         ✓
+    src/components/dish/DietaryBadges.tsx          ✓
+    src/components/dish/DatePickerModal.tsx        ✓
+
+  Gesture actions present:          3/10
+    Present: viewed, locked, not_today
+    MISSING from logs: swiped_to, swiped_past, unlocked, never,
+                       tapped_detail, tapped_ingredients, added_to_date
+    → High #2 (could just be that no events have happened yet — need code audit)
+
+  regenerate-slot deployed:         YES (v1, ACTIVE)
+  generate-daily-plan deployed:     YES (v4, ACTIVE)
+  log-re-decision deployed:         NO (not in audit checklist as "if built")
+
+  Today's plans (complete):         2
+  Today's dishes ingredient counts:
+    Aloo Gobi:              0 ingredients ← grocery list will be empty
+    Kulcha:                 0 ingredients ← grocery list will be empty
+    Aloo Paratha:           3
+    Dal Makhani:            4
+    Paneer Butter Masala:   4
+
+🔍 SPRINT 5 READINESS
+  search_vector populated:    819 / 819 (100%)  — OK
+  Sample search ('paneer'):   5 hits, top rank 0.696 (Paneer Chilli Gravy) — OK
+  term_synonyms:              112 entries (en, hi, ta, te, ml) — OK
+  Tags by tier:               Tier 1: 58 (6 cats) / Tier 2: 64 (7 cats) / Tier 3: 43 (5 cats)
+  dish_tags coverage:         20 / 819 dishes have tags. Avg 10 tags/dish but coverage is 2.4%.
+                              → CRITICAL #5 — Search filters by Food DNA require dish_tags
+  dish_similar pairs:         0 — Sprint 5 task to populate
+  region_food_affinity:       31 Indian state codes covered (incl DL 7, MH/TN/UP/MP/PB 5 each)
+  Week View — plans/day:      7 days have plans (2026-05-16..22), 1–3 users each
+  Profile data:               5 profiles total, 4 onboarded
+    has_name: 5/5
+    has_username: 4/5
+    has_avatar_url: 0/5  ← Profile screen needs default fallback
+    has_state: 4/5
+    has_notif_time: 5/5
+    premium_tier='free': 5/5
+
+🔧 CODE HEALTH
+  TypeScript errors (tsc --noEmit):  0  — OK
+  Raw console.log count:             24 (ALL in src/utils/test-supabase.ts —
+                                        legitimate diagnostic file). 0 elsewhere.
+  Edge Functions ACTIVE:             generate-daily-plan v4, regenerate-slot v1
+  .env.local file:                   NOT present in repo (gitignored — runtime uses
+                                     SUPABASE_SERVICE_ROLE_KEY + SUPABASE_ACCESS_TOKEN
+                                     from Codespaces env; SUPABASE_URL/ANON_KEY come
+                                     from src/config/constants.ts at runtime)
+
+  Supabase advisors (security):
+    ERROR  — public._seed_sessions has RLS disabled (HIGH — internal seed table)
+    INFO   — RLS enabled, no policies on: audit_log, cache_metadata, etl_jobs,
+             migration_log, mv_refresh_history, role_audit (admin-only tables — OK)
+    WARN   — function_search_path_mutable on 4 functions incl. derive_dish_attributes
+    WARN   — pg_trgm extension installed in public schema
+    WARN   — materialized view dish_popularity selectable by anon/authenticated
+    WARN   — handle_new_user() SECURITY DEFINER callable by anon + authenticated
+    WARN   — Auth leaked-password protection disabled
+
+════════════════════════════════════════════════
+CRITICAL ISSUES (block Sprint 5 start):
+  1. DIET VIOLATIONS: 18 active planner rows for one Jain user (Aloo Paratha,
+     Paneer Butter Masala, Rajma Chawal, Upma, Idli Sambar, Masala Dosa,
+     Palak Paneer — dishes with is_jain=false reached a jain user).
+     → fix by re-deriving is_jain AND filtering RE properly.
+
+  2. is_jain MISMARKING: 199 non-veg + 56 egg dishes have is_jain=true. Any
+     Jain user with the inverse filter logic (or none) would be served meat.
+     Root cause: dishes.is_jain has not been derived correctly — likely
+     bulk-set to true at import. derive_dish_attributes() has never run
+     (previously_derived = 0).
+
+  3. DUPLICATE DISH NAME: "Parotta (Kerala/Tamil)" appears twice
+     (id=282 slug=parotta-keralatamil  and  id=569 slug=parotta-kerala-tamil).
+     Both diet_type=egg, cuisine_id=7. Creates RE + Search duplication.
+
+  4. INGREDIENT LINKING: 2.4% coverage (20/819). Grocery list (Sprint 4 deliverable)
+     is empty/broken for 97.6% of dishes. Auto-derivation (planned Sprint 5)
+     CANNOT run usefully without ingredients.
+
+  5. dish_tags COVERAGE: 20/819 dishes (2.4%) have tags. Search filters
+     by Food DNA chips (Sprint 5) will return near-zero matches.
+
+HIGH PRIORITY (fix in Sprint 5 Week 1):
+  1. _seed_sessions: enable RLS (Supabase advisor ERROR).
+  2. Suggestion log wiring: 7 of 10 gesture types never logged yet
+     (could be "no events" rather than "no wiring" — code audit needed).
+  3. Hero images: 814 dishes missing real images. Will block visual UX.
+  4. dish_similar: 0 pairs — populate before "You might also like" goes live.
+  5. derive_dish_attributes() and 3 other functions: set search_path immutable.
+  6. handle_new_user() SECURITY DEFINER: revoke EXECUTE from anon/authenticated.
+  7. dish_popularity materialized view: revoke from anon/authenticated.
+  8. Enable Supabase Auth leaked-password protection (HaveIBeenPwned).
+
+LOW PRIORITY (fix when time permits):
+  1. cook_time_mins=0 for 12 no-cook dishes — decide between 0 and NULL semantics.
+  2. snack vs snacks meal_type string mismatch (audit query used 'snack' singular;
+     dishes use 'snacks' plural in meal_types[]). Standardise.
+  3. pg_trgm extension move out of public schema.
+  4. profile avatar_url defaults — none set; needs UI fallback for Sprint 5.
+  5. Backfill `jain` and `vegan` diet_type rows if product needs them as a
+     distinct category (currently veg/non_veg/egg only).
+
+SPRINT 5 GREEN LIGHT: NO — Critical #1, #2, #3 must be fixed first.
+  Critical #4 and #5 are too large for an immediate fix (require dish-by-dish
+  content work) and SHOULD be tracked as Sprint 5 Week 1 blockers, not
+  pre-sprint gates. Recommend partial unblock: fix #1/#2/#3 today, schedule
+  #4/#5 as Sprint 5 Day 0–2 backfill.
+════════════════════════════════════════════════
