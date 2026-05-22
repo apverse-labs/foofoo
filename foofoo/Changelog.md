@@ -6,6 +6,45 @@
 ## [Unreleased]
 <!-- Add new changes here. Move to a version block when a sprint completes. -->
 
+### Sprint 5 Day-0 Content Backfill — 2026-05-22
+
+- `supabase/migrations/20260522000003_sprint5_content_backfill.sql` (applied
+  in several MCP steps; consolidated migration file for reproducibility):
+  - **Part A** — `backfill_ingredients_v1()` linked **587 previously-empty
+    dishes**, inserting 3,889 `meal_ingredients` rows. Ingredient coverage
+    went from 2.4% → **74.2%** (607/818 active dishes).
+  - **Part B** — `auto_tag_dishes()` added Tier-1 tags from existing dish
+    columns (spice_level, difficulty, meal_type, dish_role with drink→beverage
+    mapping, heaviness derived from calories). dish_tags coverage went from
+    2.4% → **100%** (818/818 dishes, 4,885 assignments, avg 6.0 tags/dish).
+  - **Part C** — `derive_dish_attributes()` rewritten to use the slug-bearing
+    `ingredients` table (not `ingredients_master`) and run for every linked
+    dish (607 derived). Conflicts logged to `etl_jobs`.
+  - **Data correction** — 4 fish dishes were mislabeled `diet_type='veg'`
+    (Fish Fry Street Style #690, Ou Tenga Fish Curry #785, Naga Fish Curry
+    #796, Chettinad Fish Curry #884). Surfaced by the conflict log. Updated
+    to `non_veg` and re-derived.
+  - **Safety re-verification** — all four gates return 0:
+    veg dish with meat/seafood ingredient: 0;
+    is_jain=true with onion/garlic linked: 0;
+    active planner diet violations: 0;
+    non_veg/egg dish marked is_jain: 0.
+- `supabase/functions/backfill-ingredients/index.ts` — Edge Function spec
+  (executed via the SQL twin for atomicity, kept here as canonical
+  reference + re-runnable endpoint).
+- `supabase/functions/derive-dish-attributes/index.ts` — Edge Function
+  wrapper around `derive_dish_attributes()` for future CRON use.
+- 85 conflicts remain in `etl_jobs` for content review (81 non_veg dishes
+  whose name didn't match a meat keyword — e.g. "Keema Matar", "Taar Gosht",
+  "Bhopali Gosht Korma"). Not safety violations; content backfill TODO.
+- Part D — suggestion-log wiring audit: **all 10 action types are wired in
+  code** (the original 3/10 reflected zero-event history, not missing code).
+  Code-cleanup items flagged separately (see notes below).
+- Sprint 5 carry-over: stale `'swiped'` call at
+  `app/(tabs)/_useHomeScreen.ts:175` (use `'swiped_to'`); duplicate
+  `logSuggestionAction` exported from both `feedback.repository.ts` and
+  `plans.repository.ts`. Consolidate during Sprint 5 cleanup.
+
 ### Sprint 5 Security Hardening — 2026-05-22
 
 - `supabase/migrations/20260522000002_sprint5_security_hardening.sql` (applied)
