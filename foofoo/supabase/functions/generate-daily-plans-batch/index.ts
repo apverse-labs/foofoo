@@ -20,7 +20,7 @@
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient, type SupabaseClient } from 'https://esm.sh/@supabase/supabase-js@2';
 import { generateSlot, buildReasoning, type SlotResult } from './scoring.ts';
-import { getDateDaysAgo, getWeatherData } from './helpers.ts';
+import { getDateDaysAgo, getWeatherData, stateNameToCode, loadRegionAffinity } from './helpers.ts';
 import { RE_V1 } from './re-config.ts';
 
 const corsHeaders = {
@@ -84,7 +84,11 @@ async function generatePlanForUser(
       (recentPlans as any[]).flatMap(p => [p.breakfast_ref_id, p.lunch_ref_id, p.dinner_ref_id].filter(Boolean))
     );
 
-    const weather = await getWeatherData(supabase, (profile as any)?.current_city || (profile as any)?.home_state || 'Mumbai');
+    const homeStateCode = stateNameToCode((profile as any)?.home_state);
+    const [weather, regionAffinityByCuisineId] = await Promise.all([
+      getWeatherData(supabase, (profile as any)?.current_city || (profile as any)?.home_state || 'Mumbai'),
+      loadRegionAffinity(supabase, homeStateCode),
+    ]);
 
     let dishQuery = supabase
       .from('dishes')
@@ -93,8 +97,8 @@ async function generatePlanForUser(
       .limit(2000);
     if (foodPref === 'veg') dishQuery = dishQuery.in('diet_type', ['veg', 'vegan', 'jain']);
     else if (foodPref === 'vegan') dishQuery = dishQuery.eq('diet_type', 'vegan');
-    else if (foodPref === 'jain') dishQuery = dishQuery.in('diet_type', ['veg', 'jain']);
-    else if (foodPref === 'egg') dishQuery = dishQuery.in('diet_type', ['veg', 'egg', 'vegan', 'jain']);
+    else if (foodPref === 'jain') dishQuery = dishQuery.in('diet_type', ['veg', 'jain']).eq('is_jain', true);
+    else if (foodPref === 'egg') dishQuery = dishQuery.in('diet_type', ['veg', 'egg', 'vegan']);
 
     const { data: allDishes, error: dishError } = await dishQuery;
     if (dishError) throw new Error('dishes: ' + dishError.message);
@@ -115,13 +119,13 @@ async function generatePlanForUser(
     const lockedSlots: string[] = (existingForLocks as any)?.locked_slots || [];
     const assignedDishIds = new Set<number>();
 
-    const breakfastResult = generateSlot('breakfast', userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('breakfast') ? (existingForLocks as any)?.breakfast_ref_id : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
-    const lunchResult     = generateSlot('lunch',     userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('lunch')     ? (existingForLocks as any)?.lunch_ref_id     : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
-    const dinnerResult    = generateSlot('dinner',    userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('dinner')    ? (existingForLocks as any)?.dinner_ref_id    : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
+    const breakfastResult = generateSlot('breakfast', userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('breakfast') ? (existingForLocks as any)?.breakfast_ref_id : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
+    const lunchResult     = generateSlot('lunch',     userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('lunch')     ? (existingForLocks as any)?.lunch_ref_id     : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
+    const dinnerResult    = generateSlot('dinner',    userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('dinner')    ? (existingForLocks as any)?.dinner_ref_id    : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
 
-    const breakfast = { top: breakfastResult.top, carousel: breakfastResult.carousel };
-    const lunch     = { top: lunchResult.top,     carousel: lunchResult.carousel };
-    const dinner    = { top: dinnerResult.top,    carousel: dinnerResult.carousel };
+    const breakfast = { top: breakfastResult.top, carousel: breakfastResult.carousel, scores: breakfastResult.carouselScores };
+    const lunch     = { top: lunchResult.top,     carousel: lunchResult.carousel,     scores: lunchResult.carouselScores };
+    const dinner    = { top: dinnerResult.top,    carousel: dinnerResult.carousel,    scores: dinnerResult.carouselScores };
 
     const anyDishes = (allDishes as any[]) || [];
     if (!breakfast.top && anyDishes.length > 0) breakfast.top = anyDishes[0];
@@ -144,9 +148,9 @@ async function generatePlanForUser(
 
     await supabase.from('planner_carousel').delete().eq('planner_id', savedPlan.id);
     const carouselRows = [
-      ...breakfast.carousel.map((d: any, i: number) => ({ planner_id: savedPlan.id, meal_slot: 'breakfast', ref_type: 'dish', ref_id: d.id, position: i })),
-      ...lunch.carousel.map((d: any, i: number)     => ({ planner_id: savedPlan.id, meal_slot: 'lunch',     ref_type: 'dish', ref_id: d.id, position: i })),
-      ...dinner.carousel.map((d: any, i: number)    => ({ planner_id: savedPlan.id, meal_slot: 'dinner',    ref_type: 'dish', ref_id: d.id, position: i })),
+      ...breakfast.carousel.map((d: any, i: number) => ({ planner_id: savedPlan.id, meal_slot: 'breakfast', ref_type: 'dish', ref_id: d.id, position: i, re_score: breakfast.scores[i] ?? null })),
+      ...lunch.carousel.map((d: any, i: number)     => ({ planner_id: savedPlan.id, meal_slot: 'lunch',     ref_type: 'dish', ref_id: d.id, position: i, re_score: lunch.scores[i] ?? null })),
+      ...dinner.carousel.map((d: any, i: number)    => ({ planner_id: savedPlan.id, meal_slot: 'dinner',    ref_type: 'dish', ref_id: d.id, position: i, re_score: dinner.scores[i] ?? null })),
     ];
     if (carouselRows.length > 0) {
       const { error: cErr } = await supabase.from('planner_carousel').insert(carouselRows);
@@ -168,10 +172,54 @@ async function generatePlanForUser(
       await supabase.from('suggestion_logs').insert(logRows);
     }
 
-    // Touch buildReasoning so the unused-export check stays happy if the
-    // bundler is configured to drop unused imports.
-    void buildReasoning;
-    void (null as SlotResult | null);
+    // --- LOG RE DECISIONS to recommendation_debug_log ---
+    const weatherInfo = weather
+      ? {
+          city: (profile as any)?.current_city || (profile as any)?.home_state || 'Mumbai',
+          temp: Math.round(weather.tempCelsius),
+          condition: weather.tempCelsius > RE_V1.TEMP_HOT_CELSIUS ? 'Hot'
+            : weather.tempCelsius < RE_V1.TEMP_COLD_CELSIUS ? 'Cold'
+            : weather.weatherCode >= 500 ? 'Rainy' : 'Normal',
+        }
+      : null;
+
+    const buildDebugRow = (slotResult: SlotResult, slotName: string, topDish: any) => ({
+      user_id: userId, plan_date: planDate, meal_slot: slotName,
+      dish_id: topDish?.id ?? null, re_version: 'v1',
+      final_score: slotResult.slotScore,
+      eligible_pool_size: slotResult.totalEligible ?? 0,
+      weather_input: weatherInfo,
+      score_breakdown: {
+        winner: {
+          dish_name: topDish?.name ?? 'unknown',
+          final_score: slotResult.slotScore,
+          components: slotResult.slotComponents ?? {},
+          reasoning: slotResult.slotComponents && topDish
+            ? buildReasoning(topDish, slotResult.slotComponents, weather, isWeekend)
+            : null,
+        },
+        alternatives: slotResult.slotAlternatives ?? [],
+        context: {
+          weather: weatherInfo,
+          day_of_week: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dayOfWeek],
+          is_weekend: isWeekend,
+          total_eligible_dishes: (allDishes as any[]).length,
+          hard_filtered_out: (allDishes as any[]).length - (slotResult.totalEligible ?? 0),
+          dish_pool_size: slotResult.totalEligible ?? 0,
+        },
+        re_version: 'v1', source: 'batch',
+      },
+    });
+
+    const debugRows = [
+      buildDebugRow(breakfastResult, 'breakfast', breakfast.top),
+      buildDebugRow(lunchResult, 'lunch', lunch.top),
+      buildDebugRow(dinnerResult, 'dinner', dinner.top),
+    ].filter(r => r.dish_id !== null);
+    if (debugRows.length > 0) {
+      const { error: debugErr } = await supabase.from('recommendation_debug_log').insert(debugRows);
+      if (debugErr) console.error('[BATCH] recommendation_debug_log error', debugErr.message);
+    }
 
     return { ok: true };
   } catch (err) {

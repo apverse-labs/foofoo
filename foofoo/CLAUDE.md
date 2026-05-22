@@ -290,8 +290,27 @@ Secrets in Edge Functions go in **Supabase Vault** (Dashboard → Settings → V
 
 ## Current Sprint Status
 
-**Sprint:** 5 — DISCOVERY — COMPLETE (2026-05-22)
+**Sprint:** 5 — DISCOVERY — COMPLETE + POST-QA FIX PASS (2026-05-22)
 **Next:** Sprint 6 — Push notifications, RE v2, Analytics
+
+**Sprint 5 Post-QA Fix Pass — 2026-05-22 (see Changelog.md):**
+- [x] RE Jain hard filter fixed in all 3 Edge Functions (added is_jain=true)
+- [x] re_score now persisted in planner_carousel inserts
+- [x] recommendation_debug_log insert added to batch function
+- [x] Home-state regional affinity boost implemented (Doc 10 step 5)
+- [x] Random factor 0.05 → 0.15 (spec match)
+- [x] Email-verification poll: 5-min timeout + visible polling spinner
+- [x] Profile: re-route to auth-gate when session expires
+- [x] Sign-up + sign-in: friendly error-message mapping
+- [x] All bare `.then()` chains now have `.catch()`
+- [x] Grocery: planDate refreshes across midnight IST
+- [x] MealCard fallback image: uses dish-{id} seed when slug is null
+- [x] 3 RE Edge Functions deployed (gen v9, batch v6, regen v5)
+- [x] All 4 RE safety gates now 0
+- [ ] 2 DB migrations staged but not yet applied (see Changelog.md):
+      `20260522110000_atomic_carousel_replace.sql`,
+      `20260522110100_widen_suggestion_logs_action_check.sql`
+      Apply via `supabase db push` before next sprint.
 
 **Sprint 5 — DISCOVERY — COMPLETED:**
 - [x] Section 1 — Full-text search: SearchBar, SearchResultCard, FilterBottomSheet, EmptySearchState, SlotPickerOverlay; src/repositories/search.repository.ts; synonym expansion via term_synonyms; pre-personalised cuisine chips

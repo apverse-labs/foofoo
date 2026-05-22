@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
+import { View, Text, Pressable, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
@@ -7,6 +7,8 @@ import { Logger } from '../../src/utils/systemLogger';
 
 const POLL_MS = 5_000;
 const RESEND_COOLDOWN_S = 60;
+// Stop polling after 5 minutes so a stuck SMTP / abandoned tab can't drain the battery.
+const POLL_TIMEOUT_MS = 5 * 60 * 1000;
 
 /**
  * @summary Email verification screen that polls Supabase until the link is clicked.
@@ -23,14 +25,22 @@ export default function EmailVerification() {
   const router = useRouter();
   const [cooldown, setCooldown] = useState(0);
   const [resending, setResending] = useState(false);
+  const [pollTimedOut, setPollTimedOut] = useState(false);
   const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const cooldownRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     pollRef.current = setInterval(checkVerification, POLL_MS);
+    timeoutRef.current = setTimeout(() => {
+      if (pollRef.current) clearInterval(pollRef.current);
+      setPollTimedOut(true);
+      Logger.warn('AUTH', 'Email verification poll timed out — manual recheck required');
+    }, POLL_TIMEOUT_MS);
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
       if (cooldownRef.current) clearInterval(cooldownRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
   }, []);
 
@@ -102,6 +112,35 @@ export default function EmailVerification() {
         automatically signed in here.
       </Text>
 
+      {pollTimedOut ? (
+        <Text style={styles.warningText}>
+          Still waiting after 5 minutes. Tap "Check again" to retry or use the
+          resend button below.
+        </Text>
+      ) : (
+        <View style={styles.pollingRow}>
+          <ActivityIndicator size="small" color={COLORS.primary} />
+          <Text style={styles.pollingText}>Checking for verification…</Text>
+        </View>
+      )}
+
+      {pollTimedOut && (
+        <Pressable
+          style={styles.resendButton}
+          onPress={() => {
+            setPollTimedOut(false);
+            checkVerification();
+            pollRef.current = setInterval(checkVerification, POLL_MS);
+            timeoutRef.current = setTimeout(() => {
+              if (pollRef.current) clearInterval(pollRef.current);
+              setPollTimedOut(true);
+            }, POLL_TIMEOUT_MS);
+          }}
+        >
+          <Text style={styles.resendText}>Check again</Text>
+        </Pressable>
+      )}
+
       <Pressable
         style={[styles.resendButton, cooldown > 0 && styles.resendDisabled]}
         onPress={handleResend}
@@ -155,6 +194,18 @@ const styles = StyleSheet.create({
   },
   resendDisabled: { borderColor: COLORS.border, opacity: 0.6 },
   resendText: { fontSize: 16, fontWeight: '600', color: COLORS.primary },
+  pollingRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: SPACING.sm,
+  },
+  pollingText: { fontSize: 14, color: COLORS.textSecondary },
+  warningText: {
+    fontSize: 14,
+    color: COLORS.error,
+    textAlign: 'center',
+    maxWidth: 320,
+  },
   backLink: {
     minHeight: 48,
     justifyContent: 'center',

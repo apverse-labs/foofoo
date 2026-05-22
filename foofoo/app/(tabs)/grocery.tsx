@@ -38,7 +38,17 @@ export default function GroceryTab() {
   const { contentWidth } = useResponsive();
   const [userId, setUserId] = useState<string>('');
   const [mode, setMode] = useState<'today' | 'week'>('today');
-  const [planDate] = useState(getTodayIST);
+  // planDate stays in state so it doesn't recompute on every render, but the
+  // effect below refreshes it when the IST date rolls past midnight while the
+  // screen is mounted.
+  const [planDate, setPlanDate] = useState<string>(getTodayIST);
+  useEffect(() => {
+    const tick = setInterval(() => {
+      const fresh = getTodayIST();
+      setPlanDate(prev => (prev === fresh ? prev : fresh));
+    }, 60_000);
+    return () => clearInterval(tick);
+  }, []);
   const [groups, setGroups] = useState<GroceryCategory[]>([]);
   const [checkedIds, setCheckedIds] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);

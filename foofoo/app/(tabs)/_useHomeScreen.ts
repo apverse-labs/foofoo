@@ -56,9 +56,9 @@ export function useHomeScreen() {
   const [notTodaySlot, setNotTodaySlot] = useState('');
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id);
-    });
+    supabase.auth.getUser()
+      .then(({ data }) => { if (data.user) setUserId(data.user.id); })
+      .catch(err => Logger.error('HOME', 'auth.getUser failed', { error: err?.message }));
     checkTutorial();
     loadPlan(false);
   }, [planDate]);

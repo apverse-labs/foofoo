@@ -16,7 +16,7 @@ export const FEATURES = {
 export const RE_CONFIG = {
   DISHES_PER_SLOT: 8,
   VARIETY_GUARD_DAYS: 3,
-  RANDOM_FACTOR_WEIGHT: 0.05,
+  RANDOM_FACTOR_WEIGHT: 0.15,
   PLAN_CACHE_HOURS: 12,
   WEATHER_CACHE_HOURS: 12,
   // RE v1 scoring weights — change these to tune recommendations
@@ -28,7 +28,7 @@ export const RE_CONFIG = {
   WEATHER_BOOST: 0.15,              // Single coherent weather match (Doc 10 §6.5)
   WEEKDAY_QUICK_BOOST: 0.1,         // Quick dish (≤20 min) on a weekday
   WEEKEND_SLOW_BOOST: 0.05,         // Slow dish (>30 min) on a weekend
-  RANDOM_MAX: 0.05,                 // Max random noise per dish (Doc 10: 5%)
+  RANDOM_MAX: 0.15,                 // Max random noise per dish (Doc 10 §6.7)
   // Dish classification thresholds
   TEMP_HOT_CELSIUS: 32,
   TEMP_COLD_CELSIUS: 18,

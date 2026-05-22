@@ -25,7 +25,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getTodayIST, getDateDaysAgo, getWeatherData, successResponse } from './helpers.ts';
+import { getTodayIST, getDateDaysAgo, getWeatherData, successResponse, stateNameToCode, loadRegionAffinity } from './helpers.ts';
 import { scoreDish, type ScoreComponents } from './scoring.ts';
 import { RE_V1 } from './re-config.ts';
 
@@ -131,8 +131,12 @@ serve(async (req) => {
       (recentPlans as any[]).flatMap((p) => [p.breakfast_ref_id, p.lunch_ref_id, p.dinner_ref_id].filter(Boolean)),
     );
 
-    // --- FETCH WEATHER ---
-    const weather = await getWeatherData(supabase, profile?.current_city || profile?.home_state || 'Mumbai');
+    // --- FETCH WEATHER + REGION AFFINITY (parallel) ---
+    const homeStateCode = stateNameToCode(profile?.home_state);
+    const [weather, regionAffinityByCuisineId] = await Promise.all([
+      getWeatherData(supabase, profile?.current_city || profile?.home_state || 'Mumbai'),
+      loadRegionAffinity(supabase, homeStateCode),
+    ]);
 
     // --- FETCH ELIGIBLE DISHES (hard diet filter) ---
     let dishQuery = supabase
@@ -143,8 +147,8 @@ serve(async (req) => {
 
     if (foodPref === 'veg') dishQuery = dishQuery.in('diet_type', ['veg', 'vegan', 'jain']);
     else if (foodPref === 'vegan') dishQuery = dishQuery.eq('diet_type', 'vegan');
-    else if (foodPref === 'jain') dishQuery = dishQuery.in('diet_type', ['veg', 'jain']);
-    else if (foodPref === 'egg') dishQuery = dishQuery.in('diet_type', ['veg', 'egg', 'vegan', 'jain']);
+    else if (foodPref === 'jain') dishQuery = dishQuery.in('diet_type', ['veg', 'jain']).eq('is_jain', true);
+    else if (foodPref === 'egg') dishQuery = dishQuery.in('diet_type', ['veg', 'egg', 'vegan']);
 
     const { data: allDishes, error: dishError } = await dishQuery;
     if (dishError) throw new Error('Failed to fetch dishes: ' + dishError.message);
@@ -171,7 +175,7 @@ serve(async (req) => {
       .filter((d) => Array.isArray(d.meal_types) && d.meal_types.includes(slot))
       .filter((d) => !otherSlotIds.has(d.id))
       .map((d) => {
-        const r = scoreDish(d, user.id, planDate, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
+        const r = scoreDish(d, user.id, planDate, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
         return { dish: d, score: r.score, components: r.components };
       })
       .filter(({ score }) => score > 0)
@@ -179,7 +183,9 @@ serve(async (req) => {
 
     console.log(`[REGEN-SLOT] ${slot}: ${scored.length} eligible dishes scored`);
 
-    const carousel = scored.slice(0, RE_V1.CAROUSEL_SIZE).map(({ dish }) => dish);
+    const carouselScored = scored.slice(0, RE_V1.CAROUSEL_SIZE);
+    const carousel = carouselScored.map(({ dish }) => dish);
+    const carouselScores = carouselScored.map(({ score }) => score);
     const newTop = carousel[0] ?? null;
 
     if (!newTop) {
@@ -202,6 +208,9 @@ serve(async (req) => {
     if (updateErr) throw new Error('Failed to update planner: ' + updateErr.message);
 
     // --- REPLACE planner_carousel for this slot ---
+    // Note: delete+insert is not transactional from the JS client. Migration
+    // `add_replace_planner_carousel_slot_atomic` (see supabase/migrations/)
+    // provides an atomic RPC; once applied, swap this block for that RPC call.
     const { error: delErr } = await supabase
       .from('planner_carousel')
       .delete()
@@ -210,7 +219,7 @@ serve(async (req) => {
     if (delErr) console.error('[REGEN-SLOT] carousel delete error:', delErr.message);
 
     const carouselRows = carousel.map((d: any, i: number) => ({
-      planner_id: planner.id, meal_slot: slot, ref_type: 'dish', ref_id: d.id, position: i,
+      planner_id: planner.id, meal_slot: slot, ref_type: 'dish', ref_id: d.id, position: i, re_score: carouselScores[i] ?? null,
     }));
     if (carouselRows.length > 0) {
       const { error: insErr } = await supabase.from('planner_carousel').insert(carouselRows);
@@ -259,13 +268,15 @@ serve(async (req) => {
         : null,
       score_breakdown: {
         winner: { dish_name: newTop.name, final_score: topScored?.score ?? 1.0, components: topComponents ?? {} },
-        regen: { triggered_by: action, excluded_dish_id: excludeDishId },
+        alternatives: [],
         context: {
+          weather: weather ? { city: profile?.current_city || profile?.home_state || 'Mumbai', temp: Math.round(weather.tempCelsius), code: weather.weatherCode } : null,
           day_of_week: ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'][dayOfWeek],
           is_weekend: isWeekend,
           dish_pool_size: scored.length,
         },
-        re_version: 'v1', generation_time_ms: Date.now() - startTime,
+        regen: { triggered_by: action, excluded_dish_id: excludeDishId },
+        re_version: 'v1', source: 'regen', generation_time_ms: Date.now() - startTime,
       },
     };
     const { error: debugErr } = await supabase.from('recommendation_debug_log').insert(debugRow);

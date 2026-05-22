@@ -27,7 +27,7 @@
 
 import { serve } from 'https://deno.land/std@0.168.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
-import { getTodayIST, getDateDaysAgo, getWeatherData, fetchCarousel, successResponse } from './helpers.ts';
+import { getTodayIST, getDateDaysAgo, getWeatherData, fetchCarousel, successResponse, stateNameToCode, loadRegionAffinity } from './helpers.ts';
 import { generateSlot, buildReasoning, type SlotResult } from './scoring.ts';
 import { RE_V1 } from './re-config.ts';
 
@@ -125,8 +125,12 @@ serve(async (req) => {
       (recentPlans as any[]).flatMap(p => [p.breakfast_ref_id, p.lunch_ref_id, p.dinner_ref_id].filter(Boolean))
     );
 
-    // --- FETCH WEATHER ---
-    const weather = await getWeatherData(supabase, profile?.current_city || profile?.home_state || 'Mumbai');
+    // --- FETCH WEATHER + REGION AFFINITY (parallel) ---
+    const homeStateCode = stateNameToCode(profile?.home_state);
+    const [weather, regionAffinityByCuisineId] = await Promise.all([
+      getWeatherData(supabase, profile?.current_city || profile?.home_state || 'Mumbai'),
+      loadRegionAffinity(supabase, homeStateCode),
+    ]);
 
     // --- FETCH ELIGIBLE DISHES (hard diet filter) ---
     let dishQuery = supabase
@@ -137,8 +141,8 @@ serve(async (req) => {
 
     if (foodPref === 'veg') dishQuery = dishQuery.in('diet_type', ['veg', 'vegan', 'jain']);
     else if (foodPref === 'vegan') dishQuery = dishQuery.eq('diet_type', 'vegan');
-    else if (foodPref === 'jain') dishQuery = dishQuery.in('diet_type', ['veg', 'jain']);
-    else if (foodPref === 'egg') dishQuery = dishQuery.in('diet_type', ['veg', 'egg', 'vegan', 'jain']);
+    else if (foodPref === 'jain') dishQuery = dishQuery.in('diet_type', ['veg', 'jain']).eq('is_jain', true);
+    else if (foodPref === 'egg') dishQuery = dishQuery.in('diet_type', ['veg', 'egg', 'vegan']);
 
     const { data: allDishes, error: dishError } = await dishQuery;
     if (dishError) throw new Error('Failed to fetch dishes: ' + dishError.message);
@@ -166,13 +170,13 @@ serve(async (req) => {
     // --- SCORE AND GENERATE SLOTS ---
     const assignedDishIds = new Set<number>();
 
-    const breakfastResult = generateSlot('breakfast', user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('breakfast') ? existingForLocks?.breakfast_ref_id : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
-    const lunchResult     = generateSlot('lunch',     user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('lunch')     ? existingForLocks?.lunch_ref_id     : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
-    const dinnerResult    = generateSlot('dinner',    user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('dinner')    ? existingForLocks?.dinner_ref_id    : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
+    const breakfastResult = generateSlot('breakfast', user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('breakfast') ? existingForLocks?.breakfast_ref_id : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
+    const lunchResult     = generateSlot('lunch',     user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('lunch')     ? existingForLocks?.lunch_ref_id     : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
+    const dinnerResult    = generateSlot('dinner',    user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('dinner')    ? existingForLocks?.dinner_ref_id    : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
 
-    const breakfast = { top: breakfastResult.top, carousel: breakfastResult.carousel };
-    const lunch     = { top: lunchResult.top,     carousel: lunchResult.carousel };
-    const dinner    = { top: dinnerResult.top,    carousel: dinnerResult.carousel };
+    const breakfast = { top: breakfastResult.top, carousel: breakfastResult.carousel, scores: breakfastResult.carouselScores };
+    const lunch     = { top: lunchResult.top,     carousel: lunchResult.carousel,     scores: lunchResult.carouselScores };
+    const dinner    = { top: dinnerResult.top,    carousel: dinnerResult.carousel,    scores: dinnerResult.carouselScores };
 
     // Fallback if dish pool is insufficient
     const anyDishes = (allDishes as any[]) || [];
@@ -203,9 +207,9 @@ serve(async (req) => {
     // --- WRITE CAROUSEL ---
     await supabase.from('planner_carousel').delete().eq('planner_id', savedPlan.id);
     const carouselRows = [
-      ...breakfast.carousel.map((d: any, i: number) => ({ planner_id: savedPlan.id, meal_slot: 'breakfast', ref_type: 'dish', ref_id: d.id, position: i })),
-      ...lunch.carousel.map((d: any, i: number)     => ({ planner_id: savedPlan.id, meal_slot: 'lunch',     ref_type: 'dish', ref_id: d.id, position: i })),
-      ...dinner.carousel.map((d: any, i: number)    => ({ planner_id: savedPlan.id, meal_slot: 'dinner',    ref_type: 'dish', ref_id: d.id, position: i })),
+      ...breakfast.carousel.map((d: any, i: number) => ({ planner_id: savedPlan.id, meal_slot: 'breakfast', ref_type: 'dish', ref_id: d.id, position: i, re_score: breakfast.scores[i] ?? null })),
+      ...lunch.carousel.map((d: any, i: number)     => ({ planner_id: savedPlan.id, meal_slot: 'lunch',     ref_type: 'dish', ref_id: d.id, position: i, re_score: lunch.scores[i] ?? null })),
+      ...dinner.carousel.map((d: any, i: number)    => ({ planner_id: savedPlan.id, meal_slot: 'dinner',    ref_type: 'dish', ref_id: d.id, position: i, re_score: dinner.scores[i] ?? null })),
     ];
     if (carouselRows.length > 0) {
       const { error: carouselError } = await supabase.from('planner_carousel').insert(carouselRows);

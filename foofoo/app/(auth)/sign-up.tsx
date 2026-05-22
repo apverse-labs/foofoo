@@ -61,6 +61,36 @@ async function recordConsent(userId: string): Promise<void> {
 }
 
 /**
+ * @summary Maps raw Supabase auth error messages to user-friendly copy.
+ *
+ * @description Supabase returns messages like "User already registered" or
+ * "Password should be at least 8 characters" — fine for logs, jarring for
+ * users. This function detects common cases and substitutes plain English.
+ *
+ * @param {string} rawMessage - The error message from supabase.auth.signUp
+ * @returns {string} User-friendly explanation
+ */
+function getAuthErrorMessage(rawMessage: string): string {
+  const msg = rawMessage.toLowerCase();
+  if (msg.includes('already registered') || msg.includes('user already')) {
+    return 'This email is already registered. Try signing in instead.';
+  }
+  if (msg.includes('password') && msg.includes('characters')) {
+    return 'Password must be at least 8 characters.';
+  }
+  if (msg.includes('invalid email') || msg.includes('unable to validate email')) {
+    return 'Please enter a valid email address.';
+  }
+  if (msg.includes('network') || msg.includes('fetch') || msg.includes('failed to fetch')) {
+    return 'No internet connection. Please check and try again.';
+  }
+  if (msg.includes('rate limit') || msg.includes('too many')) {
+    return 'Too many attempts. Please wait a minute and try again.';
+  }
+  return 'Sign up failed. Please try again.';
+}
+
+/**
  * @summary Sign-up screen with full name, email, and password fields.
  *
  * @description Validates password strength in real-time (8+ chars, 1 uppercase,
@@ -112,8 +142,9 @@ export default function SignUp() {
         }
       }
     } catch (err) {
-      const msg = err instanceof Error ? err.message : 'Sign up failed. Please try again.';
-      setErrorMsg(msg);
+      const raw = err instanceof Error ? err.message : 'Sign up failed. Please try again.';
+      Logger.warn('AUTH', 'Sign up rejected', { error: raw });
+      setErrorMsg(getAuthErrorMessage(raw));
     } finally {
       setLoading(false);
     }

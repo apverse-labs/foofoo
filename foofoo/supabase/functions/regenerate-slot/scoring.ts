@@ -18,6 +18,7 @@ export interface ScoreComponents {
   mealItemBoost: number;
   weatherBoost: number;
   dayBoost: number;
+  homeStateBoost: number;
   varietyPenalty: number;
   randomFactor: number;
 }
@@ -59,10 +60,11 @@ export function scoreDish(
   weather: { weatherCode: number; tempCelsius: number } | null,
   isWeekend: boolean,
   recentDishIds: Set<number>,
+  regionAffinityByCuisineId: Record<number, number> = {},
 ): ScoreResult {
   const components: ScoreComponents = {
     base: 1.0, cuisineBoost: 0, mealItemBoost: 0,
-    weatherBoost: 0, dayBoost: 0, varietyPenalty: 0, randomFactor: 0,
+    weatherBoost: 0, dayBoost: 0, homeStateBoost: 0, varietyPenalty: 0, randomFactor: 0,
   };
 
   if (neverDishIds.has(dish.id)) return { score: -1, components };
@@ -101,6 +103,11 @@ export function scoreDish(
     components.dayBoost = RE_V1.WEEKEND_SLOW_BOOST;
   }
 
+  const aff = regionAffinityByCuisineId[dish.cuisine_id];
+  if (typeof aff === 'number' && aff > 0) {
+    components.homeStateBoost = parseFloat((aff * RE_V1.HOME_STATE_BOOST_MAX).toFixed(3));
+  }
+
   if (recentDishIds.has(dish.id)) components.varietyPenalty = RE_V1.VARIETY_PENALTY;
 
   // Salt with 'regen' so the same (user, day, dish) gets a different random
@@ -111,8 +118,8 @@ export function scoreDish(
 
   const score =
     components.base + components.cuisineBoost + components.mealItemBoost +
-    components.weatherBoost + components.dayBoost + components.varietyPenalty +
-    components.randomFactor;
+    components.weatherBoost + components.dayBoost + components.homeStateBoost +
+    components.varietyPenalty + components.randomFactor;
 
   return { score: parseFloat(score.toFixed(3)), components };
 }

@@ -18,7 +18,8 @@ export const RE_V1 = {
   WEATHER_BOOST:            0.15,  // Single coherent weather match (Doc 10 §6.5)
   WEEKDAY_QUICK_BOOST:      0.1,   // Quick dish (≤20 min) on a weekday
   WEEKEND_SLOW_BOOST:       0.05,  // Slow dish (>30 min) on a weekend
-  RANDOM_MAX:               0.05,  // Max random noise per dish (Doc 10: 5%)
+  HOME_STATE_BOOST_MAX:     0.2,   // Multiplied by region_food_affinity.affinity_score (0..1)
+  RANDOM_MAX:               0.15,  // Max random noise per dish (Doc 10 §6.7)
 
   // Dish classification thresholds
   TEMP_HOT_CELSIUS:         32,

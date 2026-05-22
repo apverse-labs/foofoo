@@ -1,0 +1,350 @@
+════════════════════════════════════════════════════════
+🍽️  FOOFOO — FULL QA REPORT
+Date: 2026-05-22 (IST)
+Tested by: Claude Code (AI QA + Senior Engineer perspective)
+Scope: Sprint 5 complete; gate review before Sprint 6
+════════════════════════════════════════════════════════
+
+📊 HEADLINE SUMMARY
+  TypeScript errors:        0    🟢
+  Bundle build errors:      0    🟢  (web bundle 4 MB, 2037 modules, no warns)
+  Dead imports:             0    🟢
+  RE safety violations:     17   🔴  (15 carousel + 2 plan-slot — Jain user)
+  Critical bugs found:      6    🔴
+  High priority bugs:       8    🟠
+  Medium priority bugs:     11   🟡
+  Low priority / polish:    9    🟢
+  Overall readiness:        🔴 NOT READY — Jain RE safety must be fixed
+                                before any Jain user touches the app
+
+─────────────────────────────────────────────────────────
+🔴 CRITICAL — Must fix before any user touches the app
+─────────────────────────────────────────────────────────
+
+1. RE Jain hard filter is incomplete — non-Jain dishes leak into carousel
+   Where: supabase/functions/generate-daily-plan/index.ts:140
+          supabase/functions/generate-daily-plans-batch/index.ts:96
+          supabase/functions/regenerate-slot/index.ts:146
+   Impact: A Jain user (food_pref='jain') currently sees 15 of 24 carousel
+           items as non-Jain dishes (e.g. Paneer Butter Masala with onion +
+           garlic). Today's locked breakfast for that user is "Idli Sambar"
+           (is_jain=false). Direct dietary harm; trust-killing for the most
+           sensitive user cohort.
+   Root cause: Filter is `.in('diet_type', ['veg','jain'])` with NO
+               `.eq('is_jain', true)`. Because diet_type='veg' dishes are
+               kept, anything tagged is_jain=false still passes.
+   DB evidence: 2 active plan-level violations on 2026-05-23 for user
+                7b53646c-... — both Idli Sambar (id=4) and Paneer Butter
+                Masala (id=18).
+
+2. Dish-attribute data integrity bug — 14 dishes flagged is_jain=true
+   contain onion or garlic ingredients
+   Where: Data side (derive-dish-attributes script or seed). Examples:
+          id=3 Upma, id=6 Vada Pav, id=8 Chole Bhature, id=11 Palak Paneer,
+          id=12 Rajma Chawal, id=15 Pav Bhaji, id=20 Methi Thepla,
+          id=600 Kadai Paneer, id=575 Kadhai Paneer, id=878 Paneer Do Pyaza.
+   Impact: Even after fixing the RE filter, these 14 dishes would still
+           leak into Jain plans because they are *labelled* Jain-safe
+           while violating the rule. The auto-derivation pipeline is
+           clearly not working for is_jain.
+   Root cause: is_jain auto-derive logic missing or not run on these rows.
+               14 / 818 active dishes = 1.7% — too high to ignore.
+
+3. planner_carousel.re_score is NULL for every row (0 / 192 populated)
+   Where: generate-daily-plan/index.ts:206-213, batch:147-154, regen:212-218
+   Impact: Analytics, debugging, and post-hoc verification of RE quality
+           are blind. We cannot tell why a dish ranked #1 vs #7.
+   Root cause: scoreDish() computes the score, ranks, then inserts only
+               [planner_id, meal_slot, ref_type, ref_id, position] —
+               the score field is silently dropped.
+
+4. recommendation_debug_log is empty (0 rows since project start)
+   Where: generate-daily-plans-batch/index.ts has no insert; only the
+          single-plan function writes them.
+   Impact: 5AM CRON, which generated 7 of 8 current plans, leaves zero
+           audit trail. We cannot reconstruct RE decisions for any
+           batched user.
+
+5. Home-state regional boost not implemented
+   Where: All three RE functions — no read of region_food_affinity table
+   Impact: Spec step 5 missing entirely. RE delivers identical results to
+           Mumbai vs Chennai users on identical Tier-1 prefs.
+
+6. Generic suggestion_logs coverage — only 3 / 10 action types ever fired
+   Where: src/components/dish/MealCard.tsx + screens
+   DB evidence: action counts → viewed:49, locked:3, not_today:2.
+                Missing: swiped_to, swiped_past, tapped_detail,
+                tapped_ingredients, never, added_to_plan, accepted.
+   Impact: RE v2 cannot learn from gestures because the gestures are
+           not being logged. Sprint 6's whole "RE v2" objective is
+           starved of input data.
+
+─────────────────────────────────────────────────────────
+🟠 HIGH — Fix before Sprint 6 build starts
+─────────────────────────────────────────────────────────
+
+7. carousel delete + insert is non-atomic in regenerate-slot
+   Where: supabase/functions/regenerate-slot/index.ts:205–218
+   Impact: Two concurrent regenerate taps on the same slot can race:
+           one deletes while the other reads. Worst case the carousel
+           is briefly empty — Home would render the empty-state.
+   Fix direction: single upsert, or wrap in `pg` transaction.
+
+8. Random factor 0.05 (not 0.15 spec)
+   Where: supabase/functions/_shared/re-config.ts:21 → RANDOM_MAX:0.05
+   Impact: Variety lower than designed; same top dishes recur faster.
+
+9. Never-list staleness between generation and view
+   Where: src/components/dish/MealCard.tsx Never action; no re-check
+          when rendering carousel from cache.
+   Impact: User adds dish to never_list at 9 AM; carousel generated at
+           5 AM still includes that dish until next regenerate.
+
+10. email-verification screen polls every 5 s with no timeout / max retries
+    Where: app/(auth)/email-verification.tsx (poll at line ~45)
+    Impact: Battery drain; user stuck with no escape if SMTP fails.
+
+11. Profile screen has no session-expired re-route
+    Where: app/(tabs)/profile.tsx:50 — setSummary(null) but buttons stay
+           live.
+    Impact: User can tap Change Password / Sign Out on a phantom session
+            and crash.
+
+12. Dish-detail [id] route accepts non-numeric without guard
+    Where: app/dish/[id].tsx:55 — `Number(params.id)` accepts garbage
+           because `Number.isNaN()` check is placed correctly but the
+           upstream route does not validate.
+    Impact: Deep link /dish/foo → silent 404 + generic error, no
+            telemetry to find dead links.
+
+13. _useHomeScreen.ts uses bare .then() without .catch() on
+    supabase.auth.getUser()
+    Where: app/(tabs)/_useHomeScreen.ts:59
+           app/(dev)/logs.tsx:56
+           src/services/onesignal.service.ts:151
+    Impact: 3 unhandled promise rejections — silent failure on
+            session-fetch error.
+
+14. _useHomeScreen.ts has no retry / exponential backoff on plan-fetch
+    failure
+    Where: app/(tabs)/_useHomeScreen.ts loadPlan
+    Impact: Single Supabase blip leaves the user on an error state until
+            manual refresh.
+
+─────────────────────────────────────────────────────────
+🟡 MEDIUM — Fix within Sprint 6
+─────────────────────────────────────────────────────────
+
+15. Combo (dish_combos) handling absent — spec step 10
+16. food_pref='egg' filter includes 'jain' diet_type — semantically odd
+17. Sign-up screen lacks friendly mapping for "User already registered"
+    → raw Supabase message shown
+18. No exponential backoff on Edge Function failures from client
+19. Grocery screen: planDate frozen at mount → no midnight rollover
+20. Search debounce resets on every keystroke (acceptable but not
+    cancelling in-flight network call → wasted requests)
+21. MealCard fallback image uses `picsum.photos/seed/null/…` when slug
+    is null — masks the underlying null
+22. Score breakdown schema differs between regenerate-slot and
+    generate-daily-plan
+23. Auth: `auth_leaked_password_protection` disabled (Supabase advisor)
+24. pg_trgm extension installed in public schema (Supabase advisor)
+25. Step-7 onboarding time picker minute step is ±15 (UX surprise)
+
+─────────────────────────────────────────────────────────
+🟢 LOW — Polish items (Sprint 7)
+─────────────────────────────────────────────────────────
+
+26. 74 hardcoded hex colour literals across 26 files (target: 0 outside
+    constants.ts) — top offenders: profile.tsx, MealCard.styles.ts,
+    intro-1.tsx, search components
+27. 69 raw paddingX/paddingY numerics — some legitimate (3, 14, 18),
+    most should use SPACING.*
+28. 6 files over 300 lines — profile.tsx (530), search.repository.ts
+    (460), search.tsx (365), dish/[id].tsx (362), MealCard.tsx (342),
+    WeekView.tsx (311)
+29. 6 INFO-level RLS-enabled-no-policy advisors (audit_log,
+    cache_metadata, etl_jobs, migration_log, mv_refresh_history,
+    role_audit) — service-only tables, low risk but should be policied
+30. src/utils/test-supabase.ts still has 24 raw console.log calls (it's
+    a debug utility, but document or move to dev-only path)
+31. Dead helper in _useHomeScreen.ts `handleDishChange` (no-op required
+    by interface — flag as TODO or remove)
+32. MealCard line ~282 fallback image consistency with dish/[id].tsx:263
+33. Cuisine-bucket lookup is a 2-step dict (cuisine_id → code → bucket);
+    could be cached one-step
+34. Step-7 lazy import of expo-notifications swallows error silently —
+    user has no way to know permission UI never appeared
+
+─────────────────────────────────────────────────────────
+📱 SCREEN-BY-SCREEN STATUS
+─────────────────────────────────────────────────────────
+Screen              Status  Issues Found
+─────────────────────────────────────────────────────────
+Splash              🟢      1 polish (#FFFFFF literal)
+Intro Screens       🟡      Single-file 3-slide carousel (not 3 files);
+                            3 hex-bg colours hardcoded
+Auth Gate           🟢      1 polish (#FFFFFF literal)
+Sign Up             🟡      Missing friendly error map; 1 hex literal
+Sign In             🟡      Fragile case-insensitive Supabase error match
+Email Verification  🟠      Indefinite polling, no timeout, no spinner
+Forgot Password     🟢      No success toast
+Onboarding 1-7      🟡      Step-7 silent denial of notifications; minute
+                            picker step is ±15; no userId loading state
+Home Day View       🟡      Plan-fetch fails leave error sticky; no
+                            backoff; 3 console.error fallbacks
+Meal Cards          🟠      Action logs missing 7/10 types; null slug
+                            fallback hides bug; carousel-OOB acceptable
+Meal Detail         🟠      Generic error; no retry; routing accepts
+                            non-numeric IDs
+Grocery List        🟢      Date frozen at mount; otherwise solid
+Search              🟢      Solid empty/loading/error; debounce ok
+Profile             🟠      No session-expired re-route; 530-line file;
+                            8 hex literals; weak time-validate
+Week View           🟡      MAX_WEEKS_AHEAD hardcoded; double-tap race
+                            window on slow generation
+
+─────────────────────────────────────────────────────────
+🧠 RECOMMENDATION ENGINE STATUS
+─────────────────────────────────────────────────────────
+Diet filter (Jain):     🔴 VIOLATED (15 carousel + 2 plan)
+Diet filter (veg/non):  🟢 No violations among 4 veg users
+Jain dish data quality: 🔴 14 dishes mis-labelled is_jain=true
+Never list safety:      🟢 CLEAN (never_list empty, no carry-through)
+Carousel depth:         🟢 8 per slot × 3 slots = 24 today (correct)
+RE scoring pipeline:    🟠 Missing home-state boost; combos not built;
+                           random factor 0.05 vs 0.15 spec
+Performance:            🟢 Dish pool fetched once per plan, no N+1;
+                           Promise.all used for parallel reads
+re_score persistence:   🔴 NULL in all 192 carousel rows
+recommendation_debug_log: 🔴 0 rows (insert missing in batch fn)
+Suggestion logs:        🔴 3/10 action types ever fired
+Edge fn JWT/auth:       🟢 Correct user-auth + service-role split
+5AM CRON last run:      🟢 2026-05-22 08:44 UTC, status=completed,
+                           skipped=4 (idempotent — plans already existed)
+Earlier 06:52 UTC run:  🔴 FAILED — 4× HTTP 401
+                           UNAUTHORIZED_INVALID_JWT_FORMAT (resolved by
+                           08:44 run; capture as known-good recovery)
+
+─────────────────────────────────────────────────────────
+🎨 UI/UX QUALITY
+─────────────────────────────────────────────────────────
+Hardcoded hex colours:   74 instances / 26 files (target: 0 outside
+                         constants.ts)
+Raw padding numbers:     69 instances (mix legitimate + drift)
+Missing loading states:  Home (plan-fetch failure), Meal Detail (retry)
+Missing error states:    Email-verification (no timeout state)
+Missing empty states:    None observed in audited screens
+Touch targets <44 dp:    None observed
+Broken navigations:      None — all router.* targets resolve to files
+                         (intro-2/intro-3 are *slides inside* intro-1,
+                         not separate routes — confirmed intentional)
+
+─────────────────────────────────────────────────────────
+🔧 CODE QUALITY
+─────────────────────────────────────────────────────────
+Raw console.* outside Logger (src+app):  24 (all inside one debug file:
+                                          src/utils/test-supabase.ts;
+                                          0 elsewhere)
+Raw console.* in supabase/functions:     29 (acceptable — server-side
+                                          structured logs)
+Unhandled .then() (no .catch):           3 (_useHomeScreen, dev logs,
+                                          onesignal.service)
+Files over 300 lines:                    6 (profile.tsx 530, search
+                                          repo 460, search.tsx 365,
+                                          dish/[id].tsx 362, MealCard
+                                          342, WeekView 311)
+TODO/FIXME/HACK/@ts-ignore:              0  🟢
+@ts-nocheck:                             0  🟢
+Array[0] without guard:                  2 (both in dev/test files)
+
+─────────────────────────────────────────────────────────
+🗄️  DATABASE HEALTH
+─────────────────────────────────────────────────────────
+table                       rows
+─────────────────────────────────
+dishes (active)             818
+dishes (total)              819
+profiles                    5
+planner                     8
+planner_carousel            192   (re_score NULL ×192)
+suggestion_logs             54    (3 of 10 actions only)
+user_diet_rules             5     (4 veg, 1 jain)
+user_category_preferences   181
+never_list                  0
+meal_ingredients            3889
+dish_tags                   4885
+dish_similar                4898
+
+Plan generation health (last 7 days): 8 plans, 0 missing slots.
+5AM CRON last run: 2026-05-22 08:44 UTC — completed, 4 skipped (plans
+already existed). Prior 06:52 UTC failed with JWT 401 across all 4 users
+but successfully retried.
+
+Supabase advisors:
+  ▸ 6× INFO   rls_enabled_no_policy (audit_log, cache_metadata, etl_jobs,
+    migration_log, mv_refresh_history, role_audit) — service-managed
+    tables, acceptable
+  ▸ 1× WARN   extension_in_public (pg_trgm)
+  ▸ 1× WARN   auth_leaked_password_protection disabled
+
+─────────────────────────────────────────────────────────
+✅ WHAT IS WORKING WELL
+─────────────────────────────────────────────────────────
+- TypeScript strict compiles cleanly with 0 errors
+- Web bundle builds in 32 s with no warnings, ~4 MB
+- No dead relative imports anywhere in src/ or app/
+- No TODO/FIXME/HACK comments anywhere in the codebase
+- No @ts-ignore or @ts-nocheck cheats — strict mode honoured
+- Every router.push/replace target resolves to a real file
+- Auth flow (Sign In) handles email-not-confirmed correctly
+- Search screen empty/loading/error states are all in place
+- Grocery screen empty/error states are in place
+- Edge Function JWT split between user-auth and service-role is correct
+- 5AM CRON pg_cron + pg_net + vault wiring proven (last run succeeded)
+- Sprint 5 deliverables visibly land:  WeekView (7×3 grid),
+  dish_similar (4,898 rows), generate-daily-plans-batch deployed
+- All raw console.log is concentrated in one debug utility file — main
+  app uses the Logger abstraction consistently
+- Dish pool fetched once, reused across 3 slots — no N+1 in RE
+- Diet filter for veg/non_veg/egg/vegan appears correct (only Jain
+  branch is broken)
+
+─────────────────────────────────────────────────────────
+⚡ RECOMMENDED FIX ORDER
+─────────────────────────────────────────────────────────
+Round 1  (~30 min — critical, fix first)
+  • [#1]  Add `.eq('is_jain', true)` when food_pref='jain' in all
+          three RE functions
+  • [#3]  Persist re_score in planner_carousel inserts
+  • Regenerate today's & tomorrow's plans for the Jain user
+
+Round 2  (~1 hour — high priority)
+  • [#2]  Re-run derive-dish-attributes on the 14 mis-labelled dishes;
+          unit-test the is_jain rule (must be FALSE if any ingredient
+          slug ∈ {onion, garlic, ginger-garlic, *_root, …})
+  • [#4]  Add recommendation_debug_log insert to
+          generate-daily-plans-batch
+  • [#6]  Wire missing 7 suggestion_logs action types in MealCard +
+          search + dish-detail
+  • [#7]  Make regenerate-slot carousel update atomic
+
+Round 3  (~2 hours — medium)
+  • [#5]  Implement region_food_affinity boost
+  • [#8]  Bring random factor back to 0.15 (or update spec — confirm
+          with founder first)
+  • [#10-14] Polish email-verification timeout, profile session
+          handling, _useHomeScreen retry/backoff, sign-up error map,
+          dish-detail route guard
+  • [#15] dish_combos handling (or move to Sprint 7 with founder)
+
+Round 4  (Sprint 7)
+  • [#26-34] Colour/padding token sweep across 26 files
+  • Split profile.tsx, search.tsx, search.repository.ts, MealCard.tsx
+    along feature seams
+  • Address Supabase advisors (pg_trgm relocate, leaked-password
+    protection toggle)
+
+────────────────────────────────────────────────────────
+STOP HERE. No fixes applied. Awaiting instruction to proceed.
+════════════════════════════════════════════════════════

@@ -49,7 +49,10 @@ export default function ProfileTab() {
       const { data } = await supabase.auth.getUser();
       const uid = data.user?.id;
       if (!uid) {
+        // Session expired or missing — bounce back to sign-in instead of
+        // leaving the user on a half-rendered profile screen with live buttons.
         setSummary(null);
+        router.replace('/(auth)/auth-gate' as never);
         return;
       }
       logScreenView(uid, 'profile');
@@ -59,7 +62,7 @@ export default function ProfileTab() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [router]);
 
   useEffect(() => { reload(); }, [reload]);
 

@@ -183,3 +183,61 @@ export function seededRandom(userId: string, planDate: string, dishId: number, s
   const seed = xmur3(`${userId}|${planDate}|${dishId}|${salt}`)();
   return mulberry32(seed)();
 }
+
+/**
+ * @summary Maps a state name (e.g. 'Karnataka') to its 2-letter region code (e.g. 'KA').
+ *
+ * @description region_food_affinity stores state_code as 2-letter ISO-3166-2:IN-like
+ *   codes (KA, MH, TN…). profiles.home_state holds the full state name. Returns null
+ *   if no match found.
+ *
+ * @param {string | null | undefined} stateName - Full state name from profiles.home_state
+ * @returns {string | null} 2-letter state code, or null if not found
+ */
+export function stateNameToCode(stateName: string | null | undefined): string | null {
+  if (!stateName) return null;
+  const map: Record<string, string> = {
+    'andhra pradesh': 'AP', 'arunachal pradesh': 'AR', 'assam': 'AS', 'bihar': 'BR',
+    'chhattisgarh': 'CT', 'goa': 'GA', 'gujarat': 'GJ', 'haryana': 'HR',
+    'himachal pradesh': 'HP', 'jharkhand': 'JH', 'karnataka': 'KA', 'kerala': 'KL',
+    'madhya pradesh': 'MP', 'maharashtra': 'MH', 'manipur': 'MN', 'meghalaya': 'ML',
+    'mizoram': 'MZ', 'nagaland': 'NL', 'odisha': 'OR', 'punjab': 'PB',
+    'rajasthan': 'RJ', 'sikkim': 'SK', 'tamil nadu': 'TN', 'telangana': 'TG',
+    'tripura': 'TR', 'uttar pradesh': 'UP', 'uttarakhand': 'UT', 'west bengal': 'WB',
+    'andaman and nicobar islands': 'AN', 'chandigarh': 'CH',
+    'dadra and nagar haveli and daman and diu': 'DN', 'delhi': 'DL',
+    'jammu and kashmir': 'JK', 'ladakh': 'LA', 'lakshadweep': 'LD', 'puducherry': 'PY',
+  };
+  return map[stateName.trim().toLowerCase()] ?? null;
+}
+
+/**
+ * @summary Loads the cuisine_id → affinity_score map for a given home-state code.
+ *
+ * @description Returns an empty map if state_code is null or unmatched. Non-fatal:
+ *   any DB error swallows to {} so the scoring pipeline degrades gracefully.
+ *
+ * @param {any} supabase - Authenticated Supabase client
+ * @param {string | null} stateCode - 2-letter state code (e.g. 'KA')
+ * @returns {Promise<Record<number, number>>} cuisine_id → affinity_score (0..1)
+ */
+export async function loadRegionAffinity(
+  supabase: any,
+  stateCode: string | null,
+): Promise<Record<number, number>> {
+  if (!stateCode) return {};
+  try {
+    const { data, error } = await supabase
+      .from('region_food_affinity')
+      .select('cuisine_id, affinity_score')
+      .eq('state_code', stateCode);
+    if (error || !data) return {};
+    const map: Record<number, number> = {};
+    for (const row of data as Array<{ cuisine_id: number; affinity_score: number }>) {
+      map[row.cuisine_id] = Number(row.affinity_score);
+    }
+    return map;
+  } catch {
+    return {};
+  }
+}

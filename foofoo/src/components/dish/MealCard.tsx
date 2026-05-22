@@ -279,7 +279,7 @@ export default function MealCard({
     <GestureDetector gesture={composed}>
       <Animated.View style={[styles.card, { width: cardWidth }, isLocked && styles.cardLocked, animatedStyle]}>
         <Image
-          source={{ uri: currentDish.hero_image_url ?? `https://picsum.photos/seed/${currentDish.slug}/400/300` }}
+          source={{ uri: currentDish.hero_image_url ?? `https://picsum.photos/seed/${currentDish.slug ?? `dish-${currentDish.id}`}/400/300` }}
           placeholder={currentDish.blurhash ?? PLACEHOLDER_HASH}
           contentFit="cover"
           style={styles.image}

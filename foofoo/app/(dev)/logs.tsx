@@ -53,9 +53,9 @@ function DevLogsContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => {
-      if (data.user) setUserId(data.user.id);
-    });
+    supabase.auth.getUser()
+      .then(({ data }) => { if (data.user) setUserId(data.user.id); })
+      .catch(() => { /* dev screen — non-fatal */ });
   }, []);
 
   const loadLog = useCallback(async (tab: TabName, uid: string | null) => {

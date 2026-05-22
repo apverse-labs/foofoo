@@ -171,6 +171,9 @@ export const OneSignalService = {
       } catch (error: any) {
         Logger.error('ONESIGNAL', 'Handler registration failed', { error: error?.message });
       }
+    }).catch((err: unknown) => {
+      const msg = err instanceof Error ? err.message : String(err);
+      Logger.error('ONESIGNAL', 'react-native-onesignal import failed', { error: msg });
     });
   },
 };

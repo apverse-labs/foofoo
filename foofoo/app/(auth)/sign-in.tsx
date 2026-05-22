@@ -72,11 +72,20 @@ export default function SignIn() {
       }
     } catch (err) {
       const raw = err instanceof Error ? err.message : 'Sign in failed. Please try again.';
-      // Surface a friendlier message for the common "email not confirmed" case
-      const msg = raw.toLowerCase().includes('email not confirmed')
-        ? 'Please verify your email before signing in. Check your inbox.'
-        : raw;
-      setErrorMsg(msg);
+      const lower = raw.toLowerCase();
+      let friendly: string;
+      if (lower.includes('email not confirmed')) {
+        friendly = 'Please verify your email before signing in. Check your inbox.';
+      } else if (lower.includes('invalid login credentials') || lower.includes('invalid credentials')) {
+        friendly = 'Wrong email or password. Please try again.';
+      } else if (lower.includes('network') || lower.includes('fetch') || lower.includes('failed to fetch')) {
+        friendly = 'No internet connection. Please check and try again.';
+      } else if (lower.includes('rate limit') || lower.includes('too many')) {
+        friendly = 'Too many attempts. Please wait a minute and try again.';
+      } else {
+        friendly = 'Sign in failed. Please try again.';
+      }
+      setErrorMsg(friendly);
     } finally {
       setLoading(false);
     }

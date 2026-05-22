@@ -18,6 +18,7 @@ export interface ScoreComponents {
   mealItemBoost: number;
   weatherBoost: number;
   dayBoost: number;
+  homeStateBoost: number;
   varietyPenalty: number;
   randomFactor: number;
 }
@@ -36,6 +37,7 @@ export interface ScoredDish {
 export interface SlotResult {
   top: any;
   carousel: any[];
+  carouselScores: number[]; // re_score aligned by position with carousel
   slotScore: number;
   slotComponents: ScoreComponents | null;
   slotAlternatives: Array<{ dish_name: string; final_score: number; why_not_first: string; components: ScoreComponents }>;
@@ -71,10 +73,11 @@ export function scoreDish(
   weather: { weatherCode: number; tempCelsius: number } | null,
   isWeekend: boolean,
   recentDishIds: Set<number>,
+  regionAffinityByCuisineId: Record<number, number> = {},
 ): ScoreResult {
   const components: ScoreComponents = {
     base: 1.0, cuisineBoost: 0, mealItemBoost: 0,
-    weatherBoost: 0, dayBoost: 0, varietyPenalty: 0, randomFactor: 0,
+    weatherBoost: 0, dayBoost: 0, homeStateBoost: 0, varietyPenalty: 0, randomFactor: 0,
   };
 
   if (neverDishIds.has(dish.id)) return { score: -1, components };
@@ -120,18 +123,24 @@ export function scoreDish(
     components.dayBoost = RE_V1.WEEKEND_SLOW_BOOST;
   }
 
-  // Step 7: Variety guard
+  // Step 7: Home-state regional affinity boost — affinity is 0..1, scaled to [0, HOME_STATE_BOOST_MAX]
+  const aff = regionAffinityByCuisineId[dish.cuisine_id];
+  if (typeof aff === 'number' && aff > 0) {
+    components.homeStateBoost = parseFloat((aff * RE_V1.HOME_STATE_BOOST_MAX).toFixed(3));
+  }
+
+  // Step 8: Variety guard
   if (recentDishIds.has(dish.id)) components.varietyPenalty = RE_V1.VARIETY_PENALTY;
 
-  // Step 8: Deterministic random — same (user, day, dish) always produces the same noise
+  // Step 9: Deterministic random — same (user, day, dish) always produces the same noise
   components.randomFactor = parseFloat(
     (seededRandom(userId, planDate, dish.id) * RE_V1.RANDOM_MAX).toFixed(3),
   );
 
   const score =
     components.base + components.cuisineBoost + components.mealItemBoost +
-    components.weatherBoost + components.dayBoost + components.varietyPenalty +
-    components.randomFactor;
+    components.weatherBoost + components.dayBoost + components.homeStateBoost +
+    components.varietyPenalty + components.randomFactor;
 
   return { score: parseFloat(score.toFixed(3)), components };
 }
@@ -168,16 +177,17 @@ export function generateSlot(
   weather: { weatherCode: number; tempCelsius: number } | null,
   isWeekend: boolean,
   recentDishIds: Set<number>,
+  regionAffinityByCuisineId: Record<number, number> = {},
 ): SlotResult {
   if (lockedDishId) {
     const locked = allDishes.find(d => d.id === lockedDishId);
-    return { top: locked, carousel: locked ? [locked] : [], slotScore: 1.0, slotComponents: null, slotAlternatives: [] };
+    return { top: locked, carousel: locked ? [locked] : [], carouselScores: locked ? [1.0] : [], slotScore: 1.0, slotComponents: null, slotAlternatives: [] };
   }
 
   const eligible: ScoredDish[] = allDishes
     .filter(d => Array.isArray(d.meal_types) && d.meal_types.includes(mealSlot))
     .map(d => {
-      const r = scoreDish(d, userId, planDate, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds);
+      const r = scoreDish(d, userId, planDate, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
       return { dish: d, score: r.score, components: r.components };
     })
     .filter(({ score }) => score > 0)
@@ -185,7 +195,9 @@ export function generateSlot(
 
   console.log(`[RE-v1] ${mealSlot}: ${eligible.length} eligible dishes scored`);
 
-  const carousel = eligible.slice(0, RE_V1.CAROUSEL_SIZE).map(({ dish }) => dish);
+  const carouselScored = eligible.slice(0, RE_V1.CAROUSEL_SIZE);
+  const carousel = carouselScored.map(({ dish }) => dish);
+  const carouselScores = carouselScored.map(({ score }) => score);
   const top = carousel.find(d => !assignedDishIds.has(d.id)) ?? carousel[0] ?? null;
   if (top) assignedDishIds.add(top.id);
 
@@ -203,6 +215,7 @@ export function generateSlot(
   return {
     top,
     carousel,
+    carouselScores,
     slotScore: topEntry?.score ?? 1.0,
     slotComponents: topEntry?.components ?? null,
     slotAlternatives,
@@ -251,6 +264,10 @@ export function buildReasoning(
   if (components.dayBoost > 0) {
     if (!isWeekend) reasons.push(`✓ Weekday — quick dish (${dish.cook_time_mins ?? '?'} mins) preferred (+${components.dayBoost.toFixed(2)})`);
     else reasons.push(`✓ Weekend — more time to cook (+${components.dayBoost.toFixed(2)})`);
+  }
+
+  if (components.homeStateBoost > 0) {
+    reasons.push(`✓ Aligned with your home-state cuisine affinity (+${components.homeStateBoost.toFixed(2)})`);
   }
 
   if (components.varietyPenalty < 0) {

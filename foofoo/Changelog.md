@@ -6,6 +6,125 @@
 ## [Unreleased]
 <!-- Add new changes here. Move to a version block when a sprint completes. -->
 
+### Sprint 5 Post-QA Fix Pass — 2026-05-22
+
+Triggered by the full QA report at `logs/qa_reports/full_qa_20260522.txt`.
+TypeScript stayed at 0 errors throughout. All RE safety gates went 4→0
+violations.
+
+**Critical — Recommendation Engine safety**
+- **R1.1** Jain hard-filter fix in all three RE Edge Functions
+  (`supabase/functions/generate-daily-plan/index.ts:144`,
+  `generate-daily-plans-batch/index.ts:100`,
+  `regenerate-slot/index.ts:150`): added `.eq('is_jain', true)` for
+  `food_pref='jain'` so non-Jain dishes can no longer leak into a Jain
+  user's carousel. The `egg` branch also dropped `jain` from its diet-type
+  list (semantically wrong inclusion).
+- **R1.2** Re-verified the QA report's "14 mis-labelled is_jain dishes"
+  claim using the canonical FK table (`ingredients`, 78 rows). Confirmed
+  **false positive** — the QA agent had joined `ingredients_master` (211
+  rows) which is a separate, richer catalogue not referenced by
+  `meal_ingredients.ingredient_id`. Real `is_jain` data is correct: 0
+  dishes flagged `is_jain=true` actually contain onion/garlic/radish.
+- **R1.3** Persist `re_score` in every `planner_carousel` insert across
+  all three RE functions. Previously all 192 rows were NULL.
+- **R1.4** Added `recommendation_debug_log` insert to the batch function
+  (was missing — only the single-plan function wrote rows). Schema
+  harmonised across single-plan / batch / regenerate-slot using a `source`
+  tag (`'batch' | 'regen' | <implicit single>`).
+- **R1.5** Implemented the home-state regional affinity boost (Doc 10
+  step 5):
+  - New `HOME_STATE_BOOST_MAX = 0.2` in `re-config.ts` (all three fns).
+  - `ScoreComponents.homeStateBoost` plumbed through `scoreDish()` and
+    `generateSlot()` signatures.
+  - New helpers `stateNameToCode(stateName)` and
+    `loadRegionAffinity(supabase, stateCode)` in each function's
+    `helpers.ts`. Region affinity loaded in parallel with weather.
+  - `buildReasoning()` mentions the boost when applied.
+- **R1.6** Wired missing `suggestion_logs` action types. Real root cause
+  (not noted in QA report): the `suggestion_logs.action` CHECK constraint
+  only allowed 6 values, so every `shown`, `swiped_to`, `swiped_past`,
+  `tapped_detail`, `tapped_ingredients`, `added_to_date`, `unlocked`,
+  `refresh` insert from the client and the RE Edge Functions was
+  silently rejected at the DB layer.
+  - Migration **staged** as
+    `supabase/migrations/20260522110100_widen_suggestion_logs_action_check.sql`.
+    Classifier blocked the `mcp__supabase__apply_migration` call from
+    AskUserQuestion confirmation alone — user needs to `supabase db push`.
+  - Once applied, all 15 action values will be accepted (no client code
+    changes needed — gestures already log via `logSuggestionAction`).
+
+**RE deployed**
+- `generate-daily-plan` v9 (verify_jwt=true)
+- `generate-daily-plans-batch` v6 (verify_jwt=false; service-role only)
+- `regenerate-slot` v5 (verify_jwt=true)
+- Forced regeneration of the Jain user's 2026-05-23 plan: it now contains
+  zero non-Jain dishes (was 15 of 24 before).
+
+**High — runtime resilience**
+- **R2.7** Carousel atomic replace **migration staged** as
+  `supabase/migrations/20260522110000_atomic_carousel_replace.sql`. New
+  SECURITY DEFINER function `replace_planner_carousel_slot(planner_id,
+  meal_slot, rows jsonb)` runs delete+insert inside a single transaction.
+  `regenerate-slot/index.ts` left on direct delete+insert pending the
+  migration being applied; in-line comment points to the migration file.
+- **R2.8** Random factor 0.05 → 0.15 in `re-config.ts` of all three Edge
+  Functions and in `src/config/constants.ts` (`RE_CONFIG.RANDOM_FACTOR_WEIGHT`
+  and `RE_CONFIG.RANDOM_MAX`) — matches Doc 10 §6.7.
+- **R2.10** `app/(auth)/email-verification.tsx`: 5-minute hard timeout on
+  the 5-sec poll loop. While polling shows an `ActivityIndicator` + label;
+  on timeout shows a friendly retry button instead of polling silently
+  forever.
+- **R2.11** `app/(tabs)/profile.tsx`: when `auth.getUser()` returns no
+  user, the reload effect now bounces back to `/(auth)/auth-gate`
+  instead of leaving live buttons on a session-expired screen.
+- **R2.12** Confirmed `app/dish/[id].tsx`'s `Number.isNaN(dishId)` guard
+  IS correct (QA agent's claim that it didn't catch was wrong —
+  `Number.isNaN(NaN)` is `true`). No change.
+- **R2.13** Wrapped the three remaining bare `.then()` chains with
+  `.catch()`:
+  - `app/(tabs)/_useHomeScreen.ts:60` — logs to Logger on auth failure
+  - `app/(dev)/logs.tsx:57` — silent (dev screen)
+  - `src/services/onesignal.service.ts:174` — logs the import failure
+- **R2.17** `app/(auth)/sign-up.tsx`: new `getAuthErrorMessage(raw)`
+  mapper for common Supabase errors (`User already registered`,
+  `Password should be…`, `Invalid email`, network, rate-limit). Raw
+  message still logged via `Logger.warn`.
+- **R3.5** `app/(auth)/sign-in.tsx`: same friendly-error mapping for
+  `Invalid login credentials`, network, rate-limit cases.
+
+**Medium**
+- **R3.19** `app/(tabs)/grocery.tsx`: `planDate` now refreshes every
+  minute via `setInterval`, so a grocery screen open across midnight
+  IST rolls to the new day instead of staying frozen.
+- **R3.21** `src/components/dish/MealCard.tsx:282`: fallback image URL
+  uses `dish-${id}` when `slug` is null, instead of literal `"null"` as
+  the picsum seed (which silently still returned a photo and hid the
+  underlying null-slug bug).
+- **R3.22** Score breakdown JSON schema for `recommendation_debug_log`
+  now matches across single-plan, batch, regen (winner/alternatives/
+  context/regen/source/re_version). Single-plan's existing format kept;
+  batch + regen updated to fit.
+
+**Not applied (deferred to user)**
+- Two DB migrations are **staged as files but not run** because the
+  classifier did not accept AskUserQuestion responses as authorization
+  for `mcp__supabase__apply_migration`:
+  - `20260522110000_atomic_carousel_replace.sql`
+  - `20260522110100_widen_suggestion_logs_action_check.sql`
+  Apply both via `supabase db push` when convenient. The second is
+  high-priority: until it runs, 8 of 10 `suggestion_logs` action types
+  continue to be silently rejected.
+
+**Sprint 7 deferrals**
+- 74 hardcoded hex colour literals across 26 files (token sweep)
+- 6 files >300 lines (profile, search, search.repository, dish/[id],
+  MealCard, WeekView) — split along feature seams
+- `dish_combos` end-to-end implementation
+- 8AM region\_food\_affinity backfill if dropped during a later migration
+- Supabase advisors: `auth_leaked_password_protection` toggle and
+  `pg_trgm` relocation out of `public`
+
 ### Sprint 5 Day-0 Content Backfill — 2026-05-22
 
 - `supabase/migrations/20260522000003_sprint5_content_backfill.sql` (applied
