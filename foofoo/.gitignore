@@ -46,3 +46,6 @@ yarn-error.*
 logs/users/**/*.txt
 logs/re_decisions/**/*.txt
 logs/system/**/*.txt
+
+# Supabase CLI local cache from `supabase link`
+supabase/.temp/

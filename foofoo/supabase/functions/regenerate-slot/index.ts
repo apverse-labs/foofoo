@@ -207,23 +207,19 @@ serve(async (req) => {
       .eq('id', planner.id);
     if (updateErr) throw new Error('Failed to update planner: ' + updateErr.message);
 
-    // --- REPLACE planner_carousel for this slot ---
-    // Note: delete+insert is not transactional from the JS client. Migration
-    // `add_replace_planner_carousel_slot_atomic` (see supabase/migrations/)
-    // provides an atomic RPC; once applied, swap this block for that RPC call.
-    const { error: delErr } = await supabase
-      .from('planner_carousel')
-      .delete()
-      .eq('planner_id', planner.id)
-      .eq('meal_slot', slot);
-    if (delErr) console.error('[REGEN-SLOT] carousel delete error:', delErr.message);
-
+    // --- REPLACE planner_carousel atomically via RPC ---
+    // delete+insert runs inside a single transaction server-side so two
+    // concurrent regen requests can't observe a partially-empty carousel.
     const carouselRows = carousel.map((d: any, i: number) => ({
       planner_id: planner.id, meal_slot: slot, ref_type: 'dish', ref_id: d.id, position: i, re_score: carouselScores[i] ?? null,
     }));
     if (carouselRows.length > 0) {
-      const { error: insErr } = await supabase.from('planner_carousel').insert(carouselRows);
-      if (insErr) console.error('[REGEN-SLOT] carousel insert error:', insErr.message);
+      const { error: rpcErr } = await supabase.rpc('replace_planner_carousel_slot', {
+        p_planner_id: planner.id,
+        p_meal_slot: slot,
+        p_rows: carouselRows,
+      });
+      if (rpcErr) console.error('[REGEN-SLOT] carousel replace error:', rpcErr.message);
     }
 
     // --- LOG TO suggestion_logs (the action that triggered the regen) ---
