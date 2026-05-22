@@ -5,7 +5,7 @@
 
 import { supabase } from '../services/supabase';
 import { Logger } from '../utils/systemLogger';
-import type { GeneratedPlan, Dish, SuggestionAction } from '../types';
+import type { GeneratedPlan, Dish } from '../types';
 
 /**
  * @summary Calls generate-daily-plan Edge Function and returns the user's meal plan.
@@ -90,45 +90,6 @@ export async function getCarouselForSlot(planId: string, mealSlot: string): Prom
   } catch (err: any) {
     Logger.error('PLANS-REPO', 'getCarouselForSlot failed', { error: err?.message, planId, mealSlot });
     throw err;
-  }
-}
-
-/**
- * @summary Logs a user interaction on a dish suggestion to suggestion_logs.
- *
- * @description Non-fatal — logging failures are silently swallowed so they never block UI.
- *
- * @param {string} userId - Supabase auth UUID
- * @param {number} dishId - Integer ID of the dish that was acted on
- * @param {string} planDate - YYYY-MM-DD date the plan was generated for
- * @param {string} slot - Meal slot: 'breakfast', 'lunch', or 'dinner'
- * @param {SuggestionAction} action - The gesture or action taken (swiped, locked, never, etc.)
- * @param {number} position - Zero-based carousel position of the dish at time of action
- * @returns {Promise<void>}
- *
- * @calledBy
- * - `app/(tabs)/index.tsx` — MealCard swipe, lock, detail tap
- */
-export async function logSuggestionAction(
-  userId: string,
-  dishId: number,
-  planDate: string,
-  slot: string,
-  action: SuggestionAction,
-  position: number,
-): Promise<void> {
-  try {
-    await supabase.from('suggestion_logs').insert({
-      user_id: userId,
-      dish_id: dishId,
-      plan_date: planDate,
-      meal_slot: slot,
-      action,
-      position,
-      re_version: 'v1',
-    });
-  } catch {
-    // Non-fatal — logging must not block UI
   }
 }
 

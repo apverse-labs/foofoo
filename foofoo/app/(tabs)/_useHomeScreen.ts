@@ -15,11 +15,11 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../src/services/supabase';
 import {
   generateDailyPlan, getCarouselForSlot, getTodayIST,
-  logSuggestionAction, lockSlot, unlockSlot,
+  lockSlot, unlockSlot,
 } from '../../src/repositories/plans.repository';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
-import { logScreenView, logFeatureTap } from '../../src/repositories/feedback.repository';
+import { logScreenView, logFeatureTap, logSuggestionAction } from '../../src/repositories/feedback.repository';
 import type { GeneratedPlan, Dish } from '../../src/types';
 
 declare const __DEV__: boolean;
@@ -167,13 +167,11 @@ export function useHomeScreen() {
   }, [loadPlan]);
 
   /**
-   * @summary Returns a dish-change handler for a given meal slot.
-   * @param {string} slot - 'breakfast', 'lunch', or 'dinner'
+   * @summary No-op dish-change handler. MealCard emits 'swiped_past' /
+   *   'swiped_to' itself on every carousel move, so the parent need not log.
+   *   Handler kept to satisfy MealCard's required onDishChange prop.
    */
-  const handleDishChange = (slot: string) => (dish: Dish, position: number) => {
-    if (!userId) return;
-    logSuggestionAction(userId, dish.id, planDate, slot, 'swiped', position);
-  };
+  const handleDishChange = (_slot: string) => (_dish: Dish, _position: number) => {};
 
   /**
    * @summary Returns a lock/unlock toggle handler for a given meal slot.
