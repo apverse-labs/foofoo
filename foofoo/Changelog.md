@@ -6,6 +6,28 @@
 ## [Unreleased]
 <!-- Add new changes here. Move to a version block when a sprint completes. -->
 
+### Sprint 5 Security Hardening — 2026-05-22
+
+- `supabase/migrations/20260522000002_sprint5_security_hardening.sql` (applied)
+  - Fix 1: enable RLS + service-role-only policy on `_seed_sessions`.
+  - Fix 2: revoke `EXECUTE` on `handle_new_user()` from anon/authenticated/PUBLIC.
+  - Fix 3: revoke `SELECT` on materialized view `dish_popularity` from
+    anon/authenticated/PUBLIC (Edge Functions use service_role).
+  - Fix 4: pin `search_path = public, pg_catalog` on `rollback_seed_session`,
+    `_trg_meal_ingredients_derive`, `_trg_ingredients_master_derive`.
+  - Fix 6: bulk `array_replace('snacks','snack')` on `dishes.meal_types`
+    for 296 rows. Client-side `MealSlot`/`DishRole` types already used
+    singular `snack` — no TS code changes required.
+- Fix 5 (Supabase Auth leaked-password protection) is dashboard-only and
+  remains pending until enabled manually.
+- Advisor diff (security): cleared `_seed_sessions` RLS ERROR,
+  4× `function_search_path_mutable` WARN, `dish_popularity`
+  `materialized_view_in_api` WARN, and both `handle_new_user`
+  `*_security_definer_function_executable` WARN. Remaining: 6× INFO
+  `rls_enabled_no_policy` (admin-only tables — deny-all by default,
+  acceptable), 1× WARN `extension_in_public` for `pg_trgm` (low
+  priority — Sprint 5 backlog), 1× WARN auth leaked-password (Fix 5).
+
 ### Pre-Sprint 5 Health Check — 2026-05-22
 
 - `logs/pre_sprint_reports/pre_sprint5_20260522.txt` — full read-only audit.
