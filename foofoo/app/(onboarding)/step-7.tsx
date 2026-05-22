@@ -14,6 +14,7 @@ import { recordConsent } from '../../src/repositories/meal-prefs.repository';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
+import { PostHogService } from '../../src/services/posthog.service';
 import type { UserRole } from '../../src/types';
 
 type RoleOption = { value: UserRole; label: string; description: string };
@@ -43,6 +44,7 @@ export default function OnboardingStep7() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    PostHogService.screen('onboarding_step_7');
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/(auth)/sign-in' as never); return; }

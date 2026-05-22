@@ -13,6 +13,7 @@ import { updateOnboardingStep } from '../../src/repositories/profiles.repository
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
+import { PostHogService } from '../../src/services/posthog.service';
 import type { IngredientAlias } from '../../src/types';
 
 interface SelectedAllergen {
@@ -42,6 +43,7 @@ export default function OnboardingStep3() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    PostHogService.screen('onboarding_step_3');
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/(auth)/sign-in' as never); return; }

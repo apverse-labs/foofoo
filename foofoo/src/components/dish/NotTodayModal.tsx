@@ -13,6 +13,7 @@ import { View, Text, StyleSheet, Pressable, Modal, ActivityIndicator } from 'rea
 import { regenerateSlot } from '../../repositories/plans.repository';
 import { logSuggestionAction, logFeatureTap } from '../../repositories/feedback.repository';
 import { Logger } from '../../utils/systemLogger';
+import { PostHogService } from '../../services/posthog.service';
 import * as Haptics from 'expo-haptics';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
 import type { Dish } from '../../types';
@@ -40,6 +41,10 @@ export default function NotTodayModal({ dish, userId, planDate, mealSlot, onConf
     try {
       logSuggestionAction(userId, dish.id, planDate, mealSlot, 'not_today', 0).catch(() => {});
       logFeatureTap(userId, 'not_today_confirm', { screen: 'home', dishId: dish.id, mealSlot });
+      PostHogService.capture('dish_not_today', {
+        dish_id: dish.id,
+        meal_slot: mealSlot,
+      });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
 
       try {

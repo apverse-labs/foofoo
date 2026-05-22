@@ -11,6 +11,7 @@ import { updateOnboardingStep } from '../../src/repositories/profiles.repository
 import { COLORS, SPACING } from '../../src/config/constants';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
+import { PostHogService } from '../../src/services/posthog.service';
 import type { BucketItem, BucketMap } from '../../src/types';
 
 /**
@@ -31,6 +32,7 @@ export default function OnboardingStep4() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    PostHogService.screen('onboarding_step_4');
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/(auth)/sign-in' as never); return; }

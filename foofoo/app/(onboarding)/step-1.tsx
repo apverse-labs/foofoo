@@ -13,6 +13,7 @@ import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { INDIAN_STATES } from '../../src/utils/indian-states';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
+import { PostHogService } from '../../src/services/posthog.service';
 
 /**
  * @summary Onboarding Step 1 — collects name, username, and location.
@@ -36,6 +37,7 @@ export default function OnboardingStep1() {
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
+    PostHogService.screen('onboarding_step_1');
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/(auth)/sign-in' as never); return; }

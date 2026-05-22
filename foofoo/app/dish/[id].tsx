@@ -27,6 +27,7 @@ import {
   logSuggestionAction, logScreenView, logFeatureTap,
 } from '../../src/repositories/feedback.repository';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
+import { PostHogService } from '../../src/services/posthog.service';
 import { Logger } from '../../src/utils/systemLogger';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { APP_NAME } from '../../src/config/constants';
@@ -109,6 +110,8 @@ export default function DishDetailScreen() {
     const today = new Date(Date.now() + 5.5 * 60 * 60 * 1000).toISOString().split('T')[0];
     logSuggestionAction(userId, dish.id, today, dish.meal_types?.[0] ?? 'all', 'tapped_detail', 0).catch(() => {});
     logScreenView(userId, 'dish_detail', { dishId: dish.id, dishName: dish.name });
+    PostHogService.screen('dish_detail', { dishId: dish.id, dishName: dish.name });
+    PostHogService.capture('dish_detail_opened', { dish_id: dish.id, dish_name: dish.name });
     UserJourneyLogger.logGestureAction(userId, 'tapped_detail', dish.name, dish.meal_types?.[0] ?? 'all', 0).catch(() => {});
   }, [dish, userId]);
 

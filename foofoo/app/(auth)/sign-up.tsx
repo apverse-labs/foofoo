@@ -12,6 +12,7 @@ import { supabase } from '../../src/services/supabase';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { Logger } from '../../src/utils/systemLogger';
 import { isValidEmail } from '../../src/utils/validators';
+import { PostHogService } from '../../src/services/posthog.service';
 
 type PasswordStrength = 'weak' | 'medium' | 'strong';
 
@@ -100,6 +101,7 @@ export default function SignUp() {
       });
       if (error) throw error;
       if (data.user) {
+        PostHogService.capture('sign_up', { method: 'email' });
         await recordConsent(data.user.id);
         // If session exists, email confirm is disabled → go straight to onboarding
         if (data.session) {

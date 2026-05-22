@@ -350,6 +350,8 @@ Reference this in CHANGELOG.md for full traceability.
 |----------|-------|
 | OpenWeatherMap setup | Sprint 3 |
 | Cloudinary account + dish images | Sprint 4–5 |
+| OneSignal App ID configured — check Dashboard for subscriber count | Sprint 6 — DONE 2026-05-22 |
+| PostHog project live — check Live Events after each dev session | Sprint 6 — DONE 2026-05-22 |
 | OneSignal push setup | Sprint 5–6 |
 | Google Play Developer (₹2,100) | Sprint 7 / Week 13 |
 | Apple Developer Account (₹8,700) | Phase 0.5 start |

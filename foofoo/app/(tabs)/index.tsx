@@ -10,7 +10,7 @@
  * @calledBy Expo Router — default tab screen
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl, Pressable,
 } from 'react-native';
@@ -25,6 +25,7 @@ import WeekView from '../../src/components/planner/WeekView';
 import { LoadingScreen, ErrorState, EmptyState } from './_HomeScreen.helpers';
 import { useHomeScreen } from './_useHomeScreen';
 import { useResponsive } from '../../src/utils/responsive';
+import { PostHogService } from '../../src/services/posthog.service';
 
 type ViewMode = 'day' | 'week';
 
@@ -32,6 +33,10 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { contentWidth } = useResponsive();
   const [viewMode, setViewMode] = useState<ViewMode>('day');
+
+  useEffect(() => {
+    PostHogService.screen('home', { viewMode });
+  }, [viewMode]);
   const {
     planDate, plan, carousels, lockedSlots,
     loading, refreshing, error, showTutorial, userId,

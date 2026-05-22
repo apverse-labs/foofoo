@@ -25,6 +25,7 @@ import { supabase } from '../../src/services/supabase';
 import { getGroceryList } from '../../src/repositories/grocery.repository';
 import { getTodayIST } from '../../src/repositories/plans.repository';
 import { logScreenView, logSuggestionAction, logFeatureTap } from '../../src/repositories/feedback.repository';
+import { PostHogService } from '../../src/services/posthog.service';
 import { Logger } from '../../src/utils/systemLogger';
 import { COLORS, SPACING, BORDER_RADIUS, APP_NAME } from '../../src/config/constants';
 import { useResponsive } from '../../src/utils/responsive';
@@ -81,6 +82,7 @@ export default function GroceryTab() {
   useFocusEffect(useCallback(() => {
     if (!userId) return;
     logScreenView(userId, 'grocery', { mode });
+    PostHogService.screen('grocery', { mode });
     logSuggestionAction(userId, null, planDate, 'all', 'tapped_ingredients', 0).catch(() => {});
   }, [userId, planDate, mode]));
 

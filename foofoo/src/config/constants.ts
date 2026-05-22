@@ -80,7 +80,9 @@ export const TIMING = {
 
 export const API = {
   OPENWEATHERMAP_BASE: 'https://api.openweathermap.org/data/2.5',
-  ONESIGNAL_APP_ID: 'YOUR_ONESIGNAL_APP_ID',
+  ONESIGNAL_APP_ID: process.env.EXPO_PUBLIC_ONESIGNAL_APP_ID || '',
+  POSTHOG_KEY: process.env.EXPO_PUBLIC_POSTHOG_KEY || '',
+  POSTHOG_HOST: process.env.EXPO_PUBLIC_POSTHOG_HOST || 'https://us.i.posthog.com',
 } as const;
 
 export const STORAGE_KEYS = {

@@ -36,6 +36,7 @@ import { cookTimeLabel } from './MealCard.helpers';
 import { TIMING } from '../../config/constants';
 import { UserJourneyLogger } from '../../utils/userJourneyLogger';
 import { logSuggestionAction } from '../../repositories/feedback.repository';
+import { PostHogService } from '../../services/posthog.service';
 import DatePickerModal from './DatePickerModal';
 import { useResponsive } from '../../utils/responsive';
 import { styles } from './MealCard.styles';
@@ -151,6 +152,12 @@ export default function MealCard({
           logSuggestionAction(userId, prevDish.id, planDate, mealSlot, 'swiped_past', i).catch(() => {});
         }
         logSuggestionAction(userId, nextDish.id, planDate, mealSlot, 'swiped_to', next).catch(() => {});
+        PostHogService.capture('dish_swiped', {
+          meal_slot: mealSlot,
+          position: next,
+          dish_id: nextDish.id,
+          direction,
+        });
         UserJourneyLogger.logGestureAction(userId, 'swiped', nextDish.name, mealSlot, next);
       }
     }

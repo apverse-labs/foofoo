@@ -10,6 +10,7 @@ import {
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import { PostHogService } from '../../src/services/posthog.service';
 
 /**
  * @summary Sign-in screen with email and password authentication.
@@ -54,6 +55,7 @@ export default function SignIn() {
 
       const userId = data.user?.id;
       if (!userId) throw new Error('No user returned from sign-in');
+      PostHogService.capture('sign_in', { method: 'email' });
 
       const { data: profile } = await supabase
         .from('profiles')

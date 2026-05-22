@@ -6,6 +6,8 @@ import { StatusBar } from 'expo-status-bar';
 import * as Sentry from '@sentry/react-native';
 import { COLORS, APP_VERSION } from '../src/config/constants';
 import { supabase } from '../src/services/supabase';
+import { OneSignalService } from '../src/services/onesignal.service';
+import { PostHogService } from '../src/services/posthog.service';
 
 // Always start at index in dev so session-check logic runs fresh on every reload.
 export const unstable_settings = { initialRouteName: 'index' };
@@ -38,6 +40,11 @@ export default function RootLayout() {
   const router = useRouter();
 
   useEffect(() => {
+    // Initialise push notifications (no-op on web) before anything else.
+    OneSignalService.init();
+    OneSignalService.setupNotificationHandlers();
+    PostHogService.init();
+
     // On every full app reload in dev, force-navigate to index so its
     // session-check logic always runs instead of restoring the last screen.
     if (__DEV__) {

@@ -6,6 +6,8 @@ import { supabase } from '../src/services/supabase';
 import { resetOnboardingProgress } from '../src/repositories/profiles.repository';
 import { COLORS, APP_NAME, STORAGE_KEYS } from '../src/config/constants';
 import { Logger } from '../src/utils/systemLogger';
+import { OneSignalService } from '../src/services/onesignal.service';
+import { PostHogService } from '../src/services/posthog.service';
 
 const INTRO_SEEN_KEY = STORAGE_KEYS.INTRO_SEEN;
 
@@ -46,11 +48,23 @@ export default function Index() {
         return;
       }
 
+      // Fire-and-forget: store OneSignal subscription ID against this user.
+      OneSignalService.registerDevice(session.user.id).catch(() => {});
+
       const { data: profile } = await supabase
         .from('profiles')
-        .select('onboarding_completed, onboarding_step')
+        .select('onboarding_completed, onboarding_step, food_pref, home_state, premium_tier')
         .eq('id', session.user.id)
         .single();
+
+      if (profile) {
+        PostHogService.identify(session.user.id, {
+          foodPref: profile.food_pref ?? '',
+          homeState: profile.home_state ?? null,
+          premiumTier: profile.premium_tier ?? 'free',
+          onboardingCompleted: !!profile.onboarding_completed,
+        });
+      }
 
       if (profile?.onboarding_completed) {
         router.replace('/(tabs)' as never);

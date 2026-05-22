@@ -27,6 +27,7 @@ import { COLORS, SPACING, BORDER_RADIUS, APP_VERSION, APP_NAME } from '../../src
 import { supabase } from '../../src/services/supabase';
 import { Logger } from '../../src/utils/systemLogger';
 import { logScreenView, logFeatureTap } from '../../src/repositories/feedback.repository';
+import { PostHogService } from '../../src/services/posthog.service';
 import {
   getProfileSummary, updateProfileSettings, changePassword, signOut,
   formatNotificationTime, formatMemberSince, initialsFromName, dietLabel,
@@ -52,6 +53,7 @@ export default function ProfileTab() {
         return;
       }
       logScreenView(uid, 'profile');
+      PostHogService.screen('profile');
       const s = await getProfileSummary(uid);
       setSummary(s);
     } finally {

@@ -11,6 +11,7 @@
 
 import { supabase } from '../services/supabase';
 import { Logger } from '../utils/systemLogger';
+import { PostHogService } from '../services/posthog.service';
 import type { FoodPref } from '../types';
 
 export interface ProfileSettingsUpdate {
@@ -143,6 +144,11 @@ export async function changePassword(newPassword: string): Promise<void> {
  * @calledBy app/(tabs)/profile.tsx sign-out button
  */
 export async function signOut(): Promise<void> {
+  // Capture + reset analytics BEFORE the auth call so the sign_out event is
+  // attributed to the still-identified user, then a fresh anonymous identity
+  // is created for the next session.
+  PostHogService.capture('sign_out');
+  PostHogService.reset();
   const { error } = await supabase.auth.signOut();
   if (error) {
     Logger.error('PROFILE-SETTINGS', 'signOut failed', { error: error.message });

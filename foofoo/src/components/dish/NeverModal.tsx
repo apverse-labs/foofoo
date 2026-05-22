@@ -14,6 +14,7 @@ import * as Haptics from 'expo-haptics';
 import { addToNeverList, regenerateSlot } from '../../repositories/plans.repository';
 import { logSuggestionAction, logFeatureTap } from '../../repositories/feedback.repository';
 import { Logger } from '../../utils/systemLogger';
+import { PostHogService } from '../../services/posthog.service';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
 import type { Dish } from '../../types';
 
@@ -44,6 +45,11 @@ export default function NeverModal({ dish, userId, planDate, mealSlot, onConfirm
       await addToNeverList(userId, dish.id);
       logSuggestionAction(userId, dish.id, planDate, mealSlot, 'never', 0).catch(() => {});
       logFeatureTap(userId, 'never_confirm', { screen: 'home', dishId: dish.id, mealSlot });
+      PostHogService.capture('dish_never', {
+        dish_id: dish.id,
+        dish_name: dish.name,
+        meal_slot: mealSlot,
+      });
       Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Heavy).catch(() => {});
 
       // 2. Regenerate this slot, excluding the dismissed dish from the new

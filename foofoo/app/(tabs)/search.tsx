@@ -28,6 +28,7 @@ import {
   type SearchResult, type SearchFilters, type CuisineOption,
 } from '../../src/repositories/search.repository';
 import { logScreenView } from '../../src/repositories/feedback.repository';
+import { PostHogService } from '../../src/services/posthog.service';
 import { Logger } from '../../src/utils/systemLogger';
 import { getTodayIST } from '../../src/repositories/plans.repository';
 import SearchBar from '../../src/components/search/SearchBar';
@@ -91,6 +92,7 @@ export default function SearchTab() {
       setUserId(uid);
       if (uid) {
         logScreenView(uid, 'search');
+        PostHogService.screen('search');
         const [cuisines, trend] = await Promise.all([
           getUserPersonalisedCuisines(uid),
           getTrendingDishes(10),

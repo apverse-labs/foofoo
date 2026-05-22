@@ -11,6 +11,7 @@
 
 import { supabase } from '../services/supabase';
 import { Logger } from '../utils/systemLogger';
+import { PostHogService } from '../services/posthog.service';
 import type { DietType, MealSlot } from '../types';
 
 export interface SearchFilters {
@@ -386,6 +387,11 @@ export async function logSearchEvent(
   filtersApplied: string[],
 ): Promise<void> {
   if (!userId) return;
+  PostHogService.capture('search_performed', {
+    query,
+    result_count: resultCount,
+    filters_applied: filtersApplied,
+  });
   const { error } = await supabase.from('app_events').insert({
     user_id: userId,
     event_type: 'search_query',

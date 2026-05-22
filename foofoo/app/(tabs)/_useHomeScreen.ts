@@ -20,6 +20,7 @@ import {
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
 import { logScreenView, logFeatureTap, logSuggestionAction } from '../../src/repositories/feedback.repository';
+import { PostHogService } from '../../src/services/posthog.service';
 import type { GeneratedPlan, Dish } from '../../src/types';
 
 declare const __DEV__: boolean;
@@ -190,6 +191,11 @@ export function useHomeScreen() {
           logSuggestionAction(userId, dish.id, planDate, slot, 'unlocked', 0);
           logFeatureTap(userId, 'unlock', { screen: 'home', slot, dishId: dish.id });
           UserJourneyLogger.logGestureAction(userId, 'unlocked', dish.name, slot, 0);
+          PostHogService.capture('dish_locked', {
+            dish_id: dish.id,
+            meal_slot: slot,
+            is_locking: false,
+          });
         }
       } else {
         await lockSlot(planId, slot, dish.id);
@@ -198,6 +204,11 @@ export function useHomeScreen() {
           logSuggestionAction(userId, dish.id, planDate, slot, 'locked', 0);
           logFeatureTap(userId, 'lock', { screen: 'home', slot, dishId: dish.id });
           UserJourneyLogger.logGestureAction(userId, 'locked', dish.name, slot, 0);
+          PostHogService.capture('dish_locked', {
+            dish_id: dish.id,
+            meal_slot: slot,
+            is_locking: true,
+          });
         }
       }
     } catch (err: any) {

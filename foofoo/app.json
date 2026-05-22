@@ -38,8 +38,18 @@
           "color": "#2D6A4F"
         }
       ],
-      "expo-image"
+      "expo-image",
+      [
+        "onesignal-expo-plugin",
+        {
+          "mode": "development"
+        }
+      ],
+      "expo-localization"
     ],
+    "extra": {
+      "oneSignalAppId": "83860a1b-1cb9-4982-8a61-d8acc2c4680a"
+    },
     "experiments": {
       "typedRoutes": true
     }

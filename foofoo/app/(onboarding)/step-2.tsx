@@ -8,6 +8,7 @@ import { updateOnboardingStep } from '../../src/repositories/profiles.repository
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
+import { PostHogService } from '../../src/services/posthog.service';
 import type { FoodPref } from '../../src/types';
 
 interface PrefOption {
@@ -41,6 +42,7 @@ export default function OnboardingStep2() {
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
+    PostHogService.screen('onboarding_step_2');
     (async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) { router.replace('/(auth)/sign-in' as never); return; }
