@@ -27,3 +27,15 @@ export const RE_V1 = {
   VARIETY_GUARD_DAYS:       3,
   WEATHER_CACHE_HOURS:      12,
 } as const;
+
+/**
+ * @summary RE v2 weights — kept in sync with generate-daily-plan/re-config.ts.
+ */
+export const RE_V2 = {
+  SPICE_THRESHOLD:        0.3,
+  SPICE_WEIGHT:           0.15,
+  COMPLEXITY_THRESHOLD:   0.3,
+  COMPLEXITY_WEIGHT:      0.10,
+  DRIFT_WEIGHT:           0.20,
+  AFFINITY_WEIGHT:        0.40,
+} as const;

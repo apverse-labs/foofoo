@@ -3,6 +3,7 @@ import { Stack, useRouter } from 'expo-router';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
+import * as Linking from 'expo-linking';
 import * as Sentry from '@sentry/react-native';
 import { COLORS, APP_VERSION } from '../src/config/constants';
 import { supabase } from '../src/services/supabase';
@@ -58,7 +59,17 @@ export default function RootLayout() {
       }
     });
 
-    return () => subscription.unsubscribe();
+    // Deep-link handler: foofoo://home from the morning push notification jumps to the planner tab.
+    const handleDeepLink = (url: string) => {
+      if (url.includes('foofoo://home')) router.replace('/(tabs)' as never);
+    };
+    Linking.getInitialURL().then(url => { if (url) handleDeepLink(url); });
+    const linkingSub = Linking.addEventListener('url', ({ url }) => handleDeepLink(url));
+
+    return () => {
+      subscription.unsubscribe();
+      linkingSub.remove();
+    };
   }, []);
 
   return (

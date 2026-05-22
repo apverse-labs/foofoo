@@ -49,3 +49,7 @@ logs/system/**/*.txt
 
 # Supabase CLI local cache from `supabase link`
 supabase/.temp/
+supabase/functions/**/supabase/.temp/
+
+# Dev runtime logs
+dev.log

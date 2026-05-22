@@ -86,23 +86,52 @@ export async function getWeekPlans(userId: string, weekStartDate: string): Promi
   const today = getTodayIST();
   const dates: string[] = Array.from({ length: 7 }, (_, i) => addDays(weekStartDate, i));
 
+  // planner.{breakfast,lunch,dinner}_ref_id are polymorphic (ref_type='dish'|'combo')
+  // and have no FK to dishes — so PostgREST can't auto-embed. We do two queries
+  // and stitch them in JS, mirroring fetchCarousel() in the RE Edge Function.
   let rows: WeekPlanRow[] = [];
   try {
-    const { data, error } = await supabase
+    const { data: plannerRows, error: plannerErr } = await supabase
       .from('planner')
-      .select(`
-        id, plan_date, locked_slots,
-        breakfast:breakfast_ref_id ( id, name, hero_image_url, blurhash, diet_type ),
-        lunch:lunch_ref_id ( id, name, hero_image_url, blurhash, diet_type ),
-        dinner:dinner_ref_id ( id, name, hero_image_url, blurhash, diet_type )
-      `)
+      .select('id, plan_date, locked_slots, breakfast_ref_id, lunch_ref_id, dinner_ref_id')
       .eq('user_id', userId)
       .in('plan_date', dates);
+    if (plannerErr) throw plannerErr;
 
-    if (error) throw error;
-    rows = ((data ?? []) as unknown as WeekPlanRow[]).map(r => ({
-      ...r,
-      locked_slots: r.locked_slots ?? [],
+    type RawPlanner = {
+      id: string;
+      plan_date: string;
+      locked_slots: string[] | null;
+      breakfast_ref_id: number | null;
+      lunch_ref_id: number | null;
+      dinner_ref_id: number | null;
+    };
+    const raw = (plannerRows ?? []) as RawPlanner[];
+
+    const dishIds = new Set<number>();
+    for (const p of raw) {
+      if (p.breakfast_ref_id != null) dishIds.add(p.breakfast_ref_id);
+      if (p.lunch_ref_id != null) dishIds.add(p.lunch_ref_id);
+      if (p.dinner_ref_id != null) dishIds.add(p.dinner_ref_id);
+    }
+
+    let dishMap = new Map<number, WeekSlotDish>();
+    if (dishIds.size > 0) {
+      const { data: dishRows, error: dishErr } = await supabase
+        .from('dishes')
+        .select('id, name, hero_image_url, blurhash, diet_type')
+        .in('id', Array.from(dishIds));
+      if (dishErr) throw dishErr;
+      dishMap = new Map((dishRows as WeekSlotDish[] | null ?? []).map(d => [d.id, d]));
+    }
+
+    rows = raw.map(p => ({
+      id: p.id,
+      plan_date: p.plan_date,
+      locked_slots: p.locked_slots ?? [],
+      breakfast: p.breakfast_ref_id != null ? dishMap.get(p.breakfast_ref_id) ?? null : null,
+      lunch:     p.lunch_ref_id     != null ? dishMap.get(p.lunch_ref_id)     ?? null : null,
+      dinner:    p.dinner_ref_id    != null ? dishMap.get(p.dinner_ref_id)    ?? null : null,
     }));
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

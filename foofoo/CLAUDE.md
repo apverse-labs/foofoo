@@ -290,8 +290,53 @@ Secrets in Edge Functions go in **Supabase Vault** (Dashboard → Settings → V
 
 ## Current Sprint Status
 
-**Sprint:** 5 — DISCOVERY — COMPLETE + POST-QA FIX PASS (2026-05-22)
-**Next:** Sprint 6 — Push notifications, RE v2, Analytics
+**Sprint:** 6 — INTELLIGENCE — COMPLETE (2026-05-22)
+**Next:** Sprint 7 — Polish + Google Play Launch
+
+**Sprint 6 — INTELLIGENCE — COMPLETED (2026-05-22, see Changelog.md):**
+- [x] Section 1 — Morning push notification (`send-morning-notification`
+      Edge Function + `foofoo-morning-notifications` CRON + deep-link
+      handler in `app/_layout.tsx`).
+- [x] Section 2 — `calculate-inferred-prefs` Edge Function +
+      `foofoo-weekly-inferred-prefs` CRON. Verified: writes spice /
+      complexity / repeat_tolerance / cuisine_drift scores for users
+      with ≥20 actions across ≥14 days.
+- [x] Section 3 — RE v2 wired into `generate-daily-plan`,
+      `generate-daily-plans-batch`, and `regenerate-slot`. Stamps
+      `re_version='v2'` when inferred_prefs exist, falls back to `'v1'`
+      otherwise. Test plan produced confirmed v2 components (affinity
+      +0.20, drift +0.12, complexity +0.05).
+- [x] Section 4 — `compute-recipe-affinity` Edge Function +
+      `foofoo-weekly-recipe-affinity` CRON. First run wrote 18 pairs
+      across 3 users.
+- [x] Section 5 — `daily-analytics-email` Edge Function +
+      `foofoo-daily-analytics-email` CRON. All 13 metrics computed and
+      captured in `etl_jobs.metadata`. **Pending:** add
+      `RESEND_API_KEY` to Supabase Edge Function secrets to enable
+      delivery (function is currently capturing metrics without
+      sending).
+- [x] Section 6 — Offline support: `useNetworkStatus` hook,
+      `OfflineService` (cachePlan / getCachedPlan / queueAction /
+      syncPendingActions), offline banner on Home, queue-on-offline in
+      `feedback.repository`. TypeScript: 0 errors.
+
+**Sprint 6 carry-over for Sprint 7:**
+- Set `RESEND_API_KEY` + verified `RESEND_FROM` in Supabase Edge
+  Function secrets so daily email goes out.
+- Confirm `ONESIGNAL_APP_ID` + `ONESIGNAL_REST_API_KEY` present in
+  Edge Function secrets (notification function reads them; current
+  user pool has 0 `onesignal_player_id` set so the path is untested
+  end-to-end).
+- Manual on-device verification of push (B6/C7/D3/D4 from prior
+  parked backlog) once an EAS dev client is available.
+- Manual browser smoke of the offline banner (DevTools → Network →
+  Offline; swipe; reconnect; verify suggestion_logs queue drains).
+- Inferred prefs only populate for users with ≥20 weighted actions
+  across ≥14 days — for the live cohort that's currently the one
+  test user with seeded history. Real users will reach the threshold
+  organically over the next 2–3 weeks of usage.
+
+**Sprint 5 — DISCOVERY — COMPLETE + POST-QA FIX PASS (2026-05-22)**
 
 **Sprint 5 Post-QA Fix Pass — 2026-05-22 (see Changelog.md):**
 - [x] RE Jain hard filter fixed in all 3 Edge Functions (added is_jain=true)

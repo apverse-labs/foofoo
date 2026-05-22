@@ -9,8 +9,15 @@
  * @calledBy generate-daily-plan/index.ts
  */
 
-import { RE_V1 } from './re-config.ts';
+import { RE_V1, RE_V2 } from './re-config.ts';
 import { seededRandom } from './helpers.ts';
+
+export interface InferredPrefs {
+  spice_score?: number | null;
+  complexity_score?: number | null;
+  repeat_tolerance?: number | null;
+  cuisine_drift?: Record<string, number> | null;
+}
 
 export interface ScoreComponents {
   base: number;
@@ -21,6 +28,10 @@ export interface ScoreComponents {
   homeStateBoost: number;
   varietyPenalty: number;
   randomFactor: number;
+  re_v2_spice_boost: number;
+  re_v2_complexity_boost: number;
+  re_v2_drift_boost: number;
+  re_v2_affinity_boost: number;
 }
 
 export interface ScoreResult {
@@ -74,10 +85,13 @@ export function scoreDish(
   isWeekend: boolean,
   recentDishIds: Set<number>,
   regionAffinityByCuisineId: Record<number, number> = {},
+  inferredPrefs: InferredPrefs | null = null,
+  affinityByDishId: Record<number, number> = {},
 ): ScoreResult {
   const components: ScoreComponents = {
     base: 1.0, cuisineBoost: 0, mealItemBoost: 0,
     weatherBoost: 0, dayBoost: 0, homeStateBoost: 0, varietyPenalty: 0, randomFactor: 0,
+    re_v2_spice_boost: 0, re_v2_complexity_boost: 0, re_v2_drift_boost: 0, re_v2_affinity_boost: 0,
   };
 
   if (neverDishIds.has(dish.id)) return { score: -1, components };
@@ -137,10 +151,40 @@ export function scoreDish(
     (seededRandom(userId, planDate, dish.id) * RE_V1.RANDOM_MAX).toFixed(3),
   );
 
+  // --- RE v2 signals: only fire when learned data exists ---------------------
+  if (inferredPrefs) {
+    // Spice — push toward dishes that match the user's learned spice axis.
+    const spice = inferredPrefs.spice_score ?? 0;
+    if (Math.abs(spice) > RE_V2.SPICE_THRESHOLD && dish.spice_level) {
+      const dishSpiceNorm = (dish.spice_level - 2.5) / 1.5; // 1→-1, 4→+1
+      components.re_v2_spice_boost = parseFloat((spice * dishSpiceNorm * RE_V2.SPICE_WEIGHT).toFixed(3));
+    }
+    // Complexity — preference for quick vs slow cooks, weighted by cook_time.
+    const cx = inferredPrefs.complexity_score ?? 0;
+    if (Math.abs(cx) > RE_V2.COMPLEXITY_THRESHOLD && dish.cook_time_mins) {
+      const dishCx = dish.cook_time_mins > 40 ? 1 : dish.cook_time_mins > 20 ? 0 : -1;
+      components.re_v2_complexity_boost = parseFloat((cx * dishCx * RE_V2.COMPLEXITY_WEIGHT).toFixed(3));
+    }
+    // Cuisine drift — apply the per-cuisine learned drift score.
+    const drift = inferredPrefs.cuisine_drift ?? {};
+    if (cuisineCode && typeof drift[cuisineCode] === 'number') {
+      components.re_v2_drift_boost = parseFloat((drift[cuisineCode] * RE_V2.DRIFT_WEIGHT).toFixed(3));
+    }
+  }
+
+  // Pre-computed affinity — applied even without inferredPrefs, since it's a
+  // direct historical signal (the user actually engaged with this dish before).
+  const affDish = affinityByDishId[dish.id];
+  if (typeof affDish === 'number') {
+    components.re_v2_affinity_boost = parseFloat(((affDish - 0.5) * RE_V2.AFFINITY_WEIGHT).toFixed(3));
+  }
+
   const score =
     components.base + components.cuisineBoost + components.mealItemBoost +
     components.weatherBoost + components.dayBoost + components.homeStateBoost +
-    components.varietyPenalty + components.randomFactor;
+    components.varietyPenalty + components.randomFactor +
+    components.re_v2_spice_boost + components.re_v2_complexity_boost +
+    components.re_v2_drift_boost + components.re_v2_affinity_boost;
 
   return { score: parseFloat(score.toFixed(3)), components };
 }
@@ -178,6 +222,8 @@ export function generateSlot(
   isWeekend: boolean,
   recentDishIds: Set<number>,
   regionAffinityByCuisineId: Record<number, number> = {},
+  inferredPrefs: InferredPrefs | null = null,
+  affinityByDishId: Record<number, number> = {},
 ): SlotResult {
   if (lockedDishId) {
     const locked = allDishes.find(d => d.id === lockedDishId);
@@ -187,7 +233,7 @@ export function generateSlot(
   const eligible: ScoredDish[] = allDishes
     .filter(d => Array.isArray(d.meal_types) && d.meal_types.includes(mealSlot))
     .map(d => {
-      const r = scoreDish(d, userId, planDate, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
+      const r = scoreDish(d, userId, planDate, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId, inferredPrefs, affinityByDishId);
       return { dish: d, score: r.score, components: r.components };
     })
     .filter(({ score }) => score > 0)

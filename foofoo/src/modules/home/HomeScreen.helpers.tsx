@@ -5,8 +5,8 @@
 
 import React from 'react';
 import { View, Text, StyleSheet, Pressable, ActivityIndicator } from 'react-native';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
-import { useResponsive } from '../../src/utils/responsive';
+import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
+import { useResponsive } from '../../utils/responsive';
 
 /**
  * @summary Full-screen skeleton shown while the plan is loading on first mount.

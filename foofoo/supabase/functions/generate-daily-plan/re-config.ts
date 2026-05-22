@@ -35,3 +35,19 @@ export const RE_V1 = {
   VARIETY_GUARD_DAYS:       3,     // Look-back window for variety penalty
   WEATHER_CACHE_HOURS:      12,    // Hours before re-fetching weather
 } as const;
+
+/**
+ * @summary RE v2 scoring weights — additive boosts layered on top of v1 when
+ *   user_inferred_prefs exist for the user.
+ *
+ * @description These tune how strongly each inferred signal moves the score.
+ *   Kept small (<= 0.2) so v2 nudges rather than overrides v1 baseline.
+ */
+export const RE_V2 = {
+  SPICE_THRESHOLD:        0.3,  // ignore weak spice preferences (noise)
+  SPICE_WEIGHT:           0.15, // max boost from spice match
+  COMPLEXITY_THRESHOLD:   0.3,  // ignore weak complexity preferences
+  COMPLEXITY_WEIGHT:      0.10, // max boost from cook-time match
+  DRIFT_WEIGHT:           0.20, // multiplier on cuisine_drift score
+  AFFINITY_WEIGHT:        0.40, // multiplier on (affinity - 0.5); range -0.2 .. +0.2
+} as const;

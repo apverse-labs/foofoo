@@ -106,7 +106,7 @@ serve(async (req) => {
     }
 
     // --- LOAD USER CONTEXT (parallel) ---
-    const [profile, dietRules, cuisinePrefs, mealPrefs, neverList, recentPlans] =
+    const [profile, dietRules, cuisinePrefs, mealPrefs, neverList, recentPlans, inferredPrefs, affinityRows] =
       await Promise.all([
         supabase.from('profiles').select('food_pref, home_state, current_city').eq('id', user.id).maybeSingle().then(r => r.data),
         supabase.from('user_diet_rules').select('food_pref, excluded_ingredients').eq('user_id', user.id).maybeSingle().then(r => r.data),
@@ -114,7 +114,15 @@ serve(async (req) => {
         supabase.from('user_category_preferences').select('category_id, bucket').eq('user_id', user.id).eq('category_type', 'meal_item').then(r => r.data || []),
         supabase.from('never_list').select('dish_id').eq('user_id', user.id).eq('is_active', true).then(r => r.data || []),
         supabase.from('planner').select('breakfast_ref_id, lunch_ref_id, dinner_ref_id').eq('user_id', user.id).gte('plan_date', getDateDaysAgo(RE_V1.VARIETY_GUARD_DAYS)).lt('plan_date', planDate).then(r => r.data || []),
+        supabase.from('user_inferred_prefs').select('spice_score, complexity_score, repeat_tolerance, cuisine_drift').eq('user_id', user.id).maybeSingle().then(r => r.data),
+        supabase.from('user_recipe_affinity').select('dish_id, affinity').eq('user_id', user.id).then(r => r.data || []),
       ]);
+
+    const affinityByDishId: Record<number, number> = {};
+    for (const row of affinityRows as Array<{ dish_id: number; affinity: number }>) {
+      affinityByDishId[row.dish_id] = Number(row.affinity);
+    }
+    const reVersion: 'v1' | 'v2' = inferredPrefs ? 'v2' : 'v1';
 
     const foodPref = dietRules?.food_pref || profile?.food_pref || 'veg';
     const excludedIngredients = new Set<number>(dietRules?.excluded_ingredients || []);
@@ -175,7 +183,7 @@ serve(async (req) => {
       .filter((d) => Array.isArray(d.meal_types) && d.meal_types.includes(slot))
       .filter((d) => !otherSlotIds.has(d.id))
       .map((d) => {
-        const r = scoreDish(d, user.id, planDate, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
+        const r = scoreDish(d, user.id, planDate, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId, inferredPrefs as any, affinityByDishId);
         return { dish: d, score: r.score, components: r.components };
       })
       .filter(({ score }) => score > 0)
@@ -231,7 +239,7 @@ serve(async (req) => {
         meal_slot: slot,
         action,
         position: 0,
-        re_version: 'v1',
+        re_version: reVersion,
       });
       if (logErr) console.error('[REGEN-SLOT] suggestion_logs (dismiss) error:', logErr.message);
     }
@@ -244,7 +252,7 @@ serve(async (req) => {
       meal_slot: slot,
       action: 'shown',
       position: i,
-      re_version: 'v1',
+      re_version: reVersion,
     }));
     if (shownLogs.length > 0) {
       const { error: shownErr } = await supabase.from('suggestion_logs').insert(shownLogs);
@@ -256,7 +264,7 @@ serve(async (req) => {
     const topComponents: ScoreComponents | null = topScored?.components ?? null;
     const debugRow = {
       user_id: user.id, plan_date: planDate, meal_slot: slot,
-      dish_id: newTop.id, re_version: 'v1',
+      dish_id: newTop.id, re_version: reVersion,
       final_score: topScored?.score ?? 1.0,
       eligible_pool_size: scored.length,
       weather_input: weather
@@ -272,7 +280,7 @@ serve(async (req) => {
           dish_pool_size: scored.length,
         },
         regen: { triggered_by: action, excluded_dish_id: excludeDishId },
-        re_version: 'v1', source: 'regen', generation_time_ms: Date.now() - startTime,
+        re_version: reVersion, source: 'regen', generation_time_ms: Date.now() - startTime,
       },
     };
     const { error: debugErr } = await supabase.from('recommendation_debug_log').insert(debugRow);
@@ -289,7 +297,7 @@ serve(async (req) => {
       action,
       excludedDishId: excludeDishId,
       generatedInMs: elapsed,
-      reVersion: 'v1',
+      reVersion,
     }, corsHeaders);
   } catch (error: any) {
     console.error('[REGEN-SLOT] Fatal error:', error.message);

@@ -6,6 +6,192 @@
 ## [Unreleased]
 <!-- Add new changes here. Move to a version block when a sprint completes. -->
 
+### Sprint 6 — INTELLIGENCE — 2026-05-22
+
+Milestone: RE learns from behaviour, push notifications live, founders
+see daily metrics, app survives offline.
+
+**Section 1 — Morning Push Notification**
+- New Edge Function `send-morning-notification` (v1). Per-user lookup of
+  notifications_enabled + onesignal_player_id + today's planner row,
+  builds personalised heading/body from breakfast dish, sends via
+  OneSignal REST `https://onesignal.com/api/v1/notifications`, records
+  send in `notification_log`. Idempotent per IST day; quiet-hours guard
+  22:00–06:00 IST; auto-clears stale `onesignal_player_id` when OneSignal
+  reports the player is no longer subscribed.
+- New SQL wrapper `public.run_morning_notifications()` (SECURITY DEFINER)
+  pulls `service_role_key` from Supabase Vault and POSTs to the function.
+- New CRON `foofoo-morning-notifications` (`45 23 * * *` = 5:15 AM IST).
+- `app/_layout.tsx`: added `expo-linking` listener — `foofoo://home` deep
+  links from the notification jump to `/(tabs)`. Handles both cold-start
+  (`Linking.getInitialURL`) and warm (`addEventListener('url', …)`).
+- Verified: function returns 200, runs in ~1.5s, quiet-hours guard
+  active during this session's 22:30 IST run (no eligible users — none
+  have an `onesignal_player_id` set yet, expected pre-EAS-dev-client).
+
+**Section 2 — RE v2: Inferred Preferences (`calculate-inferred-prefs`)**
+- New Edge Function. Eligibility: ≥20 weighted actions across ≥14
+  distinct days in the last 90 days. Computes spice_score (-1..+1),
+  complexity_score (-1..+1), repeat_tolerance (0..1), cuisine_drift
+  (jsonb cuisine_code→score). Action weights: locked=1.5,
+  tapped_detail/accepted/added_to_date=1.0, tapped_ingredients=0.5,
+  swiped_to=0.3, swiped_past=-0.5, not_today=-0.8, never=-2.0;
+  surfacing signals (`shown`/`viewed`/`refresh`/`unlocked`) weighted 0
+  so they don't move preferences.
+- Cuisine drift fires only when ≥5 cuisine observations exist (variance
+  floor).
+- New SQL wrapper `run_calculate_inferred_prefs()`.
+- New CRON `foofoo-weekly-inferred-prefs` (`30 21 * * 6` = Sun 3:00 AM
+  IST).
+- Verified: seeded a test user with 28 synthetic actions over 14 days;
+  function processed 1 eligible user, wrote one `user_inferred_prefs`
+  row with spice=+0.27, complexity=+0.50, repeat_tol=0.67, and a
+  cuisine_drift jsonb covering 7 cuisines.
+
+**Section 3 — Wire RE v2 into scoring**
+- `generate-daily-plan/re-config.ts`: added `RE_V2` constants
+  (spice/complexity thresholds + weights, drift + affinity multipliers).
+- `generate-daily-plan/scoring.ts`: extended `scoreDish()` and
+  `generateSlot()` with optional `inferredPrefs` + `affinityByDishId`
+  parameters; new components `re_v2_spice_boost`,
+  `re_v2_complexity_boost`, `re_v2_drift_boost`, `re_v2_affinity_boost`
+  on `ScoreComponents`; affinity boost applies even without inferred
+  prefs (it's a direct historical signal).
+- `generate-daily-plan/index.ts`: added parallel fetches for
+  `user_inferred_prefs` + `user_recipe_affinity` in the user-context
+  block; threads both through to `generateSlot`; stamps
+  `re_version = inferredPrefs ? 'v2' : 'v1'` on planner, carousel logs,
+  suggestion_logs, debug log, and response envelope.
+- Mirrored the same wiring in `generate-daily-plans-batch/index.ts`
+  (5 AM CRON) and `regenerate-slot/index.ts` (per-slot regen).
+- **Bug discovered + fixed during self-test:** double `const aff`
+  declaration in `generate-daily-plan/scoring.ts` caused the v9 bundle
+  to 503 with `BOOT_ERROR` (Deno failed to evaluate the module).
+  Renamed the second declaration to `affDish`; bundle now boots clean.
+  All three functions re-deployed.
+- Verified: after seeding inferred_prefs + affinity for the test user
+  and clearing tomorrow's plan, the batch run produced a `re_version='v2'`
+  planner row with non-zero v2 component values:
+    breakfast aff=+0.20 drift=+0.12, lunch aff=+0.20 drift=-0.11 cx=+0.05,
+    dinner drift=-0.15. Spice boost stayed 0 because the test user's
+    spice_score (0.27) is below the configured threshold (0.30) — works
+    as designed.
+- All RE safety gates still 0 (never-list violations 0, Jain-rule
+  violations 0).
+
+**Section 4 — Pre-computed dish affinity (`compute-recipe-affinity`)**
+- New Edge Function. Per (user, dish), starts from baseline 0.5 and
+  applies decayed action deltas: locked/tapped_detail/accepted +0.30 ×
+  decay, added_to_date +0.20, swiped_to +0.10, tapped_ingredients +0.05,
+  swiped_past −0.10, not_today −0.20, rejected −0.30. `never` action
+  hard-pins affinity to 0. Decay: ≤7d 1.0, 8-30d 0.5, 31-90d 0.2. Active
+  `never_list` entries are also hard-pinned to 0 even without log rows.
+  Upserts in batches of 500.
+- New SQL wrapper `run_compute_recipe_affinity()`.
+- New CRON `foofoo-weekly-recipe-affinity` (`0 22 * * 6` = Sun 3:30 AM
+  IST, 30 min after inferred-prefs).
+- Verified: first run wrote 18 (user, dish) pairs for 3 users.
+
+**Section 5 — Daily analytics email (`daily-analytics-email`)**
+- New Edge Function. Computes 13 metrics for the last full IST day:
+  DAU, new_signups, onboarding_done, plans_generated, total_actions,
+  acceptance_rate, never_added, most_accepted dish, most_rejected dish,
+  search_count, top_search, avg_carousel_depth, re_version breakdown.
+  Sends a plain-text report to `FOUNDER_EMAILS` (env var, default
+  `ankit3.mittal@ril.com`) via Resend. If `RESEND_API_KEY` is unset,
+  metrics still land in `etl_jobs.metadata` so nothing is lost.
+- New SQL wrapper `run_daily_analytics_email()`.
+- New CRON `foofoo-daily-analytics-email` (`30 17 * * *` = 11:00 PM IST).
+- Verified: function ran with status 'partial', captured all 13 metrics
+  in etl_jobs.metadata (today: dau=0, plans=5, accept rate=33%, most
+  accepted "Rajma Chawal" 2x, top search "roti"). Email send blocked on
+  `RESEND_API_KEY` — needs to be added to Supabase Edge Function secrets
+  manually (Dashboard → Functions → secrets) for live sending.
+
+**Section 6 — Offline support**
+- New `src/hooks/useNetworkStatus.ts` — React hook subscribing to
+  NetInfo on native and `navigator.online`/`offline` events on web;
+  returns `{ isOnline, wasOffline }`. The `wasOffline` flag latches true
+  on first disconnect so reconnect handlers can detect the transition.
+- New `src/services/offline.service.ts` — three responsibilities:
+    - `cachePlan(userId, planDate, plan)` — persists today's
+      `GeneratedPlan` to AsyncStorage under
+      `foofoo_plan_cache_<userId>_<planDate>`.
+    - `getCachedPlan(...)` — reads it back. Returns null if absent.
+    - `queueAction(userId, action)` + `syncPendingActions(userId)` —
+      append-only queue at `foofoo_pending_actions_<userId>`; on
+      reconnect, drains the queue applying `never` / `lock` /
+      `suggestion_log` actions, keeping failures in the queue for the
+      next attempt.
+- `src/repositories/feedback.repository.ts` — `logSuggestionAction` now
+  routes through `OfflineService.queueAction` when offline (detected
+  via NetInfo on native, `navigator.onLine` on web).
+- `src/modules/home/useHomeScreen.ts` — caches every successful plan
+  load; on plan-load failure, falls back to cached plan + sets
+  `usingCachedPlan`; on (`isOnline` && `wasOffline`) transition, runs
+  `syncPendingActions`. Exposes `isOnline` + `usingCachedPlan` to the
+  screen.
+- `app/(tabs)/index.tsx` — amber banner above the date navigator
+  whenever `!isOnline`. Copy switches between "Offline — showing your
+  last plan" and "No internet connection" depending on whether a cache
+  hit was available.
+- TypeScript: `tsc --noEmit` returns 0 errors.
+- Note: in-browser smoke test of the banner toggle (DevTools → Network
+  → Offline) is the next manual verification step; not yet exercised
+  in this session.
+
+**Schema / infra changes**
+- `etl_jobs.status_check` CHECK constraint widened to allow `'partial'`
+  in addition to `pending/running/completed/failed`. Was discovered
+  during self-test — three new ETL jobs use `'partial'` for mixed-outcome
+  runs and were silently failing to insert their etl_jobs row prior to
+  the migration.
+
+**CRON inventory (all active)**
+| jobname                          | schedule       | IST          |
+|----------------------------------|----------------|--------------|
+| foofoo-5am-daily-plans           | `30 23 * * *`  | Daily 05:00  |
+| foofoo-morning-notifications     | `45 23 * * *`  | Daily 05:15  |
+| foofoo-daily-analytics-email     | `30 17 * * *`  | Daily 23:00  |
+| foofoo-weekly-inferred-prefs     | `30 21 * * 6`  | Sun 03:00    |
+| foofoo-weekly-recipe-affinity    | `0 22 * * 6`   | Sun 03:30    |
+
+**Files created**
+- `supabase/functions/send-morning-notification/index.ts`
+- `supabase/functions/calculate-inferred-prefs/index.ts`
+- `supabase/functions/compute-recipe-affinity/index.ts`
+- `supabase/functions/daily-analytics-email/index.ts`
+- `src/hooks/useNetworkStatus.ts`
+- `src/services/offline.service.ts`
+
+**Files modified**
+- `app/_layout.tsx` — added deep-link handler
+- `app/(tabs)/index.tsx` — offline banner + isOnline wiring
+- `src/modules/home/useHomeScreen.ts` — cache + sync hooks
+- `src/repositories/feedback.repository.ts` — offline queueing
+- `supabase/functions/generate-daily-plan/{index,scoring,re-config}.ts`
+- `supabase/functions/generate-daily-plans-batch/{index,scoring,re-config}.ts`
+- `supabase/functions/regenerate-slot/{index,scoring,re-config}.ts`
+
+**Edge Functions deployed**
+- send-morning-notification v1
+- calculate-inferred-prefs v1
+- compute-recipe-affinity v1
+- daily-analytics-email v1
+- generate-daily-plan v11 (v10 had a boot error, fixed)
+- generate-daily-plans-batch v8
+- regenerate-slot v7
+
+**Open items / manual follow-ups (carry-over for next sprint)**
+- Add `RESEND_API_KEY` to Supabase Edge Function secrets so the daily
+  analytics email actually delivers (metrics already captured).
+- Add `ONESIGNAL_APP_ID` + `ONESIGNAL_REST_API_KEY` to Edge Function
+  secrets (notification function reads them but no users qualify yet).
+- On-device end-to-end of push + offline still needs an EAS dev client.
+- Manual browser smoke of the offline banner (toggle DevTools Network
+  to Offline, observe banner, swipe a card, reconnect, watch the queue
+  drain into `suggestion_logs`).
+
 ### Sprint 5 Post-QA Fix Pass — 2026-05-22
 
 Triggered by the full QA report at `logs/qa_reports/full_qa_20260522.txt`.

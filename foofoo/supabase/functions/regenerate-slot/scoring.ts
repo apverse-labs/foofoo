@@ -9,8 +9,15 @@
  * @calledBy supabase/functions/regenerate-slot/index.ts
  */
 
-import { RE_V1 } from './re-config.ts';
+import { RE_V1, RE_V2 } from './re-config.ts';
 import { seededRandom } from './helpers.ts';
+
+export interface InferredPrefs {
+  spice_score?: number | null;
+  complexity_score?: number | null;
+  repeat_tolerance?: number | null;
+  cuisine_drift?: Record<string, number> | null;
+}
 
 export interface ScoreComponents {
   base: number;
@@ -21,6 +28,10 @@ export interface ScoreComponents {
   homeStateBoost: number;
   varietyPenalty: number;
   randomFactor: number;
+  re_v2_spice_boost: number;
+  re_v2_complexity_boost: number;
+  re_v2_drift_boost: number;
+  re_v2_affinity_boost: number;
 }
 
 export interface ScoreResult {
@@ -61,10 +72,13 @@ export function scoreDish(
   isWeekend: boolean,
   recentDishIds: Set<number>,
   regionAffinityByCuisineId: Record<number, number> = {},
+  inferredPrefs: InferredPrefs | null = null,
+  affinityByDishId: Record<number, number> = {},
 ): ScoreResult {
   const components: ScoreComponents = {
     base: 1.0, cuisineBoost: 0, mealItemBoost: 0,
     weatherBoost: 0, dayBoost: 0, homeStateBoost: 0, varietyPenalty: 0, randomFactor: 0,
+    re_v2_spice_boost: 0, re_v2_complexity_boost: 0, re_v2_drift_boost: 0, re_v2_affinity_boost: 0,
   };
 
   if (neverDishIds.has(dish.id)) return { score: -1, components };
@@ -116,10 +130,34 @@ export function scoreDish(
     (seededRandom(userId, planDate, dish.id, 'regen') * RE_V1.RANDOM_MAX).toFixed(3),
   );
 
+  // --- RE v2 signals: identical math to generate-daily-plan/scoring.ts -------
+  if (inferredPrefs) {
+    const spice = inferredPrefs.spice_score ?? 0;
+    if (Math.abs(spice) > RE_V2.SPICE_THRESHOLD && dish.spice_level) {
+      const dishSpiceNorm = (dish.spice_level - 2.5) / 1.5;
+      components.re_v2_spice_boost = parseFloat((spice * dishSpiceNorm * RE_V2.SPICE_WEIGHT).toFixed(3));
+    }
+    const cx = inferredPrefs.complexity_score ?? 0;
+    if (Math.abs(cx) > RE_V2.COMPLEXITY_THRESHOLD && dish.cook_time_mins) {
+      const dishCx = dish.cook_time_mins > 40 ? 1 : dish.cook_time_mins > 20 ? 0 : -1;
+      components.re_v2_complexity_boost = parseFloat((cx * dishCx * RE_V2.COMPLEXITY_WEIGHT).toFixed(3));
+    }
+    const drift = inferredPrefs.cuisine_drift ?? {};
+    if (cuisineCode && typeof drift[cuisineCode] === 'number') {
+      components.re_v2_drift_boost = parseFloat((drift[cuisineCode] * RE_V2.DRIFT_WEIGHT).toFixed(3));
+    }
+  }
+  const affDish = affinityByDishId[dish.id];
+  if (typeof affDish === 'number') {
+    components.re_v2_affinity_boost = parseFloat(((affDish - 0.5) * RE_V2.AFFINITY_WEIGHT).toFixed(3));
+  }
+
   const score =
     components.base + components.cuisineBoost + components.mealItemBoost +
     components.weatherBoost + components.dayBoost + components.homeStateBoost +
-    components.varietyPenalty + components.randomFactor;
+    components.varietyPenalty + components.randomFactor +
+    components.re_v2_spice_boost + components.re_v2_complexity_boost +
+    components.re_v2_drift_boost + components.re_v2_affinity_boost;
 
   return { score: parseFloat(score.toFixed(3)), components };
 }

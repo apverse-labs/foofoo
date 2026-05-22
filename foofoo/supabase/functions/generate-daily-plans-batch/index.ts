@@ -63,13 +63,15 @@ async function generatePlanForUser(
   planDate: string,
 ): Promise<{ ok: boolean; message?: string }> {
   try {
-    const [profile, dietRules, cuisinePrefs, mealPrefs, neverList, recentPlans] = await Promise.all([
+    const [profile, dietRules, cuisinePrefs, mealPrefs, neverList, recentPlans, inferredPrefs, affinityRows] = await Promise.all([
       supabase.from('profiles').select('food_pref, home_state, current_city').eq('id', userId).maybeSingle().then(r => r.data),
       supabase.from('user_diet_rules').select('food_pref, excluded_ingredients').eq('user_id', userId).maybeSingle().then(r => r.data),
       supabase.from('user_category_preferences').select('category_id, bucket').eq('user_id', userId).eq('category_type', 'cuisine').then(r => r.data || []),
       supabase.from('user_category_preferences').select('category_id, bucket').eq('user_id', userId).eq('category_type', 'meal_item').then(r => r.data || []),
       supabase.from('never_list').select('dish_id').eq('user_id', userId).eq('is_active', true).then(r => r.data || []),
       supabase.from('planner').select('breakfast_ref_id, lunch_ref_id, dinner_ref_id').eq('user_id', userId).gte('plan_date', getDateDaysAgo(RE_V1.VARIETY_GUARD_DAYS)).lt('plan_date', planDate).then(r => r.data || []),
+      supabase.from('user_inferred_prefs').select('spice_score, complexity_score, repeat_tolerance, cuisine_drift').eq('user_id', userId).maybeSingle().then(r => r.data),
+      supabase.from('user_recipe_affinity').select('dish_id, affinity').eq('user_id', userId).then(r => r.data || []),
     ]);
 
     const foodPref = (dietRules as any)?.food_pref || (profile as any)?.food_pref || 'veg';
@@ -83,6 +85,15 @@ async function generatePlanForUser(
     const recentDishIds = new Set<number>(
       (recentPlans as any[]).flatMap(p => [p.breakfast_ref_id, p.lunch_ref_id, p.dinner_ref_id].filter(Boolean))
     );
+
+    // RE v2: when inferred prefs exist, we stamp re_version='v2' and feed the
+    // signals into scoring. Affinity is applied even without inferred prefs
+    // since it's a direct historical engagement signal.
+    const affinityByDishId: Record<number, number> = {};
+    for (const row of affinityRows as Array<{ dish_id: number; affinity: number }>) {
+      affinityByDishId[row.dish_id] = Number(row.affinity);
+    }
+    const reVersion: 'v1' | 'v2' = inferredPrefs ? 'v2' : 'v1';
 
     const homeStateCode = stateNameToCode((profile as any)?.home_state);
     const [weather, regionAffinityByCuisineId] = await Promise.all([
@@ -119,9 +130,9 @@ async function generatePlanForUser(
     const lockedSlots: string[] = (existingForLocks as any)?.locked_slots || [];
     const assignedDishIds = new Set<number>();
 
-    const breakfastResult = generateSlot('breakfast', userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('breakfast') ? (existingForLocks as any)?.breakfast_ref_id : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
-    const lunchResult     = generateSlot('lunch',     userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('lunch')     ? (existingForLocks as any)?.lunch_ref_id     : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
-    const dinnerResult    = generateSlot('dinner',    userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('dinner')    ? (existingForLocks as any)?.dinner_ref_id    : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
+    const breakfastResult = generateSlot('breakfast', userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('breakfast') ? (existingForLocks as any)?.breakfast_ref_id : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId, inferredPrefs as any, affinityByDishId);
+    const lunchResult     = generateSlot('lunch',     userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('lunch')     ? (existingForLocks as any)?.lunch_ref_id     : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId, inferredPrefs as any, affinityByDishId);
+    const dinnerResult    = generateSlot('dinner',    userId, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('dinner')    ? (existingForLocks as any)?.dinner_ref_id    : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId, inferredPrefs as any, affinityByDishId);
 
     const breakfast = { top: breakfastResult.top, carousel: breakfastResult.carousel, scores: breakfastResult.carouselScores };
     const lunch     = { top: lunchResult.top,     carousel: lunchResult.carousel,     scores: lunchResult.carouselScores };
@@ -139,7 +150,7 @@ async function generatePlanForUser(
         breakfast_ref_type: 'dish', breakfast_ref_id: breakfast.top?.id ?? null,
         lunch_ref_type: 'dish',     lunch_ref_id: lunch.top?.id ?? null,
         dinner_ref_type: 'dish',    dinner_ref_id: dinner.top?.id ?? null,
-        re_version: 'v1',
+        re_version: reVersion,
         generated_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,plan_date' })
@@ -165,7 +176,7 @@ async function generatePlanForUser(
     const logRows = slotCarousels.flatMap(([slot, carousel]) =>
       carousel.map((d: any, i: number) => ({
         user_id: userId, dish_id: d.id, plan_date: planDate, meal_slot: slot,
-        action: 'shown', position: i, re_version: 'v1',
+        action: 'shown', position: i, re_version: reVersion,
       })),
     );
     if (logRows.length > 0) {
@@ -185,7 +196,7 @@ async function generatePlanForUser(
 
     const buildDebugRow = (slotResult: SlotResult, slotName: string, topDish: any) => ({
       user_id: userId, plan_date: planDate, meal_slot: slotName,
-      dish_id: topDish?.id ?? null, re_version: 'v1',
+      dish_id: topDish?.id ?? null, re_version: reVersion,
       final_score: slotResult.slotScore,
       eligible_pool_size: slotResult.totalEligible ?? 0,
       weather_input: weatherInfo,
@@ -207,7 +218,7 @@ async function generatePlanForUser(
           hard_filtered_out: (allDishes as any[]).length - (slotResult.totalEligible ?? 0),
           dish_pool_size: slotResult.totalEligible ?? 0,
         },
-        re_version: 'v1', source: 'batch',
+        re_version: reVersion, source: 'batch',
       },
     });
 

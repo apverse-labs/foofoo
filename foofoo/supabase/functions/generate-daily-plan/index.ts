@@ -101,7 +101,7 @@ serve(async (req) => {
     const startTime = Date.now();
 
     // --- LOAD USER CONTEXT (parallel) ---
-    const [profile, dietRules, cuisinePrefs, mealPrefs, neverList, recentPlans] =
+    const [profile, dietRules, cuisinePrefs, mealPrefs, neverList, recentPlans, inferredPrefs, affinityRows] =
       await Promise.all([
         supabase.from('profiles').select('food_pref, home_state, current_city').eq('id', user.id).maybeSingle().then(r => r.data),
         supabase.from('user_diet_rules').select('food_pref, excluded_ingredients').eq('user_id', user.id).maybeSingle().then(r => r.data),
@@ -109,7 +109,17 @@ serve(async (req) => {
         supabase.from('user_category_preferences').select('category_id, bucket').eq('user_id', user.id).eq('category_type', 'meal_item').then(r => r.data || []),
         supabase.from('never_list').select('dish_id').eq('user_id', user.id).eq('is_active', true).then(r => r.data || []),
         supabase.from('planner').select('breakfast_ref_id, lunch_ref_id, dinner_ref_id').eq('user_id', user.id).gte('plan_date', getDateDaysAgo(RE_V1.VARIETY_GUARD_DAYS)).lt('plan_date', planDate).then(r => r.data || []),
+        // RE v2: inferred prefs + pre-computed affinity. Both are nullable —
+        // if either is missing, we degrade gracefully to v1 behaviour.
+        supabase.from('user_inferred_prefs').select('spice_score, complexity_score, repeat_tolerance, cuisine_drift').eq('user_id', user.id).maybeSingle().then(r => r.data),
+        supabase.from('user_recipe_affinity').select('dish_id, affinity').eq('user_id', user.id).then(r => r.data || []),
       ]);
+
+    const affinityByDishId: Record<number, number> = {};
+    for (const row of affinityRows as Array<{ dish_id: number; affinity: number }>) {
+      affinityByDishId[row.dish_id] = Number(row.affinity);
+    }
+    const reVersion: 'v1' | 'v2' = inferredPrefs ? 'v2' : 'v1';
 
     const foodPref = dietRules?.food_pref || profile?.food_pref || 'veg';
     const excludedIngredients = new Set<number>(dietRules?.excluded_ingredients || []);
@@ -170,9 +180,9 @@ serve(async (req) => {
     // --- SCORE AND GENERATE SLOTS ---
     const assignedDishIds = new Set<number>();
 
-    const breakfastResult = generateSlot('breakfast', user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('breakfast') ? existingForLocks?.breakfast_ref_id : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
-    const lunchResult     = generateSlot('lunch',     user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('lunch')     ? existingForLocks?.lunch_ref_id     : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
-    const dinnerResult    = generateSlot('dinner',    user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('dinner')    ? existingForLocks?.dinner_ref_id    : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId);
+    const breakfastResult = generateSlot('breakfast', user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('breakfast') ? existingForLocks?.breakfast_ref_id : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId, inferredPrefs as any, affinityByDishId);
+    const lunchResult     = generateSlot('lunch',     user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('lunch')     ? existingForLocks?.lunch_ref_id     : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId, inferredPrefs as any, affinityByDishId);
+    const dinnerResult    = generateSlot('dinner',    user.id, planDate, allDishes as any[], assignedDishIds, lockedSlots.includes('dinner')    ? existingForLocks?.dinner_ref_id    : undefined, neverDishIds, excludedIngredients, cuisineBuckets, mealItemBuckets, cuisineIdToCode, weather, isWeekend, recentDishIds, regionAffinityByCuisineId, inferredPrefs as any, affinityByDishId);
 
     const breakfast = { top: breakfastResult.top, carousel: breakfastResult.carousel, scores: breakfastResult.carouselScores };
     const lunch     = { top: lunchResult.top,     carousel: lunchResult.carousel,     scores: lunchResult.carouselScores };
@@ -195,7 +205,7 @@ serve(async (req) => {
         breakfast_ref_type: 'dish', breakfast_ref_id: breakfast.top?.id ?? null,
         lunch_ref_type: 'dish',     lunch_ref_id: lunch.top?.id ?? null,
         dinner_ref_type: 'dish',    dinner_ref_id: dinner.top?.id ?? null,
-        re_version: 'v1',
+        re_version: reVersion,
         generated_at: new Date().toISOString(),
         updated_at: new Date().toISOString(),
       }, { onConflict: 'user_id,plan_date' })
@@ -231,7 +241,7 @@ serve(async (req) => {
         meal_slot: slot,
         action: 'shown',
         position: i,
-        re_version: 'v1',
+        re_version: reVersion,
       })),
     );
     if (logRows.length > 0) {
@@ -248,7 +258,7 @@ serve(async (req) => {
 
     const buildDebugRow = (slotResult: SlotResult, slotName: string, topDish: any) => ({
       user_id: user.id, plan_date: planDate, meal_slot: slotName,
-      dish_id: topDish?.id ?? null, re_version: 'v1',
+      dish_id: topDish?.id ?? null, re_version: reVersion,
       final_score: slotResult.slotScore,
       eligible_pool_size: slotResult.totalEligible ?? 0,
       weather_input: weatherInfo,
@@ -263,7 +273,7 @@ serve(async (req) => {
           hard_filtered_out: (allDishes as any[]).length - (slotResult.totalEligible ?? 0),
           dish_pool_size: slotResult.totalEligible ?? 0,
         },
-        re_version: 'v1', generation_time_ms: elapsed,
+        re_version: reVersion, generation_time_ms: elapsed,
       },
     });
 
@@ -294,7 +304,7 @@ serve(async (req) => {
     console.log(`[RE-v1] Plan generated in ${elapsed}ms`);
 
     return successResponse({
-      planId: savedPlan.id, planDate, reVersion: 'v1', generatedInMs: elapsed, cached: false,
+      planId: savedPlan.id, planDate, reVersion, generatedInMs: elapsed, cached: false,
       breakfast: { dish: breakfast.top, carouselCount: breakfast.carousel.length },
       lunch:     { dish: lunch.top,     carouselCount: lunch.carousel.length },
       dinner:    { dish: dinner.top,    carouselCount: dinner.carousel.length },

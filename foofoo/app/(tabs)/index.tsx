@@ -22,8 +22,8 @@ import GestureTutorial from '../../src/components/shared/GestureTutorial';
 import NeverModal from '../../src/components/dish/NeverModal';
 import NotTodayModal from '../../src/components/dish/NotTodayModal';
 import WeekView from '../../src/components/planner/WeekView';
-import { LoadingScreen, ErrorState, EmptyState } from './_HomeScreen.helpers';
-import { useHomeScreen } from './_useHomeScreen';
+import { LoadingScreen, ErrorState, EmptyState } from '../../src/modules/home/HomeScreen.helpers';
+import { useHomeScreen } from '../../src/modules/home/useHomeScreen';
 import { useResponsive } from '../../src/utils/responsive';
 import { PostHogService } from '../../src/services/posthog.service';
 
@@ -42,6 +42,7 @@ export default function HomeScreen() {
     loading, refreshing, error, showTutorial, userId,
     neverDish, neverSlot, notTodayDish, notTodaySlot,
     displayDate,
+    isOnline, usingCachedPlan,
     setShowTutorial, setNeverDish, setNeverSlot, setNotTodayDish, setNotTodaySlot,
     setPlanDateExternal,
     handleTitlePress, loadPlan, onRefresh,
@@ -89,6 +90,17 @@ export default function HomeScreen() {
           </Text>
         </Pressable>
       </View>
+
+      {/* Offline banner — shown above the date navigator whenever offline.
+          When we have a cached plan, the copy reflects that. */}
+      {!isOnline && (
+        <View style={styles.offlineBanner} accessibilityLiveRegion="polite">
+          <Text style={styles.offlineIcon}>📡</Text>
+          <Text style={styles.offlineText}>
+            {usingCachedPlan ? 'Offline — showing your last plan' : 'No internet connection'}
+          </Text>
+        </View>
+      )}
 
       {viewMode === 'day' ? (
         <>
@@ -239,4 +251,14 @@ const styles = StyleSheet.create({
   scrollContent: { gap: SPACING.md, paddingTop: SPACING.sm, paddingHorizontal: SPACING.md, alignItems: 'center' },
   cardWrapper: { gap: 6, alignItems: 'center' },
   carouselHint: { textAlign: 'center', fontSize: 11, color: COLORS.textSecondary },
+  offlineBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+    backgroundColor: '#FFF3CD',
+    paddingVertical: SPACING.xs, paddingHorizontal: SPACING.sm,
+    borderRadius: BORDER_RADIUS.sm,
+    marginHorizontal: SPACING.md, marginBottom: SPACING.xs,
+    alignSelf: 'stretch', justifyContent: 'center',
+  },
+  offlineIcon: { fontSize: 14 },
+  offlineText: { color: '#856404', fontSize: 12, fontWeight: '600' },
 });

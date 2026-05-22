@@ -12,16 +12,18 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { supabase } from '../../src/services/supabase';
+import { supabase } from '../../services/supabase';
+import { OfflineService } from '../../services/offline.service';
 import {
   generateDailyPlan, getCarouselForSlot, getTodayIST,
   lockSlot, unlockSlot,
-} from '../../src/repositories/plans.repository';
-import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
-import { Logger } from '../../src/utils/systemLogger';
-import { logScreenView, logFeatureTap, logSuggestionAction } from '../../src/repositories/feedback.repository';
-import { PostHogService } from '../../src/services/posthog.service';
-import type { GeneratedPlan, Dish } from '../../src/types';
+} from '../../repositories/plans.repository';
+import { UserJourneyLogger } from '../../utils/userJourneyLogger';
+import { Logger } from '../../utils/systemLogger';
+import { logScreenView, logFeatureTap, logSuggestionAction } from '../../repositories/feedback.repository';
+import { PostHogService } from '../../services/posthog.service';
+import { useNetworkStatus } from '../../hooks/useNetworkStatus';
+import type { GeneratedPlan, Dish } from '../../types';
 
 declare const __DEV__: boolean;
 
@@ -54,6 +56,8 @@ export function useHomeScreen() {
   const [neverSlot, setNeverSlot] = useState('');
   const [notTodayDish, setNotTodayDish] = useState<Dish | null>(null);
   const [notTodaySlot, setNotTodaySlot] = useState('');
+  const [usingCachedPlan, setUsingCachedPlan] = useState(false);
+  const { isOnline, wasOffline } = useNetworkStatus();
 
   useEffect(() => {
     supabase.auth.getUser()
@@ -62,6 +66,18 @@ export function useHomeScreen() {
     checkTutorial();
     loadPlan(false);
   }, [planDate]);
+
+  // On reconnect after offline: drain the action queue so swipes / nevers done
+  // while disconnected hit Supabase. Plan itself is refetched by loadPlan.
+  useEffect(() => {
+    if (isOnline && wasOffline && userId) {
+      OfflineService.syncPendingActions(userId).then(({ synced, failed }) => {
+        if (synced > 0 || failed > 0) {
+          Logger.info('HOME', 'Reconnect sync done', { synced, failed });
+        }
+      });
+    }
+  }, [isOnline, wasOffline, userId]);
 
   // Log a screen_view for Home whenever userId resolves or date changes.
   useEffect(() => {
@@ -103,6 +119,11 @@ export function useHomeScreen() {
       const result = await generateDailyPlan(planDate, forceRegenerate);
       setPlan(result);
       setPlanId(result.planId);
+      setUsingCachedPlan(false);
+
+      // Cache the fresh plan so a cold-start offline still has something to show.
+      const uid = userId || (await supabase.auth.getUser()).data.user?.id;
+      if (uid) OfflineService.cachePlan(uid, planDate, result).catch(() => {});
 
       // Seed locked_slots so the lock icon reflects DB state across sessions /
       // navigation. The Edge Function returns it inside the planner row, but
@@ -135,7 +156,26 @@ export function useHomeScreen() {
       loadCarousels(result.planId, result);
     } catch (err: any) {
       Logger.error('HOME', 'Plan load failed', { error: err?.message, planDate });
-      setError('Check your internet connection and try again.');
+      // Network failed — try the offline cache before surfacing the error.
+      const uid = userId || (await supabase.auth.getUser()).data.user?.id;
+      if (uid) {
+        const cached = await OfflineService.getCachedPlan(uid, planDate);
+        if (cached) {
+          setPlan(cached);
+          setPlanId(cached.planId);
+          setUsingCachedPlan(true);
+          setCarousels({
+            breakfast: cached.breakfast?.dish ? [cached.breakfast.dish] : [],
+            lunch: cached.lunch?.dish ? [cached.lunch.dish] : [],
+            dinner: cached.dinner?.dish ? [cached.dinner.dish] : [],
+          });
+          setError(null);
+        } else {
+          setError('Check your internet connection and try again.');
+        }
+      } else {
+        setError('Check your internet connection and try again.');
+      }
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -272,6 +312,7 @@ export function useHomeScreen() {
     loading, refreshing, error, showTutorial, userId,
     neverDish, neverSlot, notTodayDish, notTodaySlot,
     displayDate,
+    isOnline, usingCachedPlan,
     setShowTutorial, setNeverDish, setNeverSlot, setNotTodayDish, setNotTodaySlot,
     setPlanDateExternal,
     handleTitlePress, loadPlan, onRefresh,

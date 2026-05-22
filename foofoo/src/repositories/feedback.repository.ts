@@ -10,9 +10,23 @@
  * @calledBy MealCard, Meal Detail, Grocery, DatePickerModal, regenerate-slot client wrapper
  */
 
+import NetInfo from '@react-native-community/netinfo';
+import { Platform } from 'react-native';
 import { supabase } from '../services/supabase';
+import { OfflineService } from '../services/offline.service';
 import { Logger } from '../utils/systemLogger';
 import type { SuggestionAction } from '../types';
+
+/**
+ * @summary Best-effort online check. Web trusts navigator.onLine; native asks NetInfo.
+ */
+async function isOnline(): Promise<boolean> {
+  if (Platform.OS === 'web') {
+    return typeof navigator === 'undefined' || navigator.onLine;
+  }
+  const s = await NetInfo.fetch();
+  return !!(s.isConnected && s.isInternetReachable !== false);
+}
 
 /**
  * @summary Logs a user interaction to suggestion_logs table.
@@ -55,7 +69,7 @@ export async function logSuggestionAction(
   reVersion = 'v1',
 ): Promise<void> {
   if (!userId) return;
-  const { error } = await supabase.from('suggestion_logs').insert({
+  const logData = {
     user_id: userId,
     dish_id: dishId,
     plan_date: planDate,
@@ -63,7 +77,15 @@ export async function logSuggestionAction(
     action,
     position,
     re_version: reVersion,
-  });
+  };
+
+  // Offline path: queue the action and bail. Sync runs on reconnect.
+  if (!(await isOnline())) {
+    await OfflineService.queueAction(userId, { type: 'suggestion_log', logData });
+    return;
+  }
+
+  const { error } = await supabase.from('suggestion_logs').insert(logData);
   if (error) Logger.warn('FEEDBACK-REPO', 'suggestion log failed', { action, dishId, error: error.message });
 }
 
