@@ -1,5 +1,6 @@
 import { useEffect } from 'react';
 import { Stack, useRouter } from 'expo-router';
+import Head from 'expo-router/head';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
@@ -74,6 +75,17 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
+      <Head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+        />
+        <meta name="theme-color" content="#2D6A4F" />
+        <meta name="apple-mobile-web-app-capable" content="yes" />
+        <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+        <meta name="apple-mobile-web-app-title" content="Foofoo" />
+        <link rel="apple-touch-icon" href="/assets/icon.png" />
+      </Head>
       <QueryClientProvider client={queryClient}>
         <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false }}>

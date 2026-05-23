@@ -1,8 +1,8 @@
 export const APP_NAME = 'Foofoo';
-export const APP_VERSION = '0.1.0';
+export const APP_VERSION = '1.0.0';
 
-export const SUPABASE_URL = 'https://ufgfznpqixplcbhmsqqw.supabase.co';
-export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVmZ2Z6bnBxaXhwbGNiaG1zcXF3Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxNTg4MjMsImV4cCI6MjA5NDczNDgyM30.DUP9dIp2g6E-g3fphtdSNmQAKrmecJj6WEs0NKe-f4M';
+export const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+export const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 export const FEATURES = {
   GOOGLE_SIGNIN: false,
@@ -87,4 +87,9 @@ export const API = {
 
 export const STORAGE_KEYS = {
   INTRO_SEEN: 'foofoo_has_seen_intro',
+} as const;
+
+export const LEGAL = {
+  PRIVACY_POLICY_URL: 'https://foofoo-privacy.vercel.app/privacy',
+  TERMS_OF_SERVICE_URL: 'https://foofoo-privacy.vercel.app/terms',
 } as const;

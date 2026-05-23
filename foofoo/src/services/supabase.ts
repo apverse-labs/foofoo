@@ -1,7 +1,11 @@
 import { createClient } from '@supabase/supabase-js';
 import * as SecureStore from 'expo-secure-store';
-import { SUPABASE_URL, SUPABASE_ANON_KEY } from '../config/constants';
 import { Platform } from 'react-native';
+
+// Read from env vars; fall back to empty strings so SSR pre-rendering during
+// `expo export --platform web` doesn't crash (pages are client-hydrated anyway).
+const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL ?? '';
+const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY ?? '';
 
 // true only in a real browser context (not SSR/Node.js)
 const isBrowser = Platform.OS === 'web' && typeof localStorage !== 'undefined';
@@ -26,11 +30,18 @@ const ExpoSecureStoreAdapter = {
   },
 };
 
-export const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
-  auth: {
-    storage: ExpoSecureStoreAdapter,
-    autoRefreshToken: true,
-    persistSession: true,
-    detectSessionInUrl: false,
-  },
-});
+// During static export SSR the env vars are empty — use placeholders so the
+// module loads without throwing. The client won't be called during SSR since
+// all screens are auth-gated and render only a loading state server-side.
+export const supabase = createClient(
+  SUPABASE_URL || 'https://ssr-placeholder.invalid',
+  SUPABASE_ANON_KEY || 'ssr-placeholder-key',
+  {
+    auth: {
+      storage: ExpoSecureStoreAdapter,
+      autoRefreshToken: true,
+      persistSession: true,
+      detectSessionInUrl: false,
+    },
+  }
+);

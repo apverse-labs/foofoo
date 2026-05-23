@@ -75,7 +75,7 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: 'row', alignItems: 'center', gap: SPACING.sm,
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm,
-    backgroundColor: '#FAFAF8',
+    backgroundColor: COLORS.background,
     borderBottomWidth: 1, borderBottomColor: COLORS.border,
   },
   headerEmoji: { fontSize: 18 },

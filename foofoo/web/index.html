@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no"
+    />
+    <meta name="theme-color" content="#2D6A4F" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Foofoo" />
+    <meta name="description" content="Your AI-powered meal planner. Stop wondering what to cook." />
+    <link rel="apple-touch-icon" href="/assets/icon.png" />
+    <title>Foofoo - AI Meal Planner</title>
+    <%- helmet.htmlAttributes.toString() %>
+  </head>
+  <body>
+    <%- helmet.bodyAttributes.toString() %>
+    <div id="root">
+      <%- rootTag %>
+    </div>
+    <%- scripts %>
+  </body>
+</html>
