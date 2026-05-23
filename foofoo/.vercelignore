@@ -1,0 +1,9 @@
+node_modules/
+.expo/
+android/
+ios/
+*.log
+.env.local
+.env.staging
+__tests__/
+coverage/
