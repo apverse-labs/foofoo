@@ -130,19 +130,38 @@ export default function ProfileTab() {
   };
 
   const handleDeleteAccount = () => {
-    const title = 'Delete account?';
-    const message =
-      'This permanently deletes your profile, preferences, meal plans, and history. ' +
-      'You will be signed out immediately. This cannot be undone.';
     if (Platform.OS === 'web') {
-      const ok = (globalThis as { confirm?: (m: string) => boolean }).confirm?.(`${title}\n\n${message}`);
-      if (ok) confirmDeleteAccount();
+      const ok1 = (globalThis as { confirm?: (m: string) => boolean }).confirm?.(
+        'Delete Account\n\nThis will permanently delete your FooFoo account, all meal plans, preferences, and history. This action cannot be undone.'
+      );
+      if (!ok1) return;
+      const ok2 = (globalThis as { confirm?: (m: string) => boolean }).confirm?.(
+        'Final Confirmation\n\nAre you absolutely sure? Your account will be permanently deleted.'
+      );
+      if (ok2) confirmDeleteAccount();
       return;
     }
-    Alert.alert(title, message, [
-      { text: 'Cancel', style: 'cancel' },
-      { text: 'Delete', style: 'destructive', onPress: confirmDeleteAccount },
-    ]);
+    Alert.alert(
+      'Delete Account',
+      'This will permanently delete your FooFoo account, all meal plans, preferences, and history. This action cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Continue',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert(
+              'Final Confirmation',
+              'Are you absolutely sure? Your account will be permanently deleted.',
+              [
+                { text: 'Go Back', style: 'cancel' },
+                { text: 'Yes, Delete Forever', style: 'destructive', onPress: confirmDeleteAccount },
+              ]
+            );
+          },
+        },
+      ]
+    );
   };
 
   const confirmDeleteAccount = async () => {
@@ -155,7 +174,10 @@ export default function ProfileTab() {
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Unknown error';
       Logger.error('PROFILE', 'deleteAccount failed', { error: msg });
-      Alert.alert('Could not delete account', msg);
+      Alert.alert(
+        'Deletion Failed',
+        'Could not delete your account. Please try again or email us at support@foofoo.app'
+      );
     } finally {
       setBusySection(null);
     }
@@ -305,20 +327,21 @@ export default function ProfileTab() {
           <Text style={styles.signOutText}>Sign Out</Text>
         </Pressable>
 
-        <Pressable
-          style={styles.deleteBtn}
-          onPress={handleDeleteAccount}
-          disabled={busySection === 'delete'}
-        >
-          {busySection === 'delete' ? (
-            <ActivityIndicator color="#B00020" />
-          ) : (
-            <Text style={styles.deleteText}>Delete Account</Text>
-          )}
-        </Pressable>
-        <Text style={styles.deleteNote}>
-          Permanently removes your profile, preferences, meal history, and saved plans.
-        </Text>
+        <View style={styles.dangerSection}>
+          <View style={styles.dangerDivider} />
+          <Text style={styles.dangerLabel}>Danger Zone</Text>
+          <Pressable
+            style={styles.deleteAccountButton}
+            onPress={handleDeleteAccount}
+            disabled={busySection === 'delete'}
+          >
+            {busySection === 'delete' ? (
+              <ActivityIndicator color={COLORS.error} size="small" />
+            ) : (
+              <Text style={styles.deleteAccountText}>🗑️  Delete My Account</Text>
+            )}
+          </Pressable>
+        </View>
       </ScrollView>
 
       {toast && (
@@ -569,19 +592,37 @@ const styles = StyleSheet.create({
   },
   signOutText: { color: COLORS.error, fontSize: 14, fontWeight: '700' },
 
-  deleteBtn: {
-    marginHorizontal: SPACING.md,
-    marginTop: SPACING.md,
-    paddingVertical: 12,
-    alignItems: 'center',
+  dangerSection: {
+    marginTop: SPACING.sm,
+    paddingBottom: 40,
   },
-  deleteText: { color: '#B00020', fontSize: 13, fontWeight: '700', textDecorationLine: 'underline' },
-  deleteNote: {
-    color: COLORS.textSecondary,
+  dangerDivider: {
+    height: 1,
+    backgroundColor: '#FFE0E0',
+    marginHorizontal: SPACING.lg,
+    marginBottom: SPACING.md,
+  },
+  dangerLabel: {
     fontSize: 11,
+    color: '#BBBBBB',
+    textTransform: 'uppercase',
+    letterSpacing: 1.5,
     textAlign: 'center',
-    paddingHorizontal: SPACING.lg,
-    marginTop: SPACING.xs,
+    marginBottom: 12,
+  },
+  deleteAccountButton: {
+    marginHorizontal: SPACING.lg,
+    paddingVertical: 14,
+    alignItems: 'center',
+    borderRadius: BORDER_RADIUS.md,
+    borderWidth: 1.5,
+    borderColor: '#FFB3B3',
+    backgroundColor: '#FFF5F5',
+  },
+  deleteAccountText: {
+    color: COLORS.error,
+    fontSize: 15,
+    fontWeight: '600',
   },
 
   toast: {
