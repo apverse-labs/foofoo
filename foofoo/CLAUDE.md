@@ -290,7 +290,10 @@ Secrets in Edge Functions go in **Supabase Vault** (Dashboard → Settings → V
 
 ## Current Sprint Status
 
-**Sprint:** 7 — Polish + Google Play Launch — STARTING (2026-05-22)
+**Sprint:** 7 — Polish + Google Play Launch — In Progress (2026-05-23)
+**Platform:** Claude Code Web (GitHub Codespaces-free workflow)
+**Environment:** Vercel web deployment for testing
+**Version:** 1.0.0
 **Pre-Sprint 7 readiness check:** see `logs/pre_sprint_reports/pre_sprint7_20260522.txt`
   - Build, features (26/26), navigation, performance, data integrity: all green
   - Hermes export blocker (supabase-js OTEL dynamic import) → patched via patch-package

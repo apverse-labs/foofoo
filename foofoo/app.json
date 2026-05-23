@@ -28,8 +28,15 @@
     },
     "web": {
       "bundler": "metro",
-      "output": "single",
-      "favicon": "./assets/favicon.png"
+      "output": "static",
+      "favicon": "./assets/favicon.png",
+      "name": "Foofoo",
+      "shortName": "Foofoo",
+      "description": "Your AI meal planner",
+      "themeColor": "#2D6A4F",
+      "backgroundColor": "#2D6A4F",
+      "display": "standalone",
+      "orientation": "portrait"
     },
     "plugins": [
       "expo-router",
