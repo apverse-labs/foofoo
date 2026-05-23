@@ -301,6 +301,16 @@ Secrets in Edge Functions go in **Supabase Vault** (Dashboard → Settings → V
   - app.json bumped to v1.0.0 + versionCode 1 + description
   - Open before submit: Privacy Policy URL, ToS URL, RESEND_API_KEY, EXPO_PUBLIC_SENTRY_DSN
 
+**Sprint 7 Progress — 2026-05-23:**
+- [x] Phase 1: Version 1.0.0, env-var Supabase keys, LEGAL URLs, app.json PWA config
+- [x] Phase 2: delete-user-account Edge Function, account.repository.ts, profile Danger Zone UI
+- [x] Phase 3: Haptics web-safe, tab accessibility labels, color constants cleanup
+- [x] Phase 4: vercel.json, .vercelignore, build scripts, VERCEL_DEPLOY.md, VERCEL_ENV_SETUP.md
+- [x] Phase 5: iOS PWA meta tags via expo-router/head (viewport-fit=cover, apple-mobile-web-app-capable)
+- [x] Phase 6: TypeScript 0 errors, web export 5.2MB/22 routes, 0 hardcoded secrets
+- [ ] Manual: Connect GitHub repo to Vercel, set env vars, share URL with beta testers
+- [ ] Next: Legal pages (Privacy Policy + ToS), EAS Android build, Play Store submission
+
 **Sprint 6 — INTELLIGENCE — COMPLETED (2026-05-22, see Changelog.md):**
 - [x] Section 1 — Morning push notification (`send-morning-notification`
       Edge Function + `foofoo-morning-notifications` CRON + deep-link

@@ -6,6 +6,50 @@
 ## [Unreleased]
 <!-- Add new changes here. Move to a version block when a sprint completes. -->
 
+### Sprint 7 — Polish + Vercel Deployment — 2026-05-23
+
+**Phase 1 — Version & Metadata:**
+- `src/config/constants.ts`: APP_VERSION 0.1.0 → 1.0.0
+- `src/config/constants.ts`: SUPABASE_URL/KEY moved from hardcoded to `process.env.EXPO_PUBLIC_*`
+- `src/config/constants.ts`: Added LEGAL URLs (privacy policy + ToS placeholder)
+- `app.json`: `web.output` "single" → "static" (Vercel static export)
+- `app.json`: Added full PWA web config (name, themeColor, display:standalone)
+- `CLAUDE.md`: Sprint 7 In Progress status + platform/environment notes
+
+**Phase 2 — Account Deletion (Play Store Compliance):**
+- `supabase/functions/delete-user-account/index.ts`: New Edge Function — JWT-verified per-user deletion via service_role
+- `src/repositories/account.repository.ts`: New repo — ordered table deletion + Edge Function call
+- `app/(tabs)/profile.tsx`: Double confirmation dialog (Continue → Yes Delete Forever)
+- `app/(tabs)/profile.tsx`: Danger Zone visual section (red border card, divider, label)
+- Existing `supabase/functions/delete-account/` + `src/repositories/profile-settings.repository.ts` remain as the primary implementation
+
+**Phase 3 — Visual Polish:**
+- `src/components/dish/MealCard.tsx`: Add `.catch(() => {})` to haptics calls (web-safe)
+- `app/(tabs)/_layout.tsx`: Add `tabBarAccessibilityLabel` to all 4 tabs
+- `src/components/grocery/GroceryCategorySection.tsx`: `#FAFAF8` → `COLORS.background`
+- All screens verified: loading states ✓, error states ✓, RefreshControl tint ✓, image contentFit=cover ✓, SafeAreaView ✓
+
+**Phase 4 — Vercel Deployment Setup:**
+- `vercel.json` (repo root): build command, output dir, SPA rewrites, security headers
+- `foofoo/.vercelignore`: exclude native dirs, logs, env files
+- `foofoo/package.json`: Added `build:web` and `vercel-build` scripts
+- `foofoo/VERCEL_ENV_SETUP.md`: Env vars reference for Vercel dashboard
+- `foofoo/VERCEL_DEPLOY.md`: Step-by-step deployment guide
+- `src/services/supabase.ts`: SSR-safe client creation (placeholder URL during static export)
+- **Web export: SUCCESS** — 5.2MB, 22 routes pre-rendered, 0 errors
+
+**Phase 5 — Web App Polish (iOS Chrome):**
+- `app/_layout.tsx`: Added `expo-router/head` with iOS PWA meta tags
+  (viewport-fit=cover, apple-mobile-web-app-capable, theme-color, apple-touch-icon)
+- `web/index.html`: Custom HTML template for future HTML customisation
+- **iOS meta tags confirmed** in generated dist/index.html
+
+**Phase 6 — Verification:**
+- TypeScript: 0 errors
+- Web export: PASS (5.2MB dist/)
+- Secrets check: 0 hardcoded credentials in src/ or app/
+- .gitignore: complete (node_modules, .expo, dist, .env.local, .env.staging)
+
 ### Pre-Sprint 7 readiness pass — 2026-05-22
 
 Diagnosis + fix pass before starting the Polish + Launch sprint.

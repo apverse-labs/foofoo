@@ -34,8 +34,8 @@ const ExpoSecureStoreAdapter = {
 // module loads without throwing. The client won't be called during SSR since
 // all screens are auth-gated and render only a loading state server-side.
 export const supabase = createClient(
-  SUPABASE_URL || 'https://placeholder.supabase.co',
-  SUPABASE_ANON_KEY || 'placeholder-key',
+  SUPABASE_URL || 'https://ssr-placeholder.invalid',
+  SUPABASE_ANON_KEY || 'ssr-placeholder-key',
   {
     auth: {
       storage: ExpoSecureStoreAdapter,
