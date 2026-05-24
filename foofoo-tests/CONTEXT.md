@@ -19,7 +19,7 @@ All documents are in ../foofoo-app/docs/ — read them in this order:
 6. Doc 08  — Information Architecture (all 30 MVP screens, user flows)
 
 ## Dev environment
-- Supabase dev project: Mumbai region
+- Supabase dev project: Mumbai region — https://ufgfznpqixplcbhmsqqw.supabase.co
 - Dev DB has 500 dishes, all Tier 1+2 tagged, all ingredients with flags
 - Auto-derivation has been run: all dishes have allergens[], diet_type, is_jain, ingredient_ids[]
 - RE v1 + v2 are live (Edge Functions deployed)
