@@ -3,7 +3,7 @@ import type { Config } from "jest";
 const config: Config = {
   preset: "ts-jest",
   testEnvironment: "node",
-  roots: ["<rootDir>/tests"],
+  roots: ["<rootDir>/unit", "<rootDir>/integration", "<rootDir>/tests"],
   testMatch: [
     "**/__tests__/**/*.ts",
     "**/?(*.)+(spec|test).ts"
@@ -15,14 +15,17 @@ const config: Config = {
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
   collectCoverageFrom: [
-    "tests/**/*.ts",
-    "!tests/**/*.d.ts"
+    "unit/**/*.ts",
+    "integration/**/*.ts",
+    "!**/*.d.ts"
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html"],
   setupFilesAfterEnv: [],
   testTimeout: 30000,
-  verbose: true
+  verbose: true,
+  // Integration tests need more time for Supabase round-trips
+  testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/dist/"]
 };
 
 export default config;

@@ -4,14 +4,19 @@
   "description": "Integration and E2E test suite for foofoo",
   "private": true,
   "scripts": {
-    "test": "jest",
-    "test:watch": "jest --watch",
-    "test:coverage": "jest --coverage",
+    "test": "jest --testPathPattern='unit|integration'",
+    "test:unit": "jest --testPathPattern='unit'",
+    "test:integration": "jest --testPathPattern='integration'",
+    "test:personas": "ts-node --project tsconfig.json personas/persona-runner.ts",
     "test:e2e": "detox test",
     "test:e2e:build": "detox build",
     "test:e2e:ios": "detox test --configuration ios.sim.debug",
     "test:e2e:android": "detox test --configuration android.emu.debug",
-    "typecheck": "tsc --noEmit"
+    "test:security": "jest --testPathPattern='rls-security|dpdp'",
+    "test:all": "npm run test && npm run test:personas",
+    "report": "ts-node --project tsconfig.json reports/generate-html.ts",
+    "typecheck": "tsc --noEmit",
+    "test:watch": "jest --watch --testPathPattern='unit'"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0"
@@ -22,6 +27,7 @@
     "detox": "^20.30.0",
     "jest": "^29.7.0",
     "ts-jest": "^29.3.4",
+    "ts-node": "^10.9.2",
     "typescript": "^5.8.3"
   }
 }
