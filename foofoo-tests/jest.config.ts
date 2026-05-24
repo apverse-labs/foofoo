@@ -1,4 +1,10 @@
 import type { Config } from "jest";
+import * as dotenv from "dotenv";
+import * as path from "path";
+
+// Load .env.test for local integration test runs.
+// In CI the env vars are injected directly — this is a no-op when the file doesn't exist.
+dotenv.config({ path: path.resolve(__dirname, ".env.test") });
 
 const config: Config = {
   preset: "ts-jest",
