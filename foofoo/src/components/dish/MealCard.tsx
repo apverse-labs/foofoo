@@ -20,6 +20,7 @@ import React, { useRef, useState } from 'react';
 import { View, Text, Pressable } from 'react-native';
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
+import { getCloudinaryUrl } from '../../utils/cloudinary';
 import { LinearGradient } from 'expo-linear-gradient';
 import { GestureDetector, Gesture } from 'react-native-gesture-handler';
 import Animated, {
@@ -40,6 +41,36 @@ import { PostHogService } from '../../services/posthog.service';
 import DatePickerModal from './DatePickerModal';
 import { useResponsive } from '../../utils/responsive';
 import { styles } from './MealCard.styles';
+
+// ─── Image source builder ────────────────────────────────────────────────────
+// Priority 1: Cloudinary card (720px) — when cloudinary_public_id is set
+// Priority 2: hero_image_url — legacy / manual URL
+// Priority 3: local placeholder PNG — when neither remote URL is available
+//
+// expo-image source prop accepts:
+//   ImageSource | ImageSource[] → remote URLs (array enables fallback chain)
+//   number                      → local require() asset
+// We can't mix number inside an ImageSource[] array (TypeScript union constraint),
+// so we only use the array for remote sources and fall back to the local number
+// only when there are no remote sources at all.
+const PLACEHOLDER_IMG = require('../../../assets/images/dish-placeholder.png') as number;
+
+type CardSource = import('expo-image').ImageSource | import('expo-image').ImageSource[] | number;
+
+function buildCardSources(dish: import('../../types').Dish): CardSource {
+  if (dish.cloudinary_public_id) {
+    // Build array: Cloudinary first, hero_image_url second (expo-image uses first that loads)
+    const arr: import('expo-image').ImageSource[] = [
+      { uri: getCloudinaryUrl(dish.cloudinary_public_id, 'card') },
+    ];
+    if (dish.hero_image_url) arr.push({ uri: dish.hero_image_url });
+    return arr;
+  }
+  if (dish.hero_image_url) return { uri: dish.hero_image_url };
+  return PLACEHOLDER_IMG;
+}
+
+// ─── Component ───────────────────────────────────────────────────────────────
 
 interface MealCardProps {
   dish: Dish | null;
@@ -279,7 +310,7 @@ export default function MealCard({
     <GestureDetector gesture={composed}>
       <Animated.View style={[styles.card, { width: cardWidth }, isLocked && styles.cardLocked, animatedStyle]}>
         <Image
-          source={{ uri: currentDish.hero_image_url ?? `https://picsum.photos/seed/${currentDish.slug ?? `dish-${currentDish.id}`}/400/300` }}
+          source={buildCardSources(currentDish)}
           placeholder={currentDish.blurhash ?? PLACEHOLDER_HASH}
           contentFit="cover"
           style={styles.image}

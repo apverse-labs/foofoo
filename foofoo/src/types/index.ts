@@ -103,6 +103,8 @@ export interface Dish {
   cook_time_mins: number;
   calories: number;
   hero_image_url: string | null;
+  /** Cloudinary public_id, e.g. "curd_rice_hero_01_qxxbm7". Null until sync-cloudinary-images runs. */
+  cloudinary_public_id: string | null;
   blurhash: string | null;
   is_active: boolean;
   allergen_ids?: number[] | null;
@@ -155,6 +157,7 @@ export interface SimilarDishRow {
     id: number;
     name: string;
     hero_image_url: string | null;
+    cloudinary_public_id: string | null;
     blurhash: string | null;
     diet_type: DietType;
     cook_time_mins: number;
