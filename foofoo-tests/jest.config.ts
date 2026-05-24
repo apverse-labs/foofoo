@@ -20,7 +20,7 @@ const config: Config = {
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html"],
-  setupFilesAfterFramework: [],
+  setupFilesAfterEnv: [],
   testTimeout: 30000,
   verbose: true
 };
