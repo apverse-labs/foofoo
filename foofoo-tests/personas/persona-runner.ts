@@ -9,7 +9,7 @@
 //   npx ts-node --project tsconfig.json personas/persona-runner.ts --persona P001
 //   npx ts-node --project tsconfig.json personas/persona-runner.ts --diet veg
 //
-// Env required: SUPABASE_URL, SUPABASE_ACCESS_TOKEN, SUPABASE_SERVICE_ROLE_KEY
+// Env required: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY
 
 import * as path from 'path';
 import * as fs from 'fs';

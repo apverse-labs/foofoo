@@ -1,7 +1,7 @@
 // integration/dpdp-compliance.test.ts
 // Data protection tests — DPDP (India) + Google Play compliance
 // Tests account deletion pipeline, data export, and consent tracking
-// Requires: SUPABASE_URL + SUPABASE_ACCESS_TOKEN + SUPABASE_SERVICE_ROLE_KEY
+// Requires: SUPABASE_URL + SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY
 
 import { supabaseAdmin, createTestUser, deleteTestUser } from '../lib/supabase';
 

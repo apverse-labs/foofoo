@@ -1,13 +1,13 @@
 // integration/rls-security.test.ts
 // Cross-user data isolation — every test creates and deletes its own users
 // CRITICAL: A breach here = production security failure
-// Requires: SUPABASE_URL + SUPABASE_ACCESS_TOKEN + SUPABASE_SERVICE_ROLE_KEY
+// Requires: SUPABASE_URL + SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY
 
 import { supabaseAdmin, createTestUser, signInTestUser, deleteTestUser } from '../lib/supabase';
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? '';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ACCESS_TOKEN ?? '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? '';
 
 jest.setTimeout(60000);
 

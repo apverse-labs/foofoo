@@ -1,6 +1,6 @@
 // integration/edge-functions.test.ts
 // Tests Supabase Edge Functions (RE plan generation, inferred prefs)
-// Requires: SUPABASE_URL + SUPABASE_ACCESS_TOKEN + SUPABASE_SERVICE_ROLE_KEY
+// Requires: SUPABASE_URL + SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY
 
 import { supabaseAdmin, createTestUser, signInTestUser, deleteTestUser } from '../lib/supabase';
 import { createClient } from '@supabase/supabase-js';
@@ -8,7 +8,7 @@ import { createClient } from '@supabase/supabase-js';
 jest.setTimeout(120000);
 
 const SUPABASE_URL = process.env.SUPABASE_URL ?? '';
-const SUPABASE_ANON_KEY = process.env.SUPABASE_ACCESS_TOKEN ?? '';
+const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? '';
 
 // ─── generate-first-plan Edge Function ───────────────────────────────────────
 
