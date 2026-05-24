@@ -7,16 +7,18 @@ iOS-first, tested on Windows via Expo web and EAS cloud builds.
 Non-technical founders building with AI assistance.
 
 ## App project location
-../foofoo-app/   (sibling folder in this workspace)
+../foofoo/   (within the same repo: apverse-labs/foofoo/foofoo/)
 
 ## Critical documents to read before writing tests
-All documents are in ../foofoo-app/docs/ — read them in this order:
-1. Doc 11A — Final Merged DB Schema (41 MVP tables, exact column names, types, FKs)
-2. Doc 10  — RE Specification (scoring pipeline, hard constraints, soft weights)
-3. Doc 12  — Sprint Plan (what was built in each sprint, definition of done)
-4. Doc 09  — Design System + Wireframes (gesture behaviour, screen states)
-5. Doc 06  — PRD v4 (feature list, onboarding flow, success metrics)
-6. Doc 08  — Information Architecture (all 30 MVP screens, user flows)
+All documents are in ../foofoo/ProductDocs/ — read them in this order:
+1. Doc 11A — `11A Final_Merged_Database_Schema_v4.MD`        (41 MVP tables, exact column names, types, FKs)
+2. Doc 10  — `10 Recommendation_Engine_Specification_v3.MD`  (scoring pipeline, hard constraints, soft weights)
+3. Doc 12  — `12 MVP_Sprint_Plan+Phase1_v3.MD`               (what was built in each sprint, definition of done)
+4. Doc 12A — `12A Sprint_Plan_Appendix_Updates_and_Phase1_v3.MD` (appendix + Phase 1 updates)
+5. Doc 09  — `09 UI_UX_Design_System_and_Wireframes_v2.MD`   (gesture behaviour, screen states)
+6. Doc 06  — `06 PRD_and_User_Personas_v4.MD`                (feature list, onboarding flow, success metrics)
+7. Doc 08  — `08 Information_Architecture_and_Sitemap_v2.MD` (all 30 MVP screens, user flows)
+8. Doc 11  — `11 Technical_Architecture_and_Database_Design_v3.MD` (overall technical architecture)
 
 ## Dev environment
 - Supabase dev project: Mumbai region — https://ufgfznpqixplcbhmsqqw.supabase.co
