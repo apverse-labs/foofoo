@@ -10,9 +10,11 @@ jest.setTimeout(120000);
 const SUPABASE_URL = process.env.SUPABASE_URL ?? '';
 const SUPABASE_ANON_KEY = process.env.SUPABASE_ANON_KEY ?? '';
 
-// ─── generate-first-plan Edge Function ───────────────────────────────────────
+// ─── generate-daily-plan Edge Function ───────────────────────────────────────
+// Deployed as: supabase/functions/generate-daily-plan
+// (Previously tested as "generate-first-plan" — aligned to actual function name)
 
-describe('Edge Function: generate-first-plan', () => {
+describe('Edge Function: generate-daily-plan', () => {
   let testUserId: string;
   let testEmail: string;
 
@@ -29,6 +31,7 @@ describe('Edge Function: generate-first-plan', () => {
       allergen_ingredient_ids: [],
     });
 
+    // Use new Doc #11A schema (item_id integer + preference_bucket)
     await supabaseAdmin.from('user_category_preferences').insert([
       { user_id: testUserId, category_type: 'cuisine', item_id: 1, preference_bucket: 'frequently' },
       { user_id: testUserId, category_type: 'cuisine', item_id: 2, preference_bucket: 'occasionally' },
@@ -44,19 +47,22 @@ describe('Edge Function: generate-first-plan', () => {
     await deleteTestUser(testUserId);
   });
 
-  it('generate-first-plan function exists and is invocable', async () => {
+  it('generate-daily-plan function exists and is invocable', async () => {
     const start = Date.now();
-    const { data, error } = await supabaseAdmin.functions.invoke('generate-first-plan', {
+    // Service-role call requires targetUserId in body (not user_id)
+    // planDate is YYYY-MM-DD (defaults to today IST if omitted)
+    const { data, error } = await supabaseAdmin.functions.invoke('generate-daily-plan', {
       body: {
-        user_id: testUserId,
-        date: new Date().toISOString().split('T')[0],
+        targetUserId: testUserId,
+        planDate: new Date().toISOString().split('T')[0],
+        forceRegenerate: true,
       },
     });
     const elapsed = Date.now() - start;
 
     if (error) {
       // Function may not be deployed yet — treat as DATA_GAP not failure
-      console.warn('⚠️ generate-first-plan not deployed or errored:', error.message);
+      console.warn('⚠️ generate-daily-plan not deployed or errored:', error.message);
       return;
     }
 
@@ -67,24 +73,37 @@ describe('Edge Function: generate-first-plan', () => {
   }, 10000);
 
   it('generated plan respects diet_type=veg hard constraint', async () => {
-    const { data, error } = await supabaseAdmin.functions.invoke('generate-first-plan', {
+    const { data, error } = await supabaseAdmin.functions.invoke('generate-daily-plan', {
       body: {
-        user_id: testUserId,
-        date: new Date().toISOString().split('T')[0],
+        targetUserId: testUserId,
+        planDate: new Date().toISOString().split('T')[0],
+        forceRegenerate: true,
       },
     });
 
     if (error) {
-      console.warn('⚠️ generate-first-plan not deployed:', error.message);
+      console.warn('⚠️ generate-daily-plan not deployed:', error.message);
       return;
     }
 
-    // If plan was generated, check planner_carousel for non-veg dishes
-    const { data: carousel } = await (supabaseAdmin as any)
-      .from('planner_carousel')
-      .select('ref_ids, scores')
+    // If plan was generated, fetch planner row and check carousel for non-veg dishes
+    const { data: plannerRow } = await supabaseAdmin
+      .from('planner')
+      .select('id')
       .eq('user_id', testUserId)
-      .limit(3);
+      .limit(1)
+      .single();
+
+    if (!plannerRow) {
+      console.warn('⚠️ No planner row created');
+      return;
+    }
+
+    const { data: carousel } = await supabaseAdmin
+      .from('planner_carousel')
+      .select('ref_id, ref_type')
+      .eq('planner_id', plannerRow.id)
+      .eq('ref_type', 'dish');
 
     if (!carousel || carousel.length === 0) {
       console.warn('⚠️ No carousel data generated');
@@ -92,12 +111,12 @@ describe('Edge Function: generate-first-plan', () => {
     }
 
     // All ref_ids should point to veg dishes
-    const allRefIds = carousel.flatMap((c: any) => c.ref_ids ?? []);
-    if (allRefIds.length > 0) {
+    const dishIds = (carousel as any[]).map((c) => c.ref_id).filter(Boolean);
+    if (dishIds.length > 0) {
       const { data: dishes } = await supabaseAdmin
         .from('dishes')
         .select('id, diet_type')
-        .in('id', allRefIds);
+        .in('id', dishIds);
 
       const nonVeg = (dishes ?? []).filter((d: any) => d.diet_type === 'non_veg');
       expect(nonVeg).toHaveLength(0);
@@ -166,7 +185,7 @@ describe('Edge Function: calculate-inferred-prefs', () => {
     }
 
     expect(data).not.toBeNull();
-    // Verify decay_config is set
+    // Verify decay_config is set (added in sprint5_test_schema_gaps migration)
     expect((data as any).decay_config).not.toBeNull();
   }, 30000);
 });
@@ -175,7 +194,8 @@ describe('Edge Function: calculate-inferred-prefs', () => {
 
 describe('Edge Function: performance', () => {
   it('any available edge function responds within 3 seconds', async () => {
-    const knownFunctions = ['generate-first-plan', 'calculate-inferred-prefs', 'get-weather'];
+    // Actual deployed functions (aligned with supabase/functions/ folder names)
+    const knownFunctions = ['generate-daily-plan', 'calculate-inferred-prefs', 'regenerate-slot'];
     let tested = 0;
 
     for (const fn of knownFunctions) {
@@ -183,8 +203,9 @@ describe('Edge Function: performance', () => {
       const { error } = await supabaseAdmin.functions.invoke(fn, { body: {} });
       const elapsed = Date.now() - start;
 
-      if (!error || error.message.includes('400') || error.message.includes('422')) {
-        // Function exists and responded (even with validation error)
+      if (!error || error.message.includes('400') || error.message.includes('422')
+          || error.message.includes('requires')) {
+        // Function exists and responded (even with a validation error)
         expect(elapsed).toBeLessThan(3000);
         tested++;
       }
