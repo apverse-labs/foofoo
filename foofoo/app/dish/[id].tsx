@@ -19,6 +19,9 @@ import {
   ActivityIndicator, Share, Alert,
 } from 'react-native';
 import { Image } from 'expo-image';
+import { getCloudinaryUrl } from '../../src/utils/cloudinary';
+
+const SIMILAR_PLACEHOLDER = require('../../assets/images/dish-placeholder.png') as number;
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { supabase } from '../../src/services/supabase';
@@ -260,7 +263,16 @@ export default function DishDetailScreen() {
                       onPress={() => router.push(`/dish/${sd.id}` as never)}
                     >
                       <Image
-                        source={{ uri: sd.hero_image_url ?? `https://picsum.photos/seed/${sd.id}/200/200` }}
+                        source={
+                          sd.cloudinary_public_id
+                            ? [
+                                { uri: getCloudinaryUrl(sd.cloudinary_public_id, 'thumb') },
+                                ...(sd.hero_image_url ? [{ uri: sd.hero_image_url }] : []),
+                              ]
+                            : sd.hero_image_url
+                              ? { uri: sd.hero_image_url }
+                              : SIMILAR_PLACEHOLDER
+                        }
                         placeholder={sd.blurhash ?? 'L6PZfSi_.AyE_3t7t7R**0o#DgR4'}
                         contentFit="cover"
                         style={styles.similarImage}

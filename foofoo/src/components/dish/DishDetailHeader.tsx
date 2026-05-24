@@ -13,7 +13,25 @@ import { View, Text, Pressable, StyleSheet, Dimensions } from 'react-native';
 import { Image } from 'expo-image';
 import { LinearGradient } from 'expo-linear-gradient';
 import { COLORS, SPACING, TIMING } from '../../config/constants';
+import { getCloudinaryUrl } from '../../utils/cloudinary';
 import type { FullDish } from '../../types';
+
+const PLACEHOLDER_IMG = require('../../../assets/images/dish-placeholder.png') as number;
+
+// Priority 1 → Cloudinary hero (1080px)
+// Priority 2 → hero_image_url (legacy)
+// Priority 3 → local placeholder
+function buildHeroSources(dish: FullDish): import('expo-image').ImageSource | import('expo-image').ImageSource[] | number {
+  if (dish.cloudinary_public_id) {
+    const arr: import('expo-image').ImageSource[] = [
+      { uri: getCloudinaryUrl(dish.cloudinary_public_id, 'hero') },
+    ];
+    if (dish.hero_image_url) arr.push({ uri: dish.hero_image_url });
+    return arr;
+  }
+  if (dish.hero_image_url) return { uri: dish.hero_image_url };
+  return PLACEHOLDER_IMG;
+}
 
 const PLACEHOLDER_HASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
 const SCREEN_HEIGHT = Dimensions.get('window').height;
@@ -35,7 +53,7 @@ export default function DishDetailHeader({ dish, onBack }: Props) {
   return (
     <View style={[styles.hero, { height: HERO_HEIGHT }]}>
       <Image
-        source={{ uri: dish.hero_image_url ?? `https://picsum.photos/seed/${dish.slug}/800/600` }}
+        source={buildHeroSources(dish)}
         placeholder={dish.blurhash ?? PLACEHOLDER_HASH}
         contentFit="cover"
         style={StyleSheet.absoluteFill}

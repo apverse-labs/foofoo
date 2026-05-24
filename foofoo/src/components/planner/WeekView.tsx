@@ -17,6 +17,25 @@ import {
 } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
+import { getCloudinaryUrl } from '../../utils/cloudinary';
+
+const PLACEHOLDER_IMG = require('../../../assets/images/dish-placeholder.png') as number;
+const CELL_PLACEHOLDER_HASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
+
+// Priority 1 → Cloudinary thumb (240px) | 2 → hero_image_url | 3 → placeholder
+function buildThumbSources(
+  dish: { cloudinary_public_id?: string | null; hero_image_url?: string | null; id: number },
+): import('expo-image').ImageSource | import('expo-image').ImageSource[] | number {
+  if (dish.cloudinary_public_id) {
+    const arr: import('expo-image').ImageSource[] = [
+      { uri: getCloudinaryUrl(dish.cloudinary_public_id, 'thumb') },
+    ];
+    if (dish.hero_image_url) arr.push({ uri: dish.hero_image_url });
+    return arr;
+  }
+  if (dish.hero_image_url) return { uri: dish.hero_image_url };
+  return PLACEHOLDER_IMG;
+}
 import {
   getWeekPlans, weekStartFromDate, addDays,
   type DayPlan,
@@ -203,8 +222,8 @@ export default function WeekView({ userId, initialDate, onDaySelect }: Props) {
                     ) : dishObj ? (
                       <>
                         <Image
-                          source={{ uri: dishObj.hero_image_url ?? `https://picsum.photos/seed/d-${dishObj.id}/100/100` }}
-                          placeholder={dishObj.blurhash ?? 'L6PZfSi_.AyE_3t7t7R**0o#DgR4'}
+                          source={buildThumbSources(dishObj)}
+                          placeholder={dishObj.blurhash ?? CELL_PLACEHOLDER_HASH}
                           contentFit="cover"
                           style={styles.cellImage}
                         />
