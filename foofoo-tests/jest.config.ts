@@ -1,9 +1,15 @@
 import type { Config } from "jest";
+import * as dotenv from "dotenv";
+import * as path from "path";
+
+// Load .env.test for local integration test runs.
+// In CI the env vars are injected directly — this is a no-op when the file doesn't exist.
+dotenv.config({ path: path.resolve(__dirname, ".env.test") });
 
 const config: Config = {
   preset: "ts-jest",
   testEnvironment: "node",
-  roots: ["<rootDir>/tests"],
+  roots: ["<rootDir>/unit", "<rootDir>/integration", "<rootDir>/tests"],
   testMatch: [
     "**/__tests__/**/*.ts",
     "**/?(*.)+(spec|test).ts"
@@ -15,14 +21,17 @@ const config: Config = {
   },
   moduleFileExtensions: ["ts", "tsx", "js", "jsx", "json"],
   collectCoverageFrom: [
-    "tests/**/*.ts",
-    "!tests/**/*.d.ts"
+    "unit/**/*.ts",
+    "integration/**/*.ts",
+    "!**/*.d.ts"
   ],
   coverageDirectory: "coverage",
   coverageReporters: ["text", "lcov", "html"],
-  setupFilesAfterFramework: [],
+  setupFilesAfterEnv: [],
   testTimeout: 30000,
-  verbose: true
+  verbose: true,
+  // Integration tests need more time for Supabase round-trips
+  testPathIgnorePatterns: ["<rootDir>/node_modules/", "<rootDir>/dist/"]
 };
 
 export default config;

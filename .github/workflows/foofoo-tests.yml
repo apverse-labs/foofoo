@@ -36,9 +36,16 @@ jobs:
       - name: Type-check
         run: npm run typecheck
 
-      - name: Run tests
-        run: npm test -- --ci --reporters=default --reporters=github-actions
+      # Unit tests run unconditionally — no Supabase credentials needed
+      - name: Run unit tests
+        run: npm run test:unit -- --ci --reporters=default --reporters=github-actions
+
+      # Integration tests only run when Supabase secrets are available.
+      # On forks or branches without secrets, this step is skipped gracefully.
+      - name: Run integration tests
+        if: ${{ secrets.SUPABASE_URL != '' }}
+        run: npm run test:integration -- --ci --reporters=default --reporters=github-actions
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
           SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}

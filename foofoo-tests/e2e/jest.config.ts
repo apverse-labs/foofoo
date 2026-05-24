@@ -13,7 +13,6 @@ const config: Config = {
   reporters: ["detox/runners/jest/reporter"],
   globalSetup: "detox/runners/jest/globalSetup",
   globalTeardown: "detox/runners/jest/globalTeardown",
-  testEnvironment: "detox/runners/jest/testEnvironment",
   testTimeout: 120000,
   verbose: true
 };
