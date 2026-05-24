@@ -6,7 +6,7 @@
       "description": "Supabase dev project URL (Mumbai)",
       "documentationUrl": "https://supabase.com/dashboard/project/ufgfznpqixplcbhmsqqw/settings/api"
     },
-    "SUPABASE_ANON_KEY": {
+    "SUPABASE_ACCESS_TOKEN": {
       "description": "Supabase anon/public key — respects RLS",
       "documentationUrl": "https://supabase.com/dashboard/project/ufgfznpqixplcbhmsqqw/settings/api"
     },
@@ -18,7 +18,7 @@
   "postCreateCommand": "cd foofoo-tests && npm install",
   "remoteEnv": {
     "SUPABASE_URL": "${localEnv:SUPABASE_URL}",
-    "SUPABASE_ANON_KEY": "${localEnv:SUPABASE_ANON_KEY}",
+    "SUPABASE_ACCESS_TOKEN": "${localEnv:SUPABASE_ACCESS_TOKEN}",
     "SUPABASE_SERVICE_ROLE_KEY": "${localEnv:SUPABASE_SERVICE_ROLE_KEY}"
   }
 }
