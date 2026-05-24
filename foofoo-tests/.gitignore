@@ -1,0 +1,12 @@
+node_modules/
+dist/
+coverage/
+.env.test
+*.log
+.DS_Store
+
+# Generated report output — keep folder structure, ignore content
+reports/html/*.html
+reports/md/*.md
+!reports/html/.gitkeep
+!reports/md/.gitkeep
