@@ -1,0 +1,44 @@
+name: foofoo-tests
+
+on:
+  push:
+    branches: [main, "claude/**"]
+    paths:
+      - "foofoo-tests/**"
+  pull_request:
+    paths:
+      - "foofoo-tests/**"
+  workflow_dispatch:   # allow manual runs from GitHub UI
+
+jobs:
+  unit-integration:
+    name: Unit & Integration Tests
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: foofoo-tests
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+          cache-dependency-path: foofoo-tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Type-check
+        run: npm run typecheck
+
+      - name: Run tests
+        run: npm test -- --ci --reporters=default --reporters=github-actions
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
