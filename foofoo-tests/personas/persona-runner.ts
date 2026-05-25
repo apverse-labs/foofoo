@@ -68,9 +68,10 @@ async function loadLookupMaps(): Promise<void> {
     warn(`Could not load cuisines: ${cErr?.message}. Cuisine preference seeding will be skipped.`);
   }
 
-  // Load ingredients
+  // Load ingredients — table is 'ingredients_master' (Doc #11A legacy name kept
+  // for backward compat; 'ingredients' exists but contains no seed data)
   const { data: ingredients, error: iErr } = await supabaseAdmin
-    .from('ingredients')
+    .from('ingredients_master')
     .select('id, name');
 
   if (!iErr && ingredients) {
@@ -229,8 +230,10 @@ async function invokeGenerateFirstPlan(
   userId: string,
   date: string
 ): Promise<{ data: any; error: any }> {
-  return supabaseAdmin.functions.invoke('generate-first-plan', {
-    body: { user_id: userId, date },
+  // Function is deployed as 'generate-daily-plan' (service-role API requires
+  // targetUserId + planDate + forceRegenerate, not user_id + date)
+  return supabaseAdmin.functions.invoke('generate-daily-plan', {
+    body: { targetUserId: userId, planDate: date, forceRegenerate: true },
   });
 }
 
@@ -574,7 +577,7 @@ async function runPersona(persona: FooFooPersona): Promise<PersonaResult> {
     const planDuration = Date.now() - efStart;
 
     if (planError) {
-      const gap = `generate-first-plan not deployed: ${planError.message}`;
+      const gap = `generate-daily-plan error: ${planError.message}`;
       dataGaps.push(gap);
       log(`  ⚠️ [${persona.id}] DATA_GAP — ${gap}`);
 
