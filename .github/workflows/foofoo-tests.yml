@@ -15,6 +15,14 @@ jobs:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest
 
+    # Secrets must be surfaced as env vars at job level so they can be
+    # referenced via the `env` context in step `if:` conditions.
+    # (GitHub Actions does NOT allow the `secrets` context in `if:` expressions.)
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
     defaults:
       run:
         working-directory: foofoo-tests
@@ -42,10 +50,8 @@ jobs:
 
       # Integration tests only run when Supabase secrets are available.
       # On forks or branches without secrets, this step is skipped gracefully.
+      # Uses env context (not secrets context) because secrets are not accessible
+      # in `if:` expressions — they are set as job-level env vars above.
       - name: Run integration tests
-        if: ${{ secrets.SUPABASE_URL != '' }}
+        if: ${{ env.SUPABASE_URL != '' }}
         run: npm run test:integration -- --ci --reporters=default --reporters=github-actions
-        env:
-          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
-          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
