@@ -81,16 +81,6 @@ export async function checkUsernameAvailable(username: string, userId: string): 
 }
 
 /**
- * @summary Alias for fetchProfile — preferred name in Phase 3 audit spec.
- *
- * @param {string} userId - Supabase auth UUID
- * @returns {Promise<UserProfile | null>} Profile row or null
- *
- * @calledBy Anywhere fetchProfile is needed
- */
-export const getProfile = fetchProfile;
-
-/**
  * @summary Generic profile update — updates any subset of profile fields.
  *
  * @param {string} userId - Supabase auth UUID
@@ -113,17 +103,6 @@ export async function updateProfile(userId: string, updates: Partial<ProfileUpda
     throw err;
   }
 }
-
-/**
- * @summary Alias for checkUsernameAvailable — preferred name in Phase 3 audit spec.
- *
- * @param {string} username - Candidate username
- * @param {string} currentUserId - Exclude this user from check
- * @returns {Promise<boolean>} True if available
- *
- * @calledBy Wherever checkUsernameAvailable is called
- */
-export const isUsernameAvailable = checkUsernameAvailable;
 
 /**
  * @summary Save Step 1 profile fields: name, username, city, state.

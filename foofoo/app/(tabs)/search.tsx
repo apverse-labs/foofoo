@@ -21,7 +21,7 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import { COLORS, SPACING, BORDER_RADIUS, TIMING } from '../../src/config/constants';
 import { supabase } from '../../src/services/supabase';
 import {
   searchDishes, getTrendingDishes, getUserPersonalisedCuisines, logSearchEvent,
@@ -171,7 +171,7 @@ export default function SearchTab() {
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 2200);
+    setTimeout(() => setToast(null), TIMING.TOAST_DISMISS_MS);
   }, []);
 
   const activeCount = countActiveFilters(filters);

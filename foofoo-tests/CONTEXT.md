@@ -29,7 +29,7 @@ All documents are in ../foofoo/ProductDocs/ — read them in this order:
 - Test user password: FooFooTest@{N} (e.g. FooFooTest@001)
 
 ## Hard rules for ALL tests
-1. NEVER modify the foofoo-app/ folder. Read-only.
+1. NEVER modify the foofoo/ folder. Read-only.
 2. NEVER use production Supabase. Dev only.
 3. Every test must clean up after itself (delete test data on teardown)
 4. Hard constraint violations (allergen, diet_type, Jain) = CRITICAL FAIL, stop suite
