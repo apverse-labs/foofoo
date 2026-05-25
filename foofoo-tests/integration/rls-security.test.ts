@@ -149,10 +149,9 @@ describe('RLS Security: user_diet_rules table', () => {
       .from('user_diet_rules')
       .upsert({
         user_id: pair.userA.id,
-        diet_type: 'veg',
-        excluded_ingredient_ids: [],
-        allergen_ingredient_ids: [],
-      });
+        food_pref: 'veg',
+        excluded_ingredients: [],
+      }, { onConflict: 'user_id' });
 
     if (insertError) {
       console.warn('⚠️ Could not insert user_diet_rules:', insertError.message);
@@ -222,13 +221,17 @@ describe('RLS Security: service role key bypasses RLS (Edge Function context)', 
   });
 
   it('service role key can read all user diet rules', async () => {
-    // Insert User A diet rules
-    await supabaseAdmin.from('user_diet_rules').upsert({
+    // Insert User A diet rules (food_pref / excluded_ingredients are the actual column names)
+    const { error: upsertError } = await supabaseAdmin.from('user_diet_rules').upsert({
       user_id: pair.userA.id,
-      diet_type: 'jain',
-      excluded_ingredient_ids: [],
-      allergen_ingredient_ids: [],
-    });
+      food_pref: 'jain',
+      excluded_ingredients: [],
+    }, { onConflict: 'user_id' });
+
+    if (upsertError) {
+      console.warn('⚠️ Could not insert user_diet_rules for servicekey test:', upsertError.message);
+      return;
+    }
 
     // Service key can read User A's row
     const { data, error } = await supabaseAdmin

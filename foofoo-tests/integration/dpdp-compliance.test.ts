@@ -21,10 +21,9 @@ async function createDpdpTestUser(): Promise<DpdpTestUser> {
   // Seed minimal user data
   await supabaseAdmin.from('user_diet_rules').upsert({
     user_id: user.id,
-    diet_type: 'veg',
-    excluded_ingredient_ids: [],
-    allergen_ingredient_ids: [],
-  });
+    food_pref: 'veg',
+    excluded_ingredients: [],
+  }, { onConflict: 'user_id' });
 
   await supabaseAdmin.from('user_consent').upsert({
     user_id: user.id,
@@ -234,7 +233,7 @@ describe('DPDP Compliance: consent versioning', () => {
         user_id: testUser.id,
         data_consent_at: new Date().toISOString(),
         data_consent_version: '2.0',
-      });
+      }, { onConflict: 'user_id' });
 
     expect(error).toBeNull();
 
