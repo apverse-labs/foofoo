@@ -15,4 +15,6 @@ reports/md/*.md
 !reports/md/secrets-audit.md
 !reports/md/sync-audit.md
 !reports/md/hygiene-complete.md
+!reports/md/dependency-audit.md
 !reports/md/data-integrity-audit.md
+!reports/md/compliance-audit.md
