@@ -1,3 +1,18 @@
+/**
+ * hard-constraints.test.ts
+ *
+ * Verifies the RE hard constraint enforcement pipeline: diet type filtering,
+ * allergen exclusion, never-list blocking, and Jain compatibility checks.
+ * Any regression here means users with dietary restrictions could be served
+ * unsafe or unwanted food suggestions.
+ *
+ * Run: npm run test:unit
+ * Depends on: lib/re-engine.ts, lib/types.ts
+ * Doc refs: Doc 10 Section 5.1
+ *
+ * SAFETY-CRITICAL: A failure here = DO NOT SHIP until resolved.
+ */
+
 // unit/hard-constraints.test.ts
 // CRITICAL safety tests for hard constraint enforcement
 // A single violation here = CRITICAL FAIL in production

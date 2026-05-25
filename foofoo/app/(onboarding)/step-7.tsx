@@ -88,6 +88,8 @@ export default function OnboardingStep7() {
         saveNotificationSettings(userId, time, notifGranted),
         recordConsent(userId),
       ]);
+      Logger.info('STEP7', 'onboarding_step_complete', { step: 7, user_id: userId });
+      Logger.info('STEP7', 'onboarding_complete', { user_id: userId });
       await UserJourneyLogger.logOnboardingStep(userId, 7, 'Role & Notifications', {
         'Role': role === 'cook' ? 'I cook (decides what to make)' : 'I get told what to cook (suggests to someone else)',
         'Notifications': notifGranted ? `Enabled — daily reminder at ${time}` : 'Not granted (can enable in Settings)',

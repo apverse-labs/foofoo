@@ -1,3 +1,18 @@
+/**
+ * persona-definitions.ts
+ *
+ * Defines 50 synthetic user personas used by persona-runner.ts to validate
+ * Recommendation Engine output. Personas span all diet types (veg/non-veg/egg/
+ * vegan/jain), Indian regions, household types, allergy combinations, never-list
+ * densities, and RE maturity stages (cold_start/two_week/three_month).
+ *
+ * Run: (imported by personas/persona-runner.ts — not run directly)
+ * Depends on: (no dependencies)
+ * Doc refs: Doc 10 Section 3 (User Segments), Doc 11A Section 2 (profiles schema)
+ *
+ * DO NOT MODIFY individual persona values — changes invalidate historical test runs.
+ */
+
 // FooFoo Test Personas — persona-definitions.ts
 // 50 personas spanning all diet types, regions, constraints, household types, RE maturity stages
 // Used by persona-runner.ts to seed test users and validate RE output

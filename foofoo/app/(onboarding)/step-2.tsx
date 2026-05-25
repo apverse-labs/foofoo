@@ -58,6 +58,7 @@ export default function OnboardingStep2() {
     try {
       await saveFoodPref(userId, selected);
       await updateOnboardingStep(userId, 2);
+      Logger.info('STEP2', 'onboarding_step_complete', { step: 2, user_id: userId });
       const label = OPTIONS.find(o => o.value === selected)?.label ?? selected;
       await UserJourneyLogger.logOnboardingStep(userId, 2, 'Food Preference', {
         'Selected preference': label,

@@ -1,3 +1,18 @@
+/**
+ * rls-security.test.ts
+ *
+ * Verifies Row-Level Security (RLS) enforcement across all MVP-active tables:
+ * confirms that a signed-in user cannot read, write, or delete another user's
+ * data even with valid credentials. Cross-user isolation is a hard production
+ * requirement.
+ *
+ * Run: npm run test:security  (or test:integration)
+ * Depends on: lib/supabase.ts
+ * Requires: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY env vars
+ *
+ * SAFETY-CRITICAL: A failure here = DO NOT SHIP until resolved.
+ */
+
 // integration/rls-security.test.ts
 // Cross-user data isolation — every test creates and deletes its own users
 // CRITICAL: A breach here = production security failure

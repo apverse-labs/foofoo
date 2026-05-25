@@ -1,3 +1,16 @@
+/**
+ * combo-architecture.test.ts
+ *
+ * Verifies the dish combo system: confirms dish_combos table is populated,
+ * combo types (inseparable/base_with_sides/thali) are valid, and combo items
+ * reference valid dish IDs. Ensures combo data integrity before RE v2 ships.
+ *
+ * Run: npm run test:integration
+ * Depends on: lib/supabase.ts
+ * Requires: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY env vars
+ * Doc refs: Doc 11A Section 5 (Dish Combo System)
+ */
+
 // integration/combo-architecture.test.ts
 // Tests dish combo system per Doc #11A Section 5
 // Requires: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY

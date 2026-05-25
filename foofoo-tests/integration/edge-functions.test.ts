@@ -1,3 +1,15 @@
+/**
+ * edge-functions.test.ts
+ *
+ * Verifies that the deployed Supabase Edge Functions (generate-daily-plan,
+ * calculate-inferred-prefs) respond correctly and produce valid data shapes.
+ * Confirms function availability and output schema against live Supabase.
+ *
+ * Run: npm run test:integration
+ * Depends on: lib/supabase.ts
+ * Requires: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY env vars
+ */
+
 // integration/edge-functions.test.ts
 // Tests Supabase Edge Functions (RE plan generation, inferred prefs)
 // Requires: SUPABASE_URL + SUPABASE_ANON_KEY + SUPABASE_SERVICE_ROLE_KEY

@@ -1,3 +1,15 @@
+/**
+ * bucket-logic.test.ts
+ *
+ * Verifies that the onboarding bucket system (Frequently / Occasionally / Never)
+ * correctly influences RE scoring soft constraints, ensuring user preferences
+ * are faithfully reflected in dish selection.
+ *
+ * Run: npm run test:unit
+ * Depends on: lib/re-engine.ts, lib/types.ts
+ * Doc refs: Doc 10 Section 5.2 (soft constraints), Section 6 Step 3
+ */
+
 // unit/bucket-logic.test.ts
 // Tests the onboarding bucket system
 // Spec: Doc #10 v3 — Section 5.2 (soft constraints), Section 6 Step 3

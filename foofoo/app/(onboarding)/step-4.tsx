@@ -64,6 +64,7 @@ export default function OnboardingStep4() {
     try {
       await saveCuisineBuckets(userId, buckets);
       await updateOnboardingStep(userId, 4);
+      Logger.info('STEP4', 'onboarding_step_complete', { step: 4, user_id: userId, cuisine_count: buckets.F.length + buckets.O.length + buckets.N.length });
       await UserJourneyLogger.logOnboardingStep(userId, 4, 'Cuisine Preferences', {
         'Frequently (strong preference)': buckets.F.join(', ') || '(none)',
         'Occasionally (open to it)': buckets.O.join(', ') || '(none)',

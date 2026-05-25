@@ -1,3 +1,17 @@
+/**
+ * auto-derivation.test.ts
+ *
+ * Verifies the ingredient flag → dish attribute auto-derivation pipeline that
+ * the derive-dish-attributes Edge Function implements. Ensures allergen, diet,
+ * and Jain flag derivation is correct and safe to run on every dish insert.
+ *
+ * Run: npm run test:unit
+ * Depends on: lib/re-engine.ts, lib/types.ts
+ * Doc refs: Doc 11A Section 4 (Auto-Derivation Pipeline)
+ *
+ * SAFETY-CRITICAL: A failure here = DO NOT SHIP until resolved.
+ */
+
 // unit/auto-derivation.test.ts
 // Tests the ingredient flag → dish attribute auto-derivation pipeline
 // Spec: Doc #11A v4 — Section 4 (Auto-Derivation Pipeline)

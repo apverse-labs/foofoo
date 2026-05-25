@@ -1,4 +1,23 @@
 #!/usr/bin/env ts-node
+/**
+ * persona-runner.ts
+ *
+ * Validates the FooFoo Recommendation Engine against 50 synthetic user personas.
+ * For each persona: creates a test user, seeds preferences into Supabase, invokes
+ * the generate-daily-plan Edge Function, and validates RE output expectations
+ * (top cuisine match, diet compliance, never-list exclusion). Generates a JSON
+ * and markdown report per run.
+ *
+ * Run: npm run test:personas
+ * Depends on: lib/supabase.ts, lib/types.ts, personas/persona-definitions.ts
+ * Requires: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY env vars
+ *
+ * Usage:
+ *   npx ts-node --project tsconfig.json personas/persona-runner.ts
+ *   npx ts-node --project tsconfig.json personas/persona-runner.ts --persona P001
+ *   npx ts-node --project tsconfig.json personas/persona-runner.ts --diet veg
+ */
+
 // personas/persona-runner.ts
 // FooFoo Persona Validation Runner
 // Loops all 50 personas, creates test users, seeds DB, calls Edge Functions,

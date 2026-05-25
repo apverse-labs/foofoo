@@ -1,3 +1,9 @@
+/**
+ * BucketSelector — tap-to-cycle cuisine/meal preference sorter for onboarding.
+ * Consumed by app/(onboarding)/step-4.tsx, step-5.tsx, step-6.tsx.
+ * Populated by cuisines or dish items from onboarding.repository.
+ */
+
 import React, { useState, useMemo } from 'react';
 import {
   View, Text, Pressable, ScrollView, Modal, TouchableOpacity,

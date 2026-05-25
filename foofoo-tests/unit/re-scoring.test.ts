@@ -1,3 +1,16 @@
+/**
+ * re-scoring.test.ts
+ *
+ * Verifies the full RE v1/v2 scoring pipeline: cuisine boosts, weather boost,
+ * home-state affinity, day-of-week signals, variety penalty, random factor,
+ * and the four RE v2 inferred-preference boosts (spice/complexity/drift/affinity).
+ * Ensures weights and thresholds match the production Edge Function exactly.
+ *
+ * Run: npm run test:unit
+ * Depends on: lib/re-engine.ts, lib/types.ts
+ * Doc refs: Doc 10 Section 5, 6, 8
+ */
+
 // unit/re-scoring.test.ts
 // Tests the RE scoring pipeline against mock data
 // Spec: Doc #10 v3 — Section 5, 6, 8

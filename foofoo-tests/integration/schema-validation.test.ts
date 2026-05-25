@@ -1,3 +1,16 @@
+/**
+ * schema-validation.test.ts
+ *
+ * Validates the live Supabase database schema against the Doc 11A v4 spec:
+ * confirms all 42 MVP-active tables exist, key columns are present, deprecated
+ * columns have been removed, and migration-added columns are in place.
+ *
+ * Run: npm run test:integration
+ * Depends on: lib/supabase.ts
+ * Requires: SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY env vars
+ * Doc refs: Doc 11A v4 (Final Merged Database Schema)
+ */
+
 // integration/schema-validation.test.ts
 // Validates live Supabase DB schema against Doc #11A v4 spec
 // Requires: SUPABASE_URL + SUPABASE_SERVICE_ROLE_KEY env vars
