@@ -49,23 +49,48 @@ function extractBaseSlug(publicId: string): string {
 
 Deno.serve(async (_req) => {
   try {
-    // 1. Read secrets from Supabase Vault
-    const apiKey    = Deno.env.get('CLOUDINARY_API_KEY');
-    const apiSecret = Deno.env.get('CLOUDINARY_API_SECRET');
-    const supabaseUrl    = Deno.env.get('SUPABASE_URL')!;
+    // 1. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-injected by the
+    //    Supabase runtime into every Edge Function — no Vault entry needed.
+    const supabaseUrl        = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // 2. Read CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET from Supabase Vault.
+    //    Vault stores encrypted DB secrets accessed via vault.decrypted_secrets —
+    //    they are NOT available via Deno.env.get().
+    const { data: vaultRows, error: vaultErr } = await (supabase as any)
+      .schema('vault')
+      .from('decrypted_secrets')
+      .select('name, decrypted_secret')
+      .in('name', ['CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']);
+
+    if (vaultErr) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: { code: 'VAULT_ERROR', message: `Could not read Vault secrets: ${vaultErr.message}` },
+      }), { status: 500, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    const vaultData = (vaultRows ?? []) as Array<{ name: string; decrypted_secret: string }>;
+    const apiKey    = vaultData.find(r => r.name === 'CLOUDINARY_API_KEY')?.decrypted_secret
+                    ?? Deno.env.get('CLOUDINARY_API_KEY');   // fallback: Edge Fn secret
+    const apiSecret = vaultData.find(r => r.name === 'CLOUDINARY_API_SECRET')?.decrypted_secret
+                    ?? Deno.env.get('CLOUDINARY_API_SECRET'); // fallback: Edge Fn secret
 
     if (!apiKey || !apiSecret) {
       return new Response(JSON.stringify({
         success: false,
-        error: { code: 'MISSING_SECRETS', message: 'CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET must be set in Supabase Vault.' },
+        error: {
+          code: 'MISSING_SECRETS',
+          message: 'Could not find CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET in Vault. '
+                 + 'Add them via Supabase Dashboard → Integrations → Vault → Add new secret.',
+        },
       }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey);
     const authHeader = 'Basic ' + btoa(`${apiKey}:${apiSecret}`);
 
-    // 2. Fetch all Cloudinary assets (paginated)
+    // 3. Fetch all Cloudinary assets (paginated)
     const allResources: Array<{ public_id: string }> = [];
     let nextCursor: string | null = null;
 
@@ -97,7 +122,7 @@ Deno.serve(async (_req) => {
 
     console.log(`[SYNC-CLOUDINARY] Fetched ${allResources.length} Cloudinary assets`);
 
-    // 3. Fetch all dish rows (id, name) for matching
+    // 4. Fetch all dish rows (id, name) for matching
     const { data: dishes, error: dishErr } = await supabase
       .from('dishes')
       .select('id, name');
@@ -116,7 +141,7 @@ Deno.serve(async (_req) => {
       slugToDish.set(slug, { id: d.id, name: d.name });
     }
 
-    // 4. Match assets → dishes
+    // 5. Match assets → dishes
     const matched:   Array<{ dishId: number; dishName: string; publicId: string }> = [];
     const unmatched: Array<{ publicId: string; baseSlug: string }> = [];
 
@@ -130,7 +155,7 @@ Deno.serve(async (_req) => {
       }
     }
 
-    // 5. Update dishes in batches of 50
+    // 6. Update dishes in batches of 50
     const BATCH = 50;
     let updateErrors = 0;
     for (let i = 0; i < matched.length; i += BATCH) {
@@ -147,7 +172,7 @@ Deno.serve(async (_req) => {
       }
     }
 
-    // 6. Log summary
+    // 7. Log summary
     const unmatchedNames = unmatched.map(u => u.publicId);
     console.log(`[SYNC-CLOUDINARY] Matched: ${matched.length} | Unmatched: ${unmatched.length} | Update errors: ${updateErrors}`);
     if (unmatched.length > 0) {
