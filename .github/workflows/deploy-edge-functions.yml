@@ -52,7 +52,6 @@ jobs:
             derive-dish-attributes
             backfill-ingredients
             log-re-decision
-            delete-account
             delete-user-account
             send-morning-notification
             daily-analytics-email
