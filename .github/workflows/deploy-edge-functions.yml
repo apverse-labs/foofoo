@@ -28,11 +28,10 @@ jobs:
         with:
           version: latest
 
-      # SUPABASE_DEPLOY_TOKEN = personal access token from
-      # https://supabase.com/dashboard/account/tokens
-      # Add it to GitHub repo secrets as SUPABASE_DEPLOY_TOKEN
+      # SUPABASE_ACCESS_TOKEN = personal access token from
+      # https://supabase.com/dashboard/account/tokens (already in repo secrets)
       - name: Authenticate Supabase CLI
-        run: supabase login --token "${{ secrets.SUPABASE_DEPLOY_TOKEN }}"
+        run: supabase login --token "${{ secrets.SUPABASE_ACCESS_TOKEN }}"
 
       - name: Deploy selected functions
         working-directory: foofoo
