@@ -199,16 +199,6 @@ export async function fetchUserCuisineBuckets(userId: string): Promise<BucketMap
 }
 
 /**
- * @summary Alias for searchIngredients — preferred name in Phase 3 audit spec.
- *
- * @param {string} searchTerm - Min 2 chars typed by user
- * @returns {Promise<IngredientAlias[]>} Up to 20 matching rows
- *
- * @calledBy `app/(onboarding)/step-3.tsx` allergen search input
- */
-export const searchAllergens = searchIngredients;
-
-/**
  * @summary Search ingredients_master by English name (case-insensitive).
  *
  * @description Use alongside searchAllergens for full allergen coverage when the

@@ -23,14 +23,14 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { COLORS, SPACING, BORDER_RADIUS, APP_VERSION, APP_NAME } from '../../src/config/constants';
+import { COLORS, SPACING, BORDER_RADIUS, APP_VERSION, APP_NAME, TIMING } from '../../src/config/constants';
 import { supabase } from '../../src/services/supabase';
 import { Logger } from '../../src/utils/systemLogger';
 import { logScreenView, logFeatureTap } from '../../src/repositories/feedback.repository';
 import { PostHogService } from '../../src/services/posthog.service';
 import {
   getProfileSummary, updateProfileSettings, changePassword, signOut, deleteAccount,
-  formatNotificationTime, formatMemberSince, initialsFromName, dietLabel,
+  formatMemberSince, initialsFromName, dietLabel,
   type ProfileSummary,
 } from '../../src/repositories/profile-settings.repository';
 
@@ -68,7 +68,7 @@ export default function ProfileTab() {
 
   const showToast = useCallback((msg: string) => {
     setToast(msg);
-    setTimeout(() => setToast(null), 2200);
+    setTimeout(() => setToast(null), TIMING.TOAST_DISMISS_MS);
   }, []);
 
   const handleToggleNotifications = async (value: boolean) => {

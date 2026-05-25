@@ -62,14 +62,9 @@ export function dishNameToPublicId(dishName: string): string {
   return `${dishName.toLowerCase().replace(/\s+/g, '_')}_hero_01`;
 }
 
-// ─── Quick smoke test (console.log 3 samples) ────────────────────────────────
-// To verify, run:  npx ts-node -e "require('./src/utils/cloudinary')"
+// ─── Manual verification ──────────────────────────────────────────────────────
+// To verify URL output, run:  npx ts-node -e "require('./src/utils/cloudinary')"
 // Expected output:
 //   https://res.cloudinary.com/dzlqsobol/image/upload/w_240,q_75,f_auto/curd_rice_hero_01_qxxbm7
 //   https://res.cloudinary.com/dzlqsobol/image/upload/w_720,q_75,f_auto/kootu_hero_01_ox7giv
 //   https://res.cloudinary.com/dzlqsobol/image/upload/w_1080,q_80,f_auto/dal_makhani_hero_01_abc123
-if (process.env.CLOUDINARY_SMOKE_TEST) {
-  console.log(getCloudinaryUrl('curd_rice_hero_01_qxxbm7', 'thumb'));
-  console.log(getCloudinaryUrl('kootu_hero_01_ox7giv', 'card'));
-  console.log(getCloudinaryUrl('dal_makhani_hero_01_abc123', 'hero'));
-}

@@ -76,6 +76,9 @@ export const TIMING = {
   ANIMATION_FAST: 200,
   ANIMATION_NORMAL: 350,
   IMAGE_TRANSITION_MS: 300, // Expo Image crossfade duration
+  TOAST_DISMISS_MS: 2200,   // Toast auto-hide delay (ms)
+  SPLASH_DURATION_MS: 2000, // Splash screen display window before navigating to intro
+  QUERY_STALE_MS: 300_000,  // React Query default staleTime (5 min)
 } as const;
 
 export const API = {
@@ -87,6 +90,11 @@ export const API = {
 
 export const STORAGE_KEYS = {
   INTRO_SEEN: 'foofoo_has_seen_intro',
+} as const;
+
+export const ONBOARDING = {
+  /** Total number of onboarding steps. Update here if steps are added or removed. */
+  STEPS: 7,
 } as const;
 
 export const LEGAL = {

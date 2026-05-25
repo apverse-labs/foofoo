@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import * as Sentry from '@sentry/react-native';
-import { COLORS, APP_VERSION } from '../src/config/constants';
+import { COLORS, APP_VERSION, TIMING } from '../src/config/constants';
 import { supabase } from '../src/services/supabase';
 import { OneSignalService } from '../src/services/onesignal.service';
 import { PostHogService } from '../src/services/posthog.service';
@@ -33,7 +33,7 @@ const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       retry: 2,
-      staleTime: 1000 * 60 * 5,
+      staleTime: TIMING.QUERY_STALE_MS,
     },
   },
 });

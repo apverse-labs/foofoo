@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../src/services/supabase';
 import { resetOnboardingProgress } from '../src/repositories/profiles.repository';
-import { COLORS, APP_NAME, STORAGE_KEYS } from '../src/config/constants';
+import { COLORS, APP_NAME, STORAGE_KEYS, ONBOARDING } from '../src/config/constants';
 import { Logger } from '../src/utils/systemLogger';
 import { OneSignalService } from '../src/services/onesignal.service';
 import { PostHogService } from '../src/services/posthog.service';
@@ -71,7 +71,7 @@ export default function Index() {
         return;
       }
 
-      const step = Math.min(Math.max((profile?.onboarding_step ?? 0) + 1, 1), 7);
+      const step = Math.min(Math.max((profile?.onboarding_step ?? 0) + 1, 1), ONBOARDING.STEPS);
       router.replace(`/(onboarding)/step-${step}` as never);
     } catch {
       Logger.error('INDEX', 'Route resolution failed — defaulting to auth-gate');

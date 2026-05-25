@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
-import { StyleSheet, View, Platform } from 'react-native';
+import { StyleSheet, View } from 'react-native';
 import Animated, { useSharedValue, useAnimatedStyle, withTiming } from 'react-native-reanimated';
 import { useRouter } from 'expo-router';
-import { COLORS, APP_NAME } from '../src/config/constants';
+import { COLORS, APP_NAME, TIMING } from '../src/config/constants';
 
 /**
  * @summary Animated green splash screen shown on first app launch.
@@ -20,7 +20,7 @@ export default function Splash() {
     opacity.value = withTiming(1, { duration: 300 });
     const timer = setTimeout(() => {
       router.replace('/(intro)/intro-1');
-    }, 2000);
+    }, TIMING.SPLASH_DURATION_MS);
     return () => clearTimeout(timer);
   }, []);
 
