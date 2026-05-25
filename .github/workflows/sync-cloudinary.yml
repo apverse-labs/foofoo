@@ -42,11 +42,25 @@ jobs:
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{}')
-          echo "$RESPONSE" | python3 -m json.tool || echo "$RESPONSE"
 
-          # Extract and display summary
+          echo "=== Raw response ==="
+          echo "$RESPONSE" | python3 -m json.tool || echo "$RESPONSE"
+          echo "===================="
+
+          # Fail the job if success != true
+          SUCCESS=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('success','false'))" 2>/dev/null || echo "false")
+          if [ "$SUCCESS" != "True" ] && [ "$SUCCESS" != "true" ]; then
+            ERROR=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); e=d.get('error',{}); print(e.get('code','?')+': '+e.get('message','unknown'))" 2>/dev/null || echo "unknown error")
+            echo ""
+            echo "❌ Function returned success=false: $ERROR"
+            exit 1
+          fi
+
+          # Display summary
           MATCHED=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('matched','?'))" 2>/dev/null || echo "?")
           UNMATCHED=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('unmatched','?'))" 2>/dev/null || echo "?")
+          TOTAL=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('totalAssets','?'))" 2>/dev/null || echo "?")
           echo ""
-          echo "✅ Matched dishes: $MATCHED"
-          echo "⚠️  Unmatched assets: $UNMATCHED"
+          echo "Total Cloudinary assets : $TOTAL"
+          echo "Matched dishes updated  : $MATCHED"
+          echo "Unmatched assets        : $UNMATCHED"

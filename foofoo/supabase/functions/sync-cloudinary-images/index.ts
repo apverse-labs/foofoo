@@ -5,13 +5,21 @@
  * Calls the Cloudinary Admin API to list all uploaded images, then matches
  * each one to a dish row using slug normalisation:
  *   public_id "curd_rice_hero_01_qxxbm7"
- *     → strip "_hero_01_XXXXXX" suffix → base slug "curd_rice"
- *     → match dishes WHERE LOWER(REPLACE(name, ' ', '_')) = 'curd_rice'
- *     → UPDATE dishes SET cloudinary_public_id = 'curd_rice_hero_01_qxxbm7'
+ *     -> strip "_hero_01_XXXXXX" suffix -> base slug "curd_rice"
+ *     -> match dishes WHERE LOWER(REPLACE(name, ' ', '_')) = 'curd_rice'
+ *     -> UPDATE dishes SET cloudinary_public_id = 'curd_rice_hero_01_qxxbm7'
  *
- * Secrets required (add in Supabase Dashboard → Settings → Vault):
- *   CLOUDINARY_API_KEY    — Cloudinary API key
- *   CLOUDINARY_API_SECRET — Cloudinary API secret
+ * Secrets required -- add in Supabase Dashboard -> Integrations -> Vault:
+ *   CLOUDINARY_API_KEY    -- Cloudinary API key
+ *   CLOUDINARY_API_SECRET -- Cloudinary API secret
+ *
+ * Vault secrets are read via supabase.rpc('get_vault_secret') -- a SECURITY
+ * DEFINER SQL function in the public schema that reads vault.decrypted_secrets.
+ * This function is created by migration 20260525000000_add_get_vault_secret_fn.sql.
+ *
+ * Fallback: if Vault returns null, reads CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET
+ * from Edge Function environment variables (Dashboard -> Edge Functions ->
+ * sync-cloudinary-images -> Secrets).
  *
  * Invoke with:
  *   supabase functions invoke sync-cloudinary-images --no-verify-jwt
@@ -23,67 +31,49 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const CLOUDINARY_CLOUD_NAME = 'dzlqsobol';
 const CLOUDINARY_API_BASE = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}`;
-const PAGE_SIZE = 500; // max per Cloudinary Admin API request
+const PAGE_SIZE = 500;
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
-
-/**
- * @summary Strips the _hero_01_XXXXXX suffix from a Cloudinary public_id.
- * @param {string} publicId - e.g. "curd_rice_hero_01_qxxbm7"
- * @returns {string} base slug, e.g. "curd_rice"
- */
 function extractBaseSlug(publicId: string): string {
-  // Remove optional subfolder prefix (e.g. "folder/curd_rice_hero_01_qxxbm7")
   const name = publicId.split('/').pop() ?? publicId;
-  // Strip _hero_01_XXXXXX: remove the last two underscore-delimited segments
-  // "curd_rice_hero_01_qxxbm7" → split by "_" → [..., "hero", "01", "qxxbm7"]
-  // We look for the first occurrence of "_hero_01_" and take everything before it.
   const heroIdx = name.indexOf('_hero_01_');
   if (heroIdx !== -1) return name.slice(0, heroIdx);
-  // Fallback: strip last segment (the Cloudinary ID)
   const parts = name.split('_');
   return parts.slice(0, -1).join('_');
 }
 
-// ─── Main handler ─────────────────────────────────────────────────────────────
-
 Deno.serve(async (_req) => {
   try {
-    // 1. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-injected by the
-    //    Supabase runtime into every Edge Function — no Vault entry needed.
+    // 1. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-injected by Supabase runtime.
     const supabaseUrl        = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    // 2. Read CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET from Supabase Vault.
-    //    Vault stores encrypted DB secrets accessed via vault.decrypted_secrets —
-    //    they are NOT available via Deno.env.get().
-    const { data: vaultRows, error: vaultErr } = await (supabase as any)
-      .schema('vault')
-      .from('decrypted_secrets')
-      .select('name, decrypted_secret')
-      .in('name', ['CLOUDINARY_API_KEY', 'CLOUDINARY_API_SECRET']);
+    // 2. Read Cloudinary credentials via RPC.
+    //    PostgREST only exposes the public schema, so we cannot query vault.decrypted_secrets
+    //    directly. Instead we call get_vault_secret(), a SECURITY DEFINER SQL function
+    //    (created by migration 20260525000000_add_get_vault_secret_fn.sql) that reads Vault.
+    //    Fallback: Edge Function env var (Dashboard -> Edge Functions -> Secrets).
+    const readSecret = async (secretName: string): Promise<string | null> => {
+      const { data, error } = await supabase.rpc('get_vault_secret', { p_name: secretName });
+      if (error) console.warn(`[SYNC-CLOUDINARY] Vault RPC error for ${secretName}:`, error.message);
+      return (data as string | null) ?? Deno.env.get(secretName) ?? null;
+    };
 
-    if (vaultErr) {
-      return new Response(JSON.stringify({
-        success: false,
-        error: { code: 'VAULT_ERROR', message: `Could not read Vault secrets: ${vaultErr.message}` },
-      }), { status: 500, headers: { 'Content-Type': 'application/json' } });
-    }
-
-    const vaultData = (vaultRows ?? []) as Array<{ name: string; decrypted_secret: string }>;
-    const apiKey    = vaultData.find(r => r.name === 'CLOUDINARY_API_KEY')?.decrypted_secret
-                    ?? Deno.env.get('CLOUDINARY_API_KEY');   // fallback: Edge Fn secret
-    const apiSecret = vaultData.find(r => r.name === 'CLOUDINARY_API_SECRET')?.decrypted_secret
-                    ?? Deno.env.get('CLOUDINARY_API_SECRET'); // fallback: Edge Fn secret
+    const [apiKey, apiSecret] = await Promise.all([
+      readSecret('CLOUDINARY_API_KEY'),
+      readSecret('CLOUDINARY_API_SECRET'),
+    ]);
 
     if (!apiKey || !apiSecret) {
       return new Response(JSON.stringify({
         success: false,
         error: {
           code: 'MISSING_SECRETS',
-          message: 'Could not find CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET in Vault. '
-                 + 'Add them via Supabase Dashboard → Integrations → Vault → Add new secret.',
+          message:
+            'CLOUDINARY_API_KEY / CLOUDINARY_API_SECRET not found. ' +
+            'Option A: ensure get_vault_secret SQL function exists (migration 20260525000000) ' +
+            'and secrets are in Vault. ' +
+            'Option B: set them via Dashboard -> Edge Functions -> sync-cloudinary-images -> Secrets.',
         },
       }), { status: 400, headers: { 'Content-Type': 'application/json' } });
     }
@@ -100,9 +90,7 @@ Deno.serve(async (_req) => {
       url.searchParams.set('resource_type', 'image');
       if (nextCursor) url.searchParams.set('next_cursor', nextCursor);
 
-      const resp = await fetch(url.toString(), {
-        headers: { Authorization: authHeader },
-      });
+      const resp = await fetch(url.toString(), { headers: { Authorization: authHeader } });
 
       if (!resp.ok) {
         const body = await resp.text();
@@ -122,10 +110,8 @@ Deno.serve(async (_req) => {
 
     console.log(`[SYNC-CLOUDINARY] Fetched ${allResources.length} Cloudinary assets`);
 
-    // 4. Fetch all dish rows (id, name) for matching
-    const { data: dishes, error: dishErr } = await supabase
-      .from('dishes')
-      .select('id, name');
+    // 4. Fetch all dish rows for matching
+    const { data: dishes, error: dishErr } = await supabase.from('dishes').select('id, name');
 
     if (dishErr || !dishes) {
       return new Response(JSON.stringify({
@@ -134,14 +120,12 @@ Deno.serve(async (_req) => {
       }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
-    // Build lookup: normalised_slug → dish_id
     const slugToDish = new Map<string, { id: number; name: string }>();
     for (const d of dishes) {
-      const slug = d.name.toLowerCase().replace(/\s+/g, '_');
-      slugToDish.set(slug, { id: d.id, name: d.name });
+      slugToDish.set(d.name.toLowerCase().replace(/\s+/g, '_'), { id: d.id, name: d.name });
     }
 
-    // 5. Match assets → dishes
+    // 5. Match assets -> dishes
     const matched:   Array<{ dishId: number; dishName: string; publicId: string }> = [];
     const unmatched: Array<{ publicId: string; baseSlug: string }> = [];
 
@@ -161,23 +145,16 @@ Deno.serve(async (_req) => {
     for (let i = 0; i < matched.length; i += BATCH) {
       const batch = matched.slice(i, i + BATCH);
       const updates = await Promise.allSettled(
-        batch.map(m =>
-          supabase.from('dishes')
-            .update({ cloudinary_public_id: m.publicId })
-            .eq('id', m.dishId)
-        )
+        batch.map(m => supabase.from('dishes').update({ cloudinary_public_id: m.publicId }).eq('id', m.dishId))
       );
       for (const r of updates) {
         if (r.status === 'rejected' || r.value?.error) updateErrors++;
       }
     }
 
-    // 7. Log summary
+    // 7. Return summary
     const unmatchedNames = unmatched.map(u => u.publicId);
-    console.log(`[SYNC-CLOUDINARY] Matched: ${matched.length} | Unmatched: ${unmatched.length} | Update errors: ${updateErrors}`);
-    if (unmatched.length > 0) {
-      console.log('[SYNC-CLOUDINARY] Unmatched public_ids:', unmatchedNames.join(', '));
-    }
+    console.log(`[SYNC-CLOUDINARY] Matched: ${matched.length} | Unmatched: ${unmatched.length} | Errors: ${updateErrors}`);
 
     return new Response(JSON.stringify({
       success: true,
