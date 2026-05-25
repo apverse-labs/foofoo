@@ -449,9 +449,12 @@ async function validatePlan(
             weather: 0,
             day_of_week: 0,
             home_state: 0,
-            history: 0,
             variety_penalty: 0,
             random: 0,
+            re_v2_spice_boost: 0,
+            re_v2_complexity_boost: 0,
+            re_v2_drift_boost: 0,
+            re_v2_affinity_boost: 0,
             total: (row.scores ?? [])[idx] ?? 0,
           },
           passes_hard_constraints: checkHardConstraints(
