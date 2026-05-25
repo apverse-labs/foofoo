@@ -63,7 +63,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         maharashtrian: 'frequently', south_indian: 'frequently',
         north_indian: 'occasionally', gujarati: 'occasionally',
-        chinese_indo: 'occasionally', street_food: 'frequently',
+        indo_chinese: 'occasionally', street_food: 'frequently',
         bengali: 'never', rajasthani: 'occasionally'
       },
       breakfast: {
@@ -96,13 +96,13 @@ export const PERSONAS: FooFooPersona[] = [
     age: 35, gender: 'female',
     home_state: 'TN', current_city: 'Chennai',
     diet_type: 'veg', household_type: 'family_with_kids', role: 'cook',
-    allergens: { ingredient_names: ['peanuts'] },
+    allergens: { ingredient_names: ['peanut'] },
     exclusions: { ingredient_names: [] },
     buckets: {
       cuisine: {
         south_indian: 'frequently', tamil_brahmin: 'frequently',
         north_indian: 'occasionally', maharashtrian: 'never',
-        chinese_indo: 'occasionally', street_food: 'occasionally'
+        indo_chinese: 'occasionally', street_food: 'occasionally'
       },
       breakfast: {
         idli: 'frequently', dosa: 'frequently', pongal: 'frequently',
@@ -140,7 +140,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         north_indian: 'frequently', awadhi: 'frequently',
         south_indian: 'occasionally', gujarati: 'occasionally',
-        chinese_indo: 'occasionally', street_food: 'frequently'
+        indo_chinese: 'occasionally', street_food: 'frequently'
       },
       breakfast: {
         paratha: 'frequently', poori_sabzi: 'occasionally',
@@ -179,7 +179,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         kerala: 'frequently', south_indian: 'frequently',
         north_indian: 'occasionally', continental: 'occasionally',
-        chinese_indo: 'never', street_food: 'occasionally'
+        indo_chinese: 'never', street_food: 'occasionally'
       },
       breakfast: {
         appam: 'frequently', puttu: 'frequently', idiyappam: 'frequently',
@@ -219,7 +219,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         gujarati: 'frequently', north_indian: 'frequently',
         south_indian: 'occasionally', maharashtrian: 'occasionally',
-        chinese_indo: 'frequently', street_food: 'frequently',
+        indo_chinese: 'frequently', street_food: 'frequently',
         rajasthani: 'occasionally'
       },
       breakfast: {
@@ -236,7 +236,7 @@ export const PERSONAS: FooFooPersona[] = [
     re_maturity: 'cold_start', never_list_density: 'light',
     expectations: {
       must_never_contain: [],
-      top3_cuisine_match: ['gujarati', 'chinese_indo', 'street_food'],
+      top3_cuisine_match: ['gujarati', 'indo_chinese', 'street_food'],
       cultural_note: 'Ahmedabad student with flatmates — Gujarati base but open to Indo-Chinese, sweet-spice balance expected',
       special_checks: [
         'Thepla or Dhokla should appear in first 3 breakfast suggestions',
@@ -258,7 +258,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         andhra: 'frequently', telangana: 'frequently',
         south_indian: 'frequently', north_indian: 'never',
-        gujarati: 'never', chinese_indo: 'never'
+        gujarati: 'never', indo_chinese: 'never'
       },
       breakfast: {
         idli: 'frequently', pesarattu: 'frequently', upma: 'frequently',
@@ -297,7 +297,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         karnataka: 'frequently', south_indian: 'frequently',
         north_indian: 'occasionally', udupi: 'frequently',
-        chinese_indo: 'never', street_food: 'occasionally'
+        indo_chinese: 'never', street_food: 'occasionally'
       },
       breakfast: {
         idli: 'frequently', dosa: 'frequently', rava_idli: 'frequently',
@@ -330,13 +330,13 @@ export const PERSONAS: FooFooPersona[] = [
     age: 45, gender: 'female',
     home_state: 'KL', current_city: 'Thrissur',
     diet_type: 'veg', household_type: 'family_with_kids', role: 'cook',
-    allergens: { ingredient_names: ['nuts'] },
+    allergens: { ingredient_names: ['peanut', 'cashew', 'almond', 'walnut', 'pistachio'] },
     exclusions: { ingredient_names: [] },
     buckets: {
       cuisine: {
         kerala: 'frequently', south_indian: 'frequently',
         north_indian: 'occasionally', continental: 'never',
-        chinese_indo: 'never'
+        indo_chinese: 'never'
       },
       breakfast: {
         puttu: 'frequently', appam: 'frequently', idiyappam: 'frequently',
@@ -374,7 +374,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         bengali_veg: 'frequently', north_indian: 'occasionally',
         south_indian: 'occasionally', street_food: 'frequently',
-        chinese_indo: 'occasionally', continental: 'occasionally'
+        indo_chinese: 'occasionally', continental: 'occasionally'
       },
       breakfast: {
         luchi_aloo: 'occasionally', paratha: 'occasionally',
@@ -412,7 +412,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         maharashtrian: 'frequently', north_indian: 'frequently',
         south_indian: 'occasionally', gujarati: 'occasionally',
-        chinese_indo: 'occasionally', street_food: 'occasionally'
+        indo_chinese: 'occasionally', street_food: 'occasionally'
       },
       breakfast: {
         poha: 'frequently', upma: 'frequently', sabudana_khichdi: 'occasionally',
@@ -450,7 +450,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         south_indian: 'frequently', tamil_brahmin: 'frequently',
         chettinad: 'occasionally', north_indian: 'occasionally',
-        continental: 'occasionally', chinese_indo: 'never'
+        continental: 'occasionally', indo_chinese: 'never'
       },
       breakfast: {
         idli: 'frequently', dosa: 'frequently', pongal: 'occasionally',
@@ -487,7 +487,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         north_indian: 'frequently', madhya_pradeshi: 'frequently',
         rajasthani: 'occasionally', gujarati: 'occasionally',
-        south_indian: 'never', chinese_indo: 'never'
+        south_indian: 'never', indo_chinese: 'never'
       },
       breakfast: {
         poha: 'frequently', jalebi_poha: 'occasionally',
@@ -524,7 +524,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         karnataka: 'frequently', udupi: 'frequently',
         south_indian: 'frequently', north_indian: 'occasionally',
-        chinese_indo: 'never', continental: 'never'
+        indo_chinese: 'never', continental: 'never'
       },
       breakfast: {
         idli: 'frequently', dosa: 'frequently', rava_idli: 'frequently',
@@ -561,7 +561,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         rajasthani: 'frequently', north_indian: 'frequently',
         gujarati: 'occasionally', marwari: 'frequently',
-        south_indian: 'never', chinese_indo: 'occasionally'
+        south_indian: 'never', indo_chinese: 'occasionally'
       },
       breakfast: {
         paratha: 'frequently', poori: 'occasionally',
@@ -598,7 +598,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         north_indian: 'frequently', punjabi: 'frequently',
-        street_food: 'frequently', chinese_indo: 'frequently',
+        street_food: 'frequently', indo_chinese: 'frequently',
         south_indian: 'occasionally', continental: 'occasionally'
       },
       breakfast: {
@@ -637,7 +637,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         punjabi: 'frequently', north_indian: 'frequently',
-        street_food: 'frequently', chinese_indo: 'frequently',
+        street_food: 'frequently', indo_chinese: 'frequently',
         south_indian: 'occasionally', continental: 'occasionally'
       },
       breakfast: {
@@ -670,13 +670,13 @@ export const PERSONAS: FooFooPersona[] = [
     age: 20, gender: 'male',
     home_state: 'KL', current_city: 'Trivandrum',
     diet_type: 'non_veg', household_type: 'solo', role: 'cook',
-    allergens: { ingredient_names: ['shellfish'] },
+    allergens: { ingredient_names: ['prawn', 'crab'] },
     exclusions: { ingredient_names: [] },
     buckets: {
       cuisine: {
         kerala: 'frequently', south_indian: 'frequently',
         seafood: 'frequently', north_indian: 'occasionally',
-        chinese_indo: 'occasionally'
+        indo_chinese: 'occasionally'
       },
       breakfast: {
         puttu_kadala: 'frequently', appam_egg: 'frequently',
@@ -714,7 +714,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         awadhi: 'frequently', north_indian: 'frequently',
         mughlai: 'frequently', street_food: 'occasionally',
-        south_indian: 'never', chinese_indo: 'occasionally'
+        south_indian: 'never', indo_chinese: 'occasionally'
       },
       breakfast: {
         paratha: 'frequently', nihari: 'occasionally',
@@ -753,7 +753,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         kerala: 'frequently', malabar: 'frequently',
         south_indian: 'occasionally', north_indian: 'never',
-        chinese_indo: 'never'
+        indo_chinese: 'never'
       },
       breakfast: {
         puttu_kadala: 'frequently', pathiri: 'frequently',
@@ -790,7 +790,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         bengali: 'frequently', south_indian: 'occasionally',
-        north_indian: 'occasionally', chinese_indo: 'frequently',
+        north_indian: 'occasionally', indo_chinese: 'frequently',
         street_food: 'frequently', continental: 'occasionally'
       },
       breakfast: {
@@ -806,7 +806,7 @@ export const PERSONAS: FooFooPersona[] = [
     re_maturity: 'cold_start', never_list_density: 'light',
     expectations: {
       must_never_contain: [],
-      top3_cuisine_match: ['bengali', 'chinese_indo', 'street_food'],
+      top3_cuisine_match: ['bengali', 'indo_chinese', 'street_food'],
       cultural_note: 'Kolkata young professional — Bengali fish/meat staples + Kolkata Chinese (distinct from standard Indo-Chinese)',
       special_checks: [
         'Macher Jhol (mustard fish curry) expected in top 3 lunch/dinner',
@@ -829,7 +829,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         awadhi: 'frequently', mughlai: 'frequently',
         north_indian: 'frequently', persian_influenced: 'occasionally',
-        south_indian: 'never', chinese_indo: 'occasionally'
+        south_indian: 'never', indo_chinese: 'occasionally'
       },
       breakfast: {
         nihari_kulcha: 'occasionally', paratha: 'frequently',
@@ -866,7 +866,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         maharashtrian: 'frequently', north_indian: 'frequently',
-        coastal: 'frequently', chinese_indo: 'occasionally',
+        coastal: 'frequently', indo_chinese: 'occasionally',
         south_indian: 'occasionally', street_food: 'frequently'
       },
       breakfast: {
@@ -905,7 +905,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         chettinad: 'frequently', tamil: 'frequently',
         south_indian: 'frequently', north_indian: 'occasionally',
-        chinese_indo: 'occasionally'
+        indo_chinese: 'occasionally'
       },
       breakfast: {
         idli: 'frequently', dosa: 'frequently', pesarattu: 'occasionally',
@@ -943,7 +943,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         andhra: 'frequently', telugu: 'frequently',
         south_indian: 'occasionally', north_indian: 'never',
-        chinese_indo: 'occasionally'
+        indo_chinese: 'occasionally'
       },
       breakfast: {
         pesarattu: 'frequently', upma: 'frequently',
@@ -980,7 +980,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         north_indian: 'frequently', punjabi: 'frequently',
-        mughlai: 'occasionally', chinese_indo: 'frequently',
+        mughlai: 'occasionally', indo_chinese: 'frequently',
         street_food: 'frequently', continental: 'occasionally'
       },
       breakfast: {
@@ -996,7 +996,7 @@ export const PERSONAS: FooFooPersona[] = [
     re_maturity: 'cold_start', never_list_density: 'light',
     expectations: {
       must_never_contain: [],
-      top3_cuisine_match: ['north_indian', 'punjabi', 'chinese_indo'],
+      top3_cuisine_match: ['north_indian', 'punjabi', 'indo_chinese'],
       cultural_note: 'Gurgaon tech flatmate — high calorie, Butter Chicken + Biryani + Indo-Chinese trinity is the stereotype that must validate',
       special_checks: [
         'Butter Chicken should appear in first 2 lunch/dinner suggestions',
@@ -1056,7 +1056,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         assamese: 'frequently', north_east: 'frequently',
         bengali: 'occasionally', north_indian: 'occasionally',
-        chinese_indo: 'occasionally', south_indian: 'never'
+        indo_chinese: 'occasionally', south_indian: 'never'
       },
       breakfast: {
         rice_pithas: 'occasionally', paratha: 'frequently',
@@ -1096,7 +1096,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         gujarati: 'frequently', jain: 'frequently',
         north_indian: 'occasionally', rajasthani: 'occasionally',
-        south_indian: 'never', chinese_indo: 'never'
+        south_indian: 'never', indo_chinese: 'never'
       },
       breakfast: {
         thepla: 'frequently', dhokla: 'frequently',
@@ -1206,13 +1206,13 @@ export const PERSONAS: FooFooPersona[] = [
     age: 38, gender: 'male',
     home_state: 'MH', current_city: 'Mumbai',
     diet_type: 'jain', household_type: 'family_with_kids', role: 'cook',
-    allergens: { ingredient_names: ['nuts'] },
+    allergens: { ingredient_names: ['peanut', 'cashew', 'almond', 'walnut', 'pistachio'] },
     exclusions: { ingredient_names: [] },
     buckets: {
       cuisine: {
         jain: 'frequently', gujarati: 'frequently',
         north_indian_jain: 'occasionally', maharashtrian_jain: 'occasionally',
-        south_indian: 'never', chinese_indo: 'never'
+        south_indian: 'never', indo_chinese: 'never'
       },
       breakfast: {
         poha_jain: 'frequently', upma_jain: 'occasionally',
@@ -1249,7 +1249,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         gujarati: 'frequently', jain: 'frequently',
         north_indian: 'occasionally', street_food_jain: 'occasionally',
-        south_indian: 'occasionally', chinese_indo: 'never'
+        south_indian: 'occasionally', indo_chinese: 'never'
       },
       breakfast: {
         thepla: 'frequently', dhokla: 'frequently',
@@ -1325,7 +1325,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         jain: 'frequently', gujarati: 'frequently',
         north_indian_jain: 'occasionally', south_indian_jain: 'occasionally',
-        chinese_indo: 'never'
+        indo_chinese: 'never'
       },
       breakfast: {
         dhokla: 'frequently', idli_jain: 'occasionally',
@@ -1402,7 +1402,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         north_indian: 'frequently', bihari: 'frequently',
-        street_food: 'frequently', chinese_indo: 'occasionally',
+        street_food: 'frequently', indo_chinese: 'occasionally',
         south_indian: 'never'
       },
       breakfast: {
@@ -1441,7 +1441,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         north_indian: 'frequently', continental: 'occasionally',
-        chinese_indo: 'frequently', street_food: 'frequently',
+        indo_chinese: 'frequently', street_food: 'frequently',
         south_indian: 'occasionally'
       },
       breakfast: {
@@ -1457,7 +1457,7 @@ export const PERSONAS: FooFooPersona[] = [
     re_maturity: 'two_week', never_list_density: 'light',
     expectations: {
       must_never_contain: [],
-      top3_cuisine_match: ['north_indian', 'chinese_indo', 'street_food'],
+      top3_cuisine_match: ['north_indian', 'indo_chinese', 'street_food'],
       cultural_note: 'Delhi solo egg-eater — urban professional, egg appears in every slot, no meat',
       special_checks: [
         'Egg dishes must appear across all 3 meal slots',
@@ -1474,13 +1474,13 @@ export const PERSONAS: FooFooPersona[] = [
     age: 34, gender: 'male',
     home_state: 'GOA', current_city: 'Panaji',
     diet_type: 'egg', household_type: 'couple', role: 'cook',
-    allergens: { ingredient_names: ['shellfish'] },
+    allergens: { ingredient_names: ['prawn', 'crab'] },
     exclusions: { ingredient_names: [] },
     buckets: {
       cuisine: {
         goan_vegetarian: 'frequently', konkan: 'frequently',
         south_indian: 'occasionally', continental: 'occasionally',
-        north_indian: 'never', chinese_indo: 'occasionally'
+        north_indian: 'never', indo_chinese: 'occasionally'
       },
       breakfast: {
         sannas: 'frequently', poie_omelette: 'frequently',
@@ -1518,7 +1518,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         vidarbha: 'frequently', maharashtrian: 'frequently',
-        north_indian: 'occasionally', chinese_indo: 'frequently',
+        north_indian: 'occasionally', indo_chinese: 'frequently',
         south_indian: 'occasionally'
       },
       breakfast: {
@@ -1557,7 +1557,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         bengali: 'frequently', north_east: 'occasionally',
         north_indian: 'occasionally', south_indian: 'never',
-        chinese_indo: 'occasionally'
+        indo_chinese: 'occasionally'
       },
       breakfast: {
         luchi: 'occasionally', paratha: 'frequently',
@@ -1594,7 +1594,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         south_indian: 'frequently', karnataka: 'frequently',
-        north_indian: 'occasionally', chinese_indo: 'frequently',
+        north_indian: 'occasionally', indo_chinese: 'frequently',
         continental: 'occasionally'
       },
       breakfast: {
@@ -1610,7 +1610,7 @@ export const PERSONAS: FooFooPersona[] = [
     re_maturity: 'cold_start', never_list_density: 'light',
     expectations: {
       must_never_contain: [],
-      top3_cuisine_match: ['south_indian', 'karnataka', 'chinese_indo'],
+      top3_cuisine_match: ['south_indian', 'karnataka', 'indo_chinese'],
       cultural_note: 'Bangalore solo egg-eater — tech city profile, South Indian base with Chinese, no meat',
       special_checks: [
         'Egg Dosa valid at breakfast (egg on top of dosa, common in Bangalore)',
@@ -1632,7 +1632,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         mughlai_veg_egg: 'frequently', north_indian: 'frequently',
-        awadhi_veg: 'occasionally', chinese_indo: 'occasionally',
+        awadhi_veg: 'occasionally', indo_chinese: 'occasionally',
         south_indian: 'never'
       },
       breakfast: {
@@ -1672,7 +1672,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         tamil: 'frequently', south_indian: 'frequently',
         chettinad: 'occasionally', north_indian: 'never',
-        chinese_indo: 'never'
+        indo_chinese: 'never'
       },
       breakfast: {
         idli: 'frequently', dosa: 'frequently',
@@ -1711,7 +1711,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         south_indian: 'frequently', north_indian_vegan: 'frequently',
-        continental_vegan: 'occasionally', chinese_indo_vegan: 'frequently',
+        continental_vegan: 'occasionally', indo_chinese_vegan: 'frequently',
         street_food_vegan: 'frequently'
       },
       breakfast: {
@@ -1745,13 +1745,13 @@ export const PERSONAS: FooFooPersona[] = [
     age: 31, gender: 'female',
     home_state: 'WB', current_city: 'Kolkata',
     diet_type: 'vegan', household_type: 'solo', role: 'cook',
-    allergens: { ingredient_names: ['nuts'] },
+    allergens: { ingredient_names: ['peanut', 'cashew', 'almond', 'walnut', 'pistachio'] },
     exclusions: { ingredient_names: [] },
     buckets: {
       cuisine: {
         bengali_vegan: 'frequently', south_indian: 'frequently',
         north_indian_vegan: 'occasionally', continental_vegan: 'occasionally',
-        chinese_indo_vegan: 'occasionally'
+        indo_chinese_vegan: 'occasionally'
       },
       breakfast: {
         poha: 'frequently', idli: 'occasionally', dosa: 'occasionally',
@@ -1789,7 +1789,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         south_indian: 'frequently', tamil_vegan: 'frequently',
         north_indian_vegan: 'occasionally', continental_vegan: 'never',
-        chinese_indo: 'occasionally'
+        indo_chinese: 'occasionally'
       },
       breakfast: {
         idli: 'frequently', dosa: 'frequently', pongal_vegan: 'frequently',
@@ -1828,7 +1828,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         south_indian: 'frequently', north_indian_vegan: 'occasionally',
         continental_vegan: 'frequently', street_food_vegan: 'occasionally',
-        chinese_indo_vegan: 'frequently'
+        indo_chinese_vegan: 'frequently'
       },
       breakfast: {
         idli: 'frequently', dosa: 'frequently', fruits: 'frequently',
@@ -1867,7 +1867,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         kerala_vegan: 'frequently', south_indian: 'frequently',
         north_indian_vegan: 'occasionally', continental_vegan: 'occasionally',
-        chinese_indo: 'never'
+        indo_chinese: 'never'
       },
       breakfast: {
         puttu_vegan: 'frequently', appam_vegan: 'frequently',
@@ -1906,7 +1906,7 @@ export const PERSONAS: FooFooPersona[] = [
     buckets: {
       cuisine: {
         south_indian: 'frequently', bengali_vegan: 'occasionally',
-        north_indian_vegan: 'occasionally', chinese_indo_vegan: 'frequently',
+        north_indian_vegan: 'occasionally', indo_chinese_vegan: 'frequently',
         continental_vegan: 'frequently', street_food_vegan: 'frequently'
       },
       breakfast: {
@@ -1922,7 +1922,7 @@ export const PERSONAS: FooFooPersona[] = [
     re_maturity: 'cold_start', never_list_density: 'light',
     expectations: {
       must_never_contain: ['dairy', 'eggs', 'honey', 'meat', 'fish'],
-      top3_cuisine_match: ['south_indian', 'chinese_indo_vegan', 'street_food_vegan'],
+      top3_cuisine_match: ['south_indian', 'indo_chinese_vegan', 'street_food_vegan'],
       cultural_note: 'Kolkata student vegan — newer-generation vegan choices, expects Indo-Chinese and Continental vegan options, tests DB breadth',
       special_checks: [
         'CRITICAL: Zero dairy and eggs',
@@ -1946,7 +1946,7 @@ export const PERSONAS: FooFooPersona[] = [
       cuisine: {
         south_indian: 'frequently', north_indian_vegan: 'frequently',
         continental_vegan: 'occasionally', maharashtrian_vegan: 'frequently',
-        chinese_indo: 'never'
+        indo_chinese: 'never'
       },
       breakfast: {
         idli: 'frequently', dosa: 'frequently', poha: 'frequently',
