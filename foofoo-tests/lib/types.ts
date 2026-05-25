@@ -1,3 +1,16 @@
+/**
+ * types.ts
+ *
+ * Shared TypeScript type definitions for the foofoo-tests suite. Mirrors the
+ * production database schema (Doc 11A) and the RE scoring interfaces used by
+ * the Edge Functions. Must be kept in sync with the production scoring.ts types
+ * to ensure test coverage accurately reflects real behavior.
+ *
+ * Run: (imported by re-engine.ts and all test files — not run directly)
+ * Depends on: (no dependencies)
+ * Doc refs: Doc 11A v4 (database schema), Doc 10 v3 (RE spec)
+ */
+
 // lib/types.ts — Shared types for foofoo-tests
 // Mirrors the production schema from Doc #11A
 

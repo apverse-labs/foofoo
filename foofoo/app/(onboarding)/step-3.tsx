@@ -93,6 +93,7 @@ export default function OnboardingStep3() {
       const ids = noAllergies ? [] : selected.map((s) => s.ingredient_id);
       await saveAllergens(userId, ids);
       await updateOnboardingStep(userId, 3);
+      Logger.info('STEP3', 'onboarding_step_complete', { step: 3, user_id: userId, allergen_count: ids.length });
       await UserJourneyLogger.logOnboardingStep(userId, 3, 'Allergies', noAllergies
         ? { 'Allergies': 'None declared', 'Impact': 'All ingredients eligible' }
         : {

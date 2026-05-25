@@ -1,3 +1,19 @@
+/**
+ * re-engine.ts
+ *
+ * Portable TypeScript implementation of the FooFoo Recommendation Engine for
+ * use by unit tests. Mirrors the scoring spec from Doc 10 v3 and the production
+ * Edge Function scoring pipeline. Must be kept in sync with the production
+ * generate-daily-plan/scoring.ts — divergence will cause test false-positives.
+ *
+ * Run: npm run test:unit  (consumed by all unit/*.test.ts files)
+ * Depends on: lib/types.ts
+ * Doc refs: Doc 10 Section 5–9
+ *
+ * NOTE: This is NOT the production engine. The production RE lives in
+ * foofoo/supabase/functions/generate-daily-plan/scoring.ts.
+ */
+
 // lib/re-engine.ts
 // Portable TypeScript implementation of the FooFoo Recommendation Engine
 // Mirrors the scoring spec from Doc #10 v3

@@ -1,3 +1,17 @@
+/**
+ * dpdp-compliance.test.ts
+ *
+ * Verifies data protection requirements for India DPDP Act compliance and Google
+ * Play Store account deletion policy (mandatory Dec 2023). Tests account deletion
+ * pipeline completeness, consent row creation, and audit log writes.
+ *
+ * Run: npm run test:integration
+ * Depends on: lib/supabase.ts
+ * Requires: SUPABASE_URL, SUPABASE_ANON_KEY, SUPABASE_SERVICE_ROLE_KEY env vars
+ *
+ * SAFETY-CRITICAL: A failure here = DO NOT SHIP until resolved.
+ */
+
 // integration/dpdp-compliance.test.ts
 // Data protection tests — DPDP (India) + Google Play compliance
 // Tests account deletion pipeline, data export, and consent tracking

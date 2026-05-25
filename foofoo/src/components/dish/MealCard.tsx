@@ -36,6 +36,7 @@ import type { Dish } from '../../types';
 import { cookTimeLabel } from './MealCard.helpers';
 import { TIMING } from '../../config/constants';
 import { UserJourneyLogger } from '../../utils/userJourneyLogger';
+import { Logger } from '../../utils/systemLogger';
 import { logSuggestionAction } from '../../repositories/feedback.repository';
 import { PostHogService } from '../../services/posthog.service';
 import DatePickerModal from './DatePickerModal';
@@ -202,6 +203,7 @@ export default function MealCard({
   const handleNever = () => {
     const d = currentDishRef.current;
     if (!d) return;
+    Logger.info('MEAL-CARD', 'gesture_never', { ref_type: 'dish', ref_id: d.id, slot: mealSlot });
     if (userId) {
       UserJourneyLogger.logGestureAction(userId, 'never', d.name, mealSlot, currentIndexRef.current);
     }
@@ -211,6 +213,7 @@ export default function MealCard({
   const handleNotToday = () => {
     const d = currentDishRef.current;
     if (!d) return;
+    Logger.info('MEAL-CARD', 'gesture_not_today', { ref_type: 'dish', ref_id: d.id, slot: mealSlot });
     if (userId) {
       UserJourneyLogger.logGestureAction(userId, 'not_today', d.name, mealSlot, currentIndexRef.current);
     }
@@ -222,6 +225,10 @@ export default function MealCard({
   };
 
   const handleLock = () => {
+    const d = currentDishRef.current;
+    if (d) {
+      Logger.info('MEAL-CARD', 'gesture_lock', { ref_type: 'dish', ref_id: d.id, slot: mealSlot, locked: !isLocked });
+    }
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium).catch(() => {});
     onLock();
   };

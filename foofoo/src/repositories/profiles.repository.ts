@@ -1,3 +1,8 @@
+/**
+ * @summary User profile repository — all reads and writes to the profiles table.
+ * @calledBy app/(onboarding)/step-1.tsx through step-7.tsx, app/(tabs)/profile.tsx
+ */
+
 import { supabase } from '../services/supabase';
 import { Logger } from '../utils/systemLogger';
 import type { UserProfile, Step1Data, UserRole, FoodPref } from '../types';

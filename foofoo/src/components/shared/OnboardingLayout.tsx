@@ -1,3 +1,9 @@
+/**
+ * OnboardingLayout — shared full-screen layout wrapper used by all 7 onboarding steps.
+ * Consumed by every app/(onboarding)/step-*.tsx screen.
+ * Populated by step-specific content passed as children.
+ */
+
 import React from 'react';
 import {
   View,

@@ -1,3 +1,15 @@
+/**
+ * variety-guard.test.ts
+ *
+ * Verifies the variety guard and repeat-tolerance logic: dishes seen within
+ * the recent window receive the correct penalty, and the repeat window formula
+ * matches the production Edge Function's getRepeatWindow implementation.
+ *
+ * Run: npm run test:unit
+ * Depends on: lib/re-engine.ts, lib/types.ts
+ * Doc refs: Doc 10 Section 8
+ */
+
 // unit/variety-guard.test.ts
 // Tests repeat tolerance and variety guard logic
 // Spec: Doc #10 v3 — Section 8

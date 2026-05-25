@@ -69,6 +69,7 @@ export default function OnboardingStep5() {
     try {
       await saveMealBuckets(userId, buckets, dishIds);
       await updateOnboardingStep(userId, 5);
+      Logger.info('STEP5', 'onboarding_step_complete', { step: 5, user_id: userId });
       const getDishNames = (ids: string[]) =>
         ids.map(id => items.find(i => i.id === id)?.label ?? id).join(', ') || '(none)';
       await UserJourneyLogger.logOnboardingStep(userId, 5, 'Breakfast Preferences', {

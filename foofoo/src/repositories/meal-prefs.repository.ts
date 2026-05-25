@@ -1,3 +1,8 @@
+/**
+ * @summary Meal preferences repository — breakfast/lunch-dinner bucket dish fetching and consent recording.
+ * @calledBy app/(onboarding)/step-5.tsx, step-6.tsx, step-7.tsx
+ */
+
 import { supabase } from '../services/supabase';
 import { Logger } from '../utils/systemLogger';
 import type { DishRow, BucketMap, FoodPref } from '../types';

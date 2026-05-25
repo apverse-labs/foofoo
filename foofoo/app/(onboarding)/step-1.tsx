@@ -89,6 +89,7 @@ export default function OnboardingStep1() {
         current_city: city.trim(),
       };
       await saveProfileStep1(userId, profileData);
+      Logger.info('STEP1', 'onboarding_step_complete', { step: 1, user_id: userId });
       await UserJourneyLogger.logOnboardingStep(userId, 1, 'Profile Setup', {
         Name: profileData.name,
         Username: `@${profileData.username}`,

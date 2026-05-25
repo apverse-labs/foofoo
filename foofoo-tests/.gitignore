@@ -13,3 +13,5 @@ reports/md/*.md
 # Audit reports are committed (not generated — human-reviewed)
 !reports/md/hygiene-audit.md
 !reports/md/secrets-audit.md
+!reports/md/sync-audit.md
+!reports/md/hygiene-complete.md
