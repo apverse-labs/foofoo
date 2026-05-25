@@ -27,7 +27,7 @@ export async function getDishById(dishId: number): Promise<FullDish | null> {
       id, name, slug, description,
       diet_type, spice_level, cook_time_mins, difficulty,
       calories, meal_types, dish_role,
-      hero_image_url, blurhash,
+      hero_image_url, cloudinary_public_id, blurhash,
       allergen_ids, is_jain, is_active, cuisine_id,
       cuisines ( id, code, name, display_name ),
       dish_tags (
@@ -65,8 +65,8 @@ export async function getSimilarDishes(dishId: number, limit = 4): Promise<Simil
     .from('dish_similar')
     .select(`
       similar_dish_id,
-      dishes:similar_dish_id ( id, name, hero_image_url, blurhash,
-                               diet_type, cook_time_mins, cuisines(name) )
+      dishes:similar_dish_id ( id, name, hero_image_url, cloudinary_public_id,
+                               blurhash, diet_type, cook_time_mins, cuisines(name) )
     `)
     .eq('dish_id', dishId)
     .order('similarity_score', { ascending: false })

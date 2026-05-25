@@ -75,7 +75,7 @@ export async function getCarouselForSlot(planId: string, mealSlot: string): Prom
       .from('dishes')
       .select(`id, name, slug, cuisine_id, diet_type, spice_level,
                cook_time_mins, difficulty, calories, meal_types,
-               dish_role, hero_image_url, blurhash,
+               dish_role, hero_image_url, cloudinary_public_id, blurhash,
                cuisines(id, code, name)`)
       .in('id', dishIds);
 
