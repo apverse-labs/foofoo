@@ -40,10 +40,16 @@ const VALID_ACTIONS = new Set(['not_today', 'never', 'refresh']);
 serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
-  try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header');
+  // Auth guard — must precede try/catch so auth failures return 401, not 500.
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    return new Response(JSON.stringify({
+      success: false,
+      error: { code: 'AUTH_FAILED', message: 'No authorization header', retry: false },
+    }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
 
+  try {
     const supabase = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_ANON_KEY') ?? '',
@@ -51,7 +57,12 @@ serve(async (req) => {
     );
 
     const { data: { user }, error: authError } = await supabase.auth.getUser();
-    if (authError || !user) throw new Error('Unauthorized');
+    if (authError || !user) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: { code: 'AUTH_FAILED', message: 'Invalid or expired token', retry: false },
+      }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
 
     const body = await req.json().catch(() => ({}));
     const planDate: string = body.planDate || getTodayIST();
@@ -199,8 +210,8 @@ serve(async (req) => {
     if (!newTop) {
       return new Response(JSON.stringify({
         success: false,
-        error: { code: 'NO_DISHES_AVAILABLE', message: 'No suitable dishes available after applying filters', retry: false },
-      }), { status: 404, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+        error: { code: 'ELIGIBLE_POOL_EMPTY', message: 'No suitable dishes available after applying filters', retry: false },
+      }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
     }
 
     // --- UPDATE PLANNER (only this slot) ---

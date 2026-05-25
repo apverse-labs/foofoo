@@ -26,7 +26,7 @@ serve(async (req) => {
   try {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
-      return new Response(JSON.stringify({ success: false, error: { code: 'UNAUTHORIZED', message: 'No auth header', retry: false } }), {
+      return new Response(JSON.stringify({ success: false, error: { code: 'AUTH_FAILED', message: 'No auth header', retry: false } }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -54,7 +54,7 @@ serve(async (req) => {
     );
     const { data: { user }, error: authErr } = await userSupabase.auth.getUser();
     if (authErr || !user) {
-      return new Response(JSON.stringify({ success: false, error: { code: 'UNAUTHORIZED', message: 'Invalid token', retry: false } }), {
+      return new Response(JSON.stringify({ success: false, error: { code: 'AUTH_FAILED', message: 'Invalid token', retry: false } }), {
         status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -63,7 +63,7 @@ serve(async (req) => {
     const { mealSlot, planDate, dishId, scoreBreakdown } = body;
 
     if (!mealSlot || !planDate || !dishId) {
-      return new Response(JSON.stringify({ success: false, error: { code: 'BAD_REQUEST', message: 'mealSlot, planDate, and dishId are required', retry: false } }), {
+      return new Response(JSON.stringify({ success: false, error: { code: 'VALIDATION_ERROR', message: 'mealSlot, planDate, and dishId are required', retry: false } }), {
         status: 400, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
@@ -80,7 +80,7 @@ serve(async (req) => {
 
     if (insertError) {
       console.error('[LOG-RE] insert failed:', insertError.message);
-      return new Response(JSON.stringify({ success: false, error: { code: 'DB_ERROR', message: insertError.message, retry: true } }), {
+      return new Response(JSON.stringify({ success: false, error: { code: 'INTERNAL_ERROR', message: insertError.message, retry: true } }), {
         status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }

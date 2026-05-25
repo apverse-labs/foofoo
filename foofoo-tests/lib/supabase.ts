@@ -2,7 +2,9 @@ import { createClient, SupabaseClient } from "@supabase/supabase-js";
 
 const supabaseUrl = process.env.SUPABASE_URL ?? "";
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY ?? "";
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY ?? "";
+// Service role key is optional — if absent, admin calls will fail at runtime,
+// not at module load time, so contract-only tests can still import this module.
+const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key-not-set";
 
 if (!supabaseUrl) {
   throw new Error("Missing env var: SUPABASE_URL");
@@ -11,7 +13,8 @@ if (!supabaseUrl) {
 /** Anon-key client — respects Row Level Security */
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);
 
-/** Service-role client — bypasses RLS; use only in trusted test helpers */
+/** Service-role client — bypasses RLS; use only in trusted test helpers.
+ *  Requires SUPABASE_SERVICE_ROLE_KEY env var.  Missing key → runtime failure only. */
 export const supabaseAdmin: SupabaseClient = createClient(
   supabaseUrl,
   supabaseServiceKey,

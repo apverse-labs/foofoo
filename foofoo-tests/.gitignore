@@ -19,3 +19,4 @@ reports/md/*.md
 !reports/md/data-integrity-audit.md
 !reports/md/compliance-audit.md
 !reports/md/rls-audit.md
+!reports/md/edge-function-audit.md
