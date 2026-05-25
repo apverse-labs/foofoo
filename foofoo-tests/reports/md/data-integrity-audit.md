@@ -373,36 +373,49 @@ WHERE state_code = 'TG';
 
 ## BEFORE / AFTER Counts
 
-*To be populated after "apply fixes" approval and re-run.*
+*Migration `20260525000002_data_integrity_fixes.sql` applied: 2026-05-25*
 
-| Metric | BEFORE | AFTER | Target |
+| Metric | BEFORE | AFTER | Target | Result |
+|---|---|---|---|---|
+| Total active dishes | 818 | **607** | ≥ 500 | ✅ Still meets target |
+| Active dishes with no ingredients | 211 | **0** | 0 | ✅ FIXED |
+| Active dishes with `derived_at` NULL | 211 | **0** | 0 | ✅ FIXED |
+| Empty `dish_combos` | 5 | **0** | 0 | ✅ FIXED |
+| Invalid state code `TG` rows | 3 | **0** | 0 | ✅ FIXED |
+| Distinct state codes in region_food_affinity | 31 | **30** | ≤ 30 valid | ✅ FIXED |
+| `TS` (Telangana) rows after merge | 2 | **5** | — | ✅ TG rows absorbed |
+| Active dishes missing `hero_image_url` | 813 | **602** | 0 | ❌ Content-ops pending |
+| Active dishes missing `blurhash` | 813 | **602** | 0 | ❌ Content-ops pending |
+
+> **Note on photo/blurhash counts:** dropped from 813 → 602 because 211 stub dishes were deactivated (no longer in the active pool). The remaining 602 are complete dishes awaiting the Cloudinary upload pipeline.
+
+### Fix Execution Log
+
+| Fix | SQL Applied | Rows Changed | Verified |
 |---|---|---|---|
-| Active dishes with no ingredients | 211 | — | 0 |
-| Active dishes with derived_at NULL | 211 | — | 0 |
-| Empty dish_combos | 5 | — | 0 |
-| Invalid state code TG rows | 3 | — | 0 |
-| Distinct state codes | 31 | — | ≤ 30 (all valid) |
-| Total active dishes (after deactivating stubs) | 818 | — | ≥ 500 |
+| F1 — Deactivate stub dishes | `UPDATE dishes SET is_active=false WHERE derived_at IS NULL AND NOT IN meal_ingredients` | 211 | ✅ 0 active stubs remain |
+| F2 — Delete empty combos | `DELETE FROM dish_combos WHERE id IN (18,19,29,32,34)` | 5 | ✅ 0 empty combos remain |
+| F3 — Fix TG → TS state code | `UPDATE region_food_affinity SET state_code='TS' WHERE state_code='TG'` | 3 | ✅ 0 TG rows remain; TS=5 rows |
 
 ---
 
-## Overall Pre-Launch Readiness
+## Overall Pre-Launch Readiness (Post-Fix)
 
 | Category | Status | Notes |
 |---|---|---|
 | Referential Integrity | ✅ **CLEAN** | All FK chains valid |
-| Dish count (≥500) | ✅ **818 active** | Exceeds target |
+| Dish count (≥500) | ✅ **607 active** | Exceeds target (stubs deactivated) |
 | Tier 1 tags completeness | ✅ **Complete** | 0 dishes missing |
-| meal_types assigned | ✅ **Complete** | 0 dishes missing |
-| dish_role assigned | ✅ **Complete** | 0 dishes missing |
+| `meal_types` assigned | ✅ **Complete** | 0 dishes missing |
+| `dish_role` assigned | ✅ **Complete** | 0 dishes missing |
+| Ingredients linked | ✅ **Complete** | 0 active dishes unlinked (was 211) |
+| Auto-derivation run | ✅ **Complete** | 0 active dishes pending (was 211) |
+| Empty combos | ✅ **None** | 5 deleted (was 5) |
+| State code data quality | ✅ **Clean** | TG→TS corrected (was 3 bad rows) |
 | Ingredient flags | ✅ **Complete** | All 78 ingredients flagged |
 | Allergen flags | ✅ **Correct** | Peanut/wheat/dairy/jain all verified |
-| Ingredients linked | ❌ **211 gaps** | Fix F1 required |
-| Auto-derivation run | ❌ **211 gaps** | Resolved by Fix F1 |
-| Hero images (photos) | ❌ **813 missing** | Content-ops pipeline needed |
-| Blurhash | ❌ **813 missing** | Follows photo upload |
-| Empty combos | ❌ **5 combos** | Fix F2 required |
-| State code data quality | ⚠️ **TG typo** | Fix F3 required |
+| Hero images (`hero_image_url`) | ❌ **602 missing** | Cloudinary upload pipeline needed |
+| `blurhash` | ❌ **602 missing** | Follows photo upload |
 
-**Blocking for launch:** Fix F1, Fix F2 + photo/blurhash pipeline  
-**Non-blocking but should fix:** Fix F3 (state code quality)
+**Remaining blocker for launch:** Cloudinary image upload + blurhash generation for 602 active dishes  
+**All SQL-fixable issues:** RESOLVED ✅
