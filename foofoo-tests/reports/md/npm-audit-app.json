@@ -59,8 +59,7 @@
         "@expo/config",
         "@expo/inline-modules",
         "@expo/prebuild-config",
-        "expo",
-        "onesignal-expo-plugin"
+        "expo"
       ],
       "range": "*",
       "nodes": [
@@ -191,7 +190,8 @@
         "@expo/metro-config"
       ],
       "effects": [
-        "@sentry/react-native"
+        "@sentry/react-native",
+        "onesignal-expo-plugin"
       ],
       "range": "40.0.0-alpha.0 - 40.0.0-beta.5 || >=41.0.0-alpha.0",
       "nodes": [
@@ -208,10 +208,10 @@
       "severity": "moderate",
       "isDirect": true,
       "via": [
-        "@expo/config-plugins"
+        "expo"
       ],
       "effects": [],
-      "range": "2.5.0",
+      "range": ">=2.5.1",
       "nodes": [
         "node_modules/onesignal-expo-plugin"
       ],
@@ -286,12 +286,12 @@
       "total": 13
     },
     "dependencies": {
-      "prod": 642,
+      "prod": 643,
       "dev": 74,
       "optional": 38,
       "peer": 15,
       "peerOptional": 0,
-      "total": 757
+      "total": 758
     }
   }
 }
