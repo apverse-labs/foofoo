@@ -292,3 +292,126 @@ describe('RLS Security: users cannot write to other users rows', () => {
     expect(error).not.toBeNull();
   });
 });
+
+// ─── Reference table write protection ────────────────────────────────────────
+// dishes is seeded reference data — authenticated users must never be able to
+// INSERT/UPDATE/DELETE rows. Only service_role can write (dishes_service_write).
+
+describe('RLS Security: authenticated user cannot write to reference tables', () => {
+  let testUser: { id: string; email: string };
+  let testClient: SupabaseClient;
+
+  beforeAll(async () => {
+    const password = 'TestPass123!';
+    const email = `test-rls-ref-${Date.now()}@foofoo-test.dev`;
+    testUser = await createTestUser(email, password);
+    testClient = await signInTestUser(email, password);
+  });
+
+  afterAll(async () => {
+    await deleteTestUser(testUser.id);
+  });
+
+  it('authenticated user cannot INSERT into dishes (reference data is read-only)', async () => {
+    const { error } = await testClient
+      .from('dishes')
+      .insert({
+        name: 'Malicious Insert Dish',
+        cuisine_id: 1,
+        diet_type: 'veg',
+        spice_level: 1,
+        cook_time_mins: 10,
+        difficulty: 1,
+        is_active: true,
+      });
+
+    // RLS must block INSERT — authenticated users have SELECT-only policy on dishes
+    expect(error).not.toBeNull();
+    expect(error!.code).toMatch(/^(42501|PGRST301|PGRST116)$/);
+  });
+});
+
+// ─── Ops table isolation (service_role only) ──────────────────────────────────
+// audit_log, etl_jobs, etc. have "service_role only" policies — authenticated
+// users must receive 0 rows (RLS filters everything), NOT a 403 error.
+// Returning 0 rows (not an error) is the correct PostgREST behaviour when
+// a policy exists but no rows match.
+
+describe('RLS Security: ops tables return 0 rows to authenticated users', () => {
+  let testUser: { id: string; email: string };
+  let testClient: SupabaseClient;
+
+  beforeAll(async () => {
+    const password = 'TestPass123!';
+    const email = `test-rls-ops-${Date.now()}@foofoo-test.dev`;
+    testUser = await createTestUser(email, password);
+    testClient = await signInTestUser(email, password);
+
+    // Insert a sentinel audit_log row via admin so the table is non-empty
+    await supabaseAdmin.from('audit_log').insert({
+      action: 'test_rls_sentinel',
+      table_name: 'audit_log',
+      changed_by: testUser.id,
+    }).select(); // ignore errors — table may have different schema
+  });
+
+  afterAll(async () => {
+    await supabaseAdmin
+      .from('audit_log')
+      .delete()
+      .eq('action', 'test_rls_sentinel');
+    await deleteTestUser(testUser.id);
+  });
+
+  it('authenticated user querying audit_log gets 0 rows (not a 403 error)', async () => {
+    const { data, error } = await testClient
+      .from('audit_log')
+      .select('*')
+      .limit(10);
+
+    // Must NOT return a PostgREST error — RLS returns empty set, not 403
+    expect(error).toBeNull();
+    // Must return 0 rows — the sentinel row inserted above is invisible to this user
+    expect(data ?? []).toHaveLength(0);
+  });
+});
+
+// ─── Unauthenticated access to user-data tables ───────────────────────────────
+// An unauthenticated anon client must receive 0 rows from user-data tables.
+// Policies use `auth.uid() = user_id` which evaluates to NULL for anon,
+// so the WHERE clause matches nothing — PostgREST returns [] with no error.
+
+describe('RLS Security: unauthenticated (anon) access to user-data tables returns 0 rows', () => {
+  // Import the exported anon-key client (no session — unauthenticated)
+  const anonClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+  it('unauthenticated client querying user_diet_rules returns 0 rows (not 403)', async () => {
+    const { data, error } = await anonClient
+      .from('user_diet_rules')
+      .select('*')
+      .limit(10);
+
+    expect(error).toBeNull();
+    expect(data ?? []).toHaveLength(0);
+  });
+
+  it('unauthenticated client querying planner returns 0 rows (not 403)', async () => {
+    const { data, error } = await anonClient
+      .from('planner')
+      .select('*')
+      .limit(10);
+
+    expect(error).toBeNull();
+    expect(data ?? []).toHaveLength(0);
+  });
+
+  it('unauthenticated client querying user_inferred_prefs returns 0 rows (not 403)', async () => {
+    const { data, error } = await anonClient
+      .from('user_inferred_prefs')
+      .select('*')
+      .limit(10);
+
+    expect(error).toBeNull();
+    expect(data ?? []).toHaveLength(0);
+  });
+});

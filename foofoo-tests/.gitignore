@@ -18,3 +18,4 @@ reports/md/*.md
 !reports/md/dependency-audit.md
 !reports/md/data-integrity-audit.md
 !reports/md/compliance-audit.md
+!reports/md/rls-audit.md
