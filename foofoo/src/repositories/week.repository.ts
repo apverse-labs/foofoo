@@ -19,6 +19,7 @@ export interface WeekSlotDish {
   id: number;
   name: string;
   hero_image_url: string | null;
+  cloudinary_public_id: string | null;
   blurhash: string | null;
   diet_type: DietType;
 }
@@ -119,7 +120,7 @@ export async function getWeekPlans(userId: string, weekStartDate: string): Promi
     if (dishIds.size > 0) {
       const { data: dishRows, error: dishErr } = await supabase
         .from('dishes')
-        .select('id, name, hero_image_url, blurhash, diet_type')
+        .select('id, name, hero_image_url, cloudinary_public_id, blurhash, diet_type')
         .in('id', Array.from(dishIds));
       if (dishErr) throw dishErr;
       dishMap = new Map((dishRows as WeekSlotDish[] | null ?? []).map(d => [d.id, d]));
