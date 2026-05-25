@@ -3,9 +3,25 @@
 -- Adds ingredients referenced by the 50-persona test suite that are missing
 -- from ingredients_master: mushrooms (exclusion), beef (exclusion), pork (exclusion),
 -- and common ingredient aliases: shellfish group, soy, nuts umbrella aliases.
+--
+-- Note: ingredient_aliases.ingredient_id had a FK pointing to the 'ingredients'
+-- table (which has no seed data). Step 1 corrects this to ingredients_master.
 -- =============================================================================
 
--- ─── 1. Add missing exclusion ingredients ────────────────────────────────────
+-- ─── Step 1: Fix FK — ingredient_aliases wrongly references 'ingredients' ────
+--   The 'ingredients' table is empty; all seeded data lives in ingredients_master.
+--   Drop the wrong constraint and re-add it pointing at ingredients_master.
+
+ALTER TABLE public.ingredient_aliases
+  DROP CONSTRAINT IF EXISTS ingredient_aliases_ingredient_id_fkey;
+
+ALTER TABLE public.ingredient_aliases
+  ADD CONSTRAINT ingredient_aliases_ingredient_id_fkey
+    FOREIGN KEY (ingredient_id)
+    REFERENCES public.ingredients_master(id)
+    ON DELETE CASCADE;
+
+-- ─── Step 2: Add missing exclusion ingredients ────────────────────────────────
 -- These are food items personas declare as exclusions (not allergens).
 
 INSERT INTO public.ingredients_master (name, is_allergen)
@@ -15,7 +31,7 @@ VALUES
   ('Pork',      FALSE)
 ON CONFLICT (name) DO NOTHING;
 
--- ─── 2. Add ingredient aliases ───────────────────────────────────────────────
+-- ─── Step 3: Add ingredient aliases ──────────────────────────────────────────
 
 INSERT INTO public.ingredient_aliases (ingredient_id, alias)
 SELECT im.id, a.alias
@@ -51,7 +67,7 @@ FROM (VALUES
   ('Crab',     'crab'),
   ('Crab',     'crab meat'),
 
-  -- Nuts umbrella alias → map to Peanut as representative
+  -- Nuts umbrella aliases → map to Peanut as representative
   ('Peanut',   'nuts'),
   ('Peanut',   'tree nuts'),
   ('Peanut',   'peanuts'),
