@@ -1,0 +1,99 @@
+name: Persona Validation (50 Personas)
+
+on:
+  workflow_dispatch:
+    inputs:
+      diet:
+        description: |
+          Filter by diet type — runs only personas of that diet.
+          Leave blank to run all 50 personas.
+        required: false
+        default: ''
+      persona:
+        description: |
+          Run a single persona by ID (e.g. "P001").
+          Leave blank to run all (or filtered by diet above).
+        required: false
+        default: ''
+      verbose:
+        description: 'Enable verbose output (true/false)'
+        required: false
+        default: 'false'
+
+jobs:
+  persona-validation:
+    name: 50-Persona RE Validation
+    runs-on: ubuntu-latest
+
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    defaults:
+      run:
+        working-directory: foofoo-tests
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: foofoo-tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build CLI flags
+        id: flags
+        run: |
+          FLAGS=""
+          if [ -n "${{ github.event.inputs.persona }}" ]; then
+            FLAGS="$FLAGS --persona ${{ github.event.inputs.persona }}"
+          fi
+          if [ -n "${{ github.event.inputs.diet }}" ]; then
+            FLAGS="$FLAGS --diet ${{ github.event.inputs.diet }}"
+          fi
+          if [ "${{ github.event.inputs.verbose }}" = "true" ]; then
+            FLAGS="$FLAGS --verbose"
+          fi
+          echo "flags=$FLAGS" >> $GITHUB_OUTPUT
+          echo "Running with flags: $FLAGS"
+
+      - name: Run persona validation
+        run: |
+          npx ts-node --project tsconfig.json personas/persona-runner.ts ${{ steps.flags.outputs.flags }}
+        # Exit code 2 = CRITICAL_FAIL found — surface it but don't hide the report
+        continue-on-error: true
+        id: runner
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: persona-report-${{ github.run_number }}
+          path: |
+            foofoo-tests/reports/html/dashboard.html
+            foofoo-tests/reports/md/master-summary.md
+          retention-days: 30
+
+      - name: Print markdown summary to job log
+        if: always()
+        run: |
+          if [ -f reports/md/master-summary.md ]; then
+            echo "### Persona Validation Results" >> $GITHUB_STEP_SUMMARY
+            cat reports/md/master-summary.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No markdown report generated" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Fail if CRITICAL_FAILs found
+        if: steps.runner.outcome == 'failure'
+        run: |
+          echo "❌ Persona runner exited with code 2 — CRITICAL_FAIL constraint violations found."
+          echo "   Download the HTML report artifact above for full details."
+          exit 1
