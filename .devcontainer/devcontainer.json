@@ -3,22 +3,27 @@
   "image": "mcr.microsoft.com/devcontainers/typescript-node:22",
   "secrets": {
     "SUPABASE_URL": {
-      "description": "Supabase dev project URL (Mumbai)",
+      "description": "Supabase dev project URL (Mumbai) — e.g. https://ufgfznpqixplcbhmsqqw.supabase.co",
       "documentationUrl": "https://supabase.com/dashboard/project/ufgfznpqixplcbhmsqqw/settings/api"
     },
-    "SUPABASE_ACCESS_TOKEN": {
-      "description": "Supabase anon/public key — respects RLS",
+    "SUPABASE_ANON_KEY": {
+      "description": "Supabase anon/public key — respects Row Level Security. Found under Project API keys → anon public.",
       "documentationUrl": "https://supabase.com/dashboard/project/ufgfznpqixplcbhmsqqw/settings/api"
     },
     "SUPABASE_SERVICE_ROLE_KEY": {
-      "description": "Supabase service role key — bypasses RLS, test teardown only",
+      "description": "Supabase service role key — bypasses RLS, used only in test teardown. Found under Project API keys → service_role.",
       "documentationUrl": "https://supabase.com/dashboard/project/ufgfznpqixplcbhmsqqw/settings/api"
+    },
+    "SUPABASE_ACCESS_TOKEN": {
+      "description": "Supabase CLI personal access token (NOT the anon key). Used to authenticate the Supabase CLI for deployments. Generate at https://supabase.com/dashboard/account/tokens",
+      "documentationUrl": "https://supabase.com/dashboard/account/tokens"
     }
   },
   "postCreateCommand": "cd foofoo-tests && npm install",
   "remoteEnv": {
     "SUPABASE_URL": "${localEnv:SUPABASE_URL}",
-    "SUPABASE_ACCESS_TOKEN": "${localEnv:SUPABASE_ACCESS_TOKEN}",
-    "SUPABASE_SERVICE_ROLE_KEY": "${localEnv:SUPABASE_SERVICE_ROLE_KEY}"
+    "SUPABASE_ANON_KEY": "${localEnv:SUPABASE_ANON_KEY}",
+    "SUPABASE_SERVICE_ROLE_KEY": "${localEnv:SUPABASE_SERVICE_ROLE_KEY}",
+    "SUPABASE_ACCESS_TOKEN": "${localEnv:SUPABASE_ACCESS_TOKEN}"
   }
 }

@@ -29,7 +29,9 @@
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-const CLOUDINARY_CLOUD_NAME = 'dzlqsobol';
+// Intentionally hardcoded — the cloud name is public (it appears in every CDN
+// URL served to users) and does not change across environments. Not a secret.
+const CLOUDINARY_CLOUD_NAME = Deno.env.get('CLOUDINARY_CLOUD_NAME') ?? 'dzlqsobol';
 const CLOUDINARY_API_BASE = `https://api.cloudinary.com/v1_1/${CLOUDINARY_CLOUD_NAME}`;
 const PAGE_SIZE = 500;
 

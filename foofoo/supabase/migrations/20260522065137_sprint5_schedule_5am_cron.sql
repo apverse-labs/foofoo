@@ -15,6 +15,11 @@ DECLARE
   v_key text;
   v_request_id bigint;
 BEGIN
+  -- ⚠️  HARDCODED PROJECT URL — pg_cron cannot read env vars at runtime, so the
+  --    Edge Function URL must be embedded here at migration time.
+  --    If the Supabase project ref ever changes, this function must be replaced
+  --    with a new migration that contains the updated URL.
+  --    Current project: ufgfznpqixplcbhmsqqw (dev/Mumbai, ap-south-1)
   v_url := 'https://ufgfznpqixplcbhmsqqw.supabase.co/functions/v1/generate-daily-plans-batch';
 
   SELECT decrypted_secret INTO v_key

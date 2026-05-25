@@ -10,3 +10,6 @@ reports/html/*.html
 reports/md/*.md
 !reports/html/.gitkeep
 !reports/md/.gitkeep
+# Audit reports are committed (not generated — human-reviewed)
+!reports/md/hygiene-audit.md
+!reports/md/secrets-audit.md

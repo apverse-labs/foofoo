@@ -248,7 +248,11 @@ serve(async (req) => {
 
     // --- SEND EMAIL via Resend ---
     const resendKey = Deno.env.get('RESEND_API_KEY');
-    const founderEmails = (Deno.env.get('FOUNDER_EMAILS') || 'ankit3.mittal@ril.com')
+    // FOUNDER_EMAILS must be set in Supabase Vault — no hardcoded fallback.
+    // If not set, the function still computes metrics but skips sending (same
+    // behaviour as when RESEND_API_KEY is absent).
+    // Set via: Supabase Dashboard → Edge Functions → daily-analytics-email → Secrets
+    const founderEmails = (Deno.env.get('FOUNDER_EMAILS') ?? '')
       .split(',').map((e) => e.trim()).filter(Boolean);
     const fromAddr = Deno.env.get('RESEND_FROM') || 'FooFoo Intelligence <onboarding@resend.dev>';
 
