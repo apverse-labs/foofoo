@@ -1,0 +1,81 @@
+name: Deploy Edge Functions
+
+on:
+  workflow_dispatch:
+    inputs:
+      functions:
+        description: |
+          Comma-separated list of functions to deploy, or "all" for everything.
+          e.g. "generate-daily-plan,calculate-inferred-prefs"
+        required: false
+        default: all
+      confirm:
+        description: Type "deploy" to confirm
+        required: true
+
+jobs:
+  deploy:
+    name: Deploy to Supabase (dev)
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.confirm == 'deploy' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      # SUPABASE_DEPLOY_TOKEN = personal access token from
+      # https://supabase.com/dashboard/account/tokens
+      # Add it to GitHub repo secrets as SUPABASE_DEPLOY_TOKEN
+      - name: Authenticate Supabase CLI
+        run: supabase login --token "${{ secrets.SUPABASE_DEPLOY_TOKEN }}"
+
+      - name: Deploy selected functions
+        working-directory: foofoo
+        env:
+          PROJECT_REF: ufgfznpqixplcbhmsqqw
+          INPUT: ${{ github.event.inputs.functions }}
+        run: |
+          set -e
+
+          ALL_FUNCTIONS=(
+            generate-daily-plan
+            generate-daily-plans-batch
+            calculate-inferred-prefs
+            regenerate-slot
+            derive-dish-attributes
+            backfill-ingredients
+            log-re-decision
+            delete-account
+            delete-user-account
+            send-morning-notification
+            daily-analytics-email
+            compute-recipe-affinity
+          )
+
+          if [ "$INPUT" = "all" ]; then
+            TARGETS=("${ALL_FUNCTIONS[@]}")
+          else
+            IFS=',' read -ra TARGETS <<< "$INPUT"
+          fi
+
+          for fn in "${TARGETS[@]}"; do
+            fn=$(echo "$fn" | xargs)   # trim whitespace
+            echo "▶ Deploying $fn..."
+            supabase functions deploy "$fn" \
+              --project-ref "$PROJECT_REF" \
+              --no-verify-jwt
+            echo "✅ $fn deployed"
+          done
+
+      - name: Summary
+        if: always()
+        run: |
+          echo "### Edge Function Deployment" >> $GITHUB_STEP_SUMMARY
+          echo "- Project: ufgfznpqixplcbhmsqqw (dev/Mumbai)" >> $GITHUB_STEP_SUMMARY
+          echo "- Functions: ${{ github.event.inputs.functions }}" >> $GITHUB_STEP_SUMMARY
+          echo "- Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY
