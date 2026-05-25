@@ -10,7 +10,7 @@ describe('Combo Architecture: dish_combos table', () => {
   it('dish_combos table has rows', async () => {
     const { data, error } = await supabaseAdmin
       .from('dish_combos')
-      .select('combo_id, combo_name, combo_type, meal_types')
+      .select('id, name, combo_type, meal_types')
       .limit(10);
 
     expect(error).toBeNull();
@@ -23,7 +23,7 @@ describe('Combo Architecture: dish_combos table', () => {
 
     const { data, error } = await supabaseAdmin
       .from('dish_combos')
-      .select('combo_id, combo_type')
+      .select('id, combo_type')
       .not('combo_type', 'is', null);
 
     expect(error).toBeNull();
@@ -41,7 +41,7 @@ describe('Combo Architecture: dish_combos table', () => {
   it('meal_types is an array on dish_combos', async () => {
     const { data, error } = await supabaseAdmin
       .from('dish_combos')
-      .select('combo_id, meal_types')
+      .select('id, meal_types')
       .limit(5);
 
     expect(error).toBeNull();
@@ -57,7 +57,7 @@ describe('Combo Architecture: dish_combo_items', () => {
   it('dish_combo_items has is_default and is_swappable columns working', async () => {
     const { data, error } = await supabaseAdmin
       .from('dish_combo_items')
-      .select('combo_id, dish_id, role, is_default, is_swappable, sort_order')
+      .select('combo_id, dish_id, role, is_default, is_swappable, display_order')
       .limit(10);
 
     expect(error).toBeNull();
@@ -67,7 +67,7 @@ describe('Combo Architecture: dish_combo_items', () => {
   it('each combo has at least one is_default=true item', async () => {
     const { data: combos, error: combosError } = await supabaseAdmin
       .from('dish_combos')
-      .select('combo_id')
+      .select('id')
       .limit(5);
 
     expect(combosError).toBeNull();
@@ -80,7 +80,7 @@ describe('Combo Architecture: dish_combo_items', () => {
       const { data: items, error } = await supabaseAdmin
         .from('dish_combo_items')
         .select('is_default')
-        .eq('combo_id', combo.combo_id);
+        .eq('combo_id', combo.id);
 
       expect(error).toBeNull();
       if (!items || items.length === 0) continue;

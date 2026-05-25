@@ -26,10 +26,9 @@ describe('Edge Function: generate-daily-plan', () => {
     // Seed minimal onboarding data
     await supabaseAdmin.from('user_diet_rules').upsert({
       user_id: testUserId,
-      diet_type: 'veg',
-      excluded_ingredient_ids: [],
-      allergen_ingredient_ids: [],
-    });
+      food_pref: 'veg',
+      excluded_ingredients: [],
+    }, { onConflict: 'user_id' });
 
     // Use new Doc #11A schema (item_id integer + preference_bucket)
     await supabaseAdmin.from('user_category_preferences').insert([

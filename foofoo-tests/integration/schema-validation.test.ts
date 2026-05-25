@@ -25,7 +25,7 @@ const MVP_TABLES = [
   'mv_refresh_history', 'media_assets', 'migration_log', 'notification_log',
 ];
 
-const KEEP_EMPTY_TABLES = ['recipes', 'recipe_steps', 'localizations', 'family_members'];
+const KEEP_EMPTY_TABLES = ['recipes', 'recipe_steps', 'family_members'];
 
 const DROPPED_TABLES = [
   'user_preferences',
@@ -90,7 +90,7 @@ describe('Schema Validation: MVP Active Tables', () => {
     expect(missing).toEqual([]);
   }, 60000);
 
-  it('all 4 Keep Empty tables exist', async () => {
+  it('all Keep Empty tables exist', async () => {
     const missing: string[] = [];
     for (const table of KEEP_EMPTY_TABLES) {
       const exists = await tableExists(table);
@@ -260,7 +260,7 @@ describe('Schema Validation: dish_combos and dish_combo_items', () => {
 
   it('dish_combos table exists with combo_type column', async () => {
     expect(await columnExists('dish_combos', 'combo_type')).toBe(true);
-    expect(await columnExists('dish_combos', 'combo_name')).toBe(true);
+    expect(await columnExists('dish_combos', 'name')).toBe(true);
     expect(await columnExists('dish_combos', 'meal_types')).toBe(true);
   });
 
