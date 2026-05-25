@@ -1,0 +1,52 @@
+name: Deploy & Run sync-cloudinary-images
+
+# One-shot workflow — run manually from GitHub Actions tab
+on:
+  workflow_dispatch:
+
+jobs:
+  sync:
+    name: Deploy Edge Function + Sync Cloudinary Images
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: foofoo
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Supabase CLI
+        run: npm install -g supabase@latest
+
+      - name: Link Supabase project
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Deploy sync-cloudinary-images Edge Function
+        run: supabase functions deploy sync-cloudinary-images --no-verify-jwt
+        env:
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+
+      - name: Invoke sync-cloudinary-images
+        run: |
+          echo "Invoking sync-cloudinary-images..."
+          RESPONSE=$(curl -s -X POST \
+            "https://${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co/functions/v1/sync-cloudinary-images" \
+            -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          echo "$RESPONSE" | python3 -m json.tool || echo "$RESPONSE"
+
+          # Extract and display summary
+          MATCHED=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('matched','?'))" 2>/dev/null || echo "?")
+          UNMATCHED=$(echo "$RESPONSE" | python3 -c "import sys,json; d=json.load(sys.stdin); print(d.get('data',{}).get('unmatched','?'))" 2>/dev/null || echo "?")
+          echo ""
+          echo "✅ Matched dishes: $MATCHED"
+          echo "⚠️  Unmatched assets: $UNMATCHED"
