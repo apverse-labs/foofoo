@@ -18,6 +18,7 @@ export interface Dish {
   allergens: string[];          // e.g. ['nuts', 'dairy', 'gluten']
   regional_origin?: string;     // state code
   cook_time_mins?: number;
+  calories?: number;            // used by RE v1 weather boost (CALORIES_LIGHT/HEAVY thresholds)
   is_active: boolean;
 }
 
@@ -63,18 +64,14 @@ export interface SuggestionLog {
   action_at: Date;
 }
 
+// UserInferredPrefs matches foofoo/supabase/functions/generate-daily-plan/scoring.ts InferredPrefs
+// Old fields (repeat_tolerance_breakfast/lunch/dinner, spice_tolerance) were wrong — see sync-audit.md
 export interface UserInferredPrefs {
   user_id: string;
-  repeat_tolerance_breakfast: number;   // 1-10
-  repeat_tolerance_lunch: number;
-  repeat_tolerance_dinner: number;
-  spice_tolerance: number;              // 1-4 inferred
-  decay_config: {
-    week_1: number;
-    week_2_4: number;
-    month_2_3: number;
-    beyond: number;
-  };
+  spice_score?: number | null;          // -1..+1; positive = likes spicy
+  complexity_score?: number | null;     // -1..+1; positive = likes complex/slow
+  repeat_tolerance?: number | null;     // 1-10 scale (single value, not per-slot)
+  cuisine_drift?: Record<string, number> | null; // per-cuisine drift score
 }
 
 // ─── RE Engine types ──────────────────────────────────────────────────────────
@@ -87,10 +84,15 @@ export interface REContext {
   home_state?: string;
 }
 
+// WeatherCondition — used by re-engine.ts unit tests.
+// The Edge Function uses { weatherCode: number; tempCelsius: number } (OpenWeatherMap format).
+// re-engine.ts accepts WeatherCondition and maps it internally using weatherCode when available.
 export interface WeatherCondition {
   temperature_c: number;
   humidity_percent: number;
   condition: 'sunny' | 'rainy' | 'cloudy' | 'humid' | 'cold';
+  weatherCode?: number;   // OpenWeatherMap code; ≥500 <600 = rainy. Optional for test compatibility.
+  tempCelsius?: number;   // alias for temperature_c used by Edge Function responses
 }
 
 export interface ScoredDish {
@@ -100,16 +102,24 @@ export interface ScoredDish {
   is_eligible: boolean;
 }
 
+// ScoreBreakdown — mirrors Edge Function ScoreComponents (scoring.ts)
+// Field names use test-readable underscore style; Edge Function uses camelCase.
+// Added re_v2_* fields to match Edge Function's RE v2 scoring signals.
+// Removed 'history' field — Edge Function has no history scoring step (see sync-audit.md EXTRA_STEP-1).
 export interface ScoreBreakdown {
   base: number;
-  cuisine_pref: number;
-  meal_item_pref: number;
-  weather: number;
-  day_of_week: number;
-  home_state: number;
-  history: number;
-  variety_penalty: number;
-  random: number;
+  cuisine_pref: number;        // cuisineBoost in EF
+  meal_item_pref: number;      // mealItemBoost in EF
+  weather: number;             // weatherBoost in EF
+  day_of_week: number;         // dayBoost in EF
+  home_state: number;          // homeStateBoost in EF
+  variety_penalty: number;     // varietyPenalty in EF
+  random: number;              // randomFactor in EF
+  // RE v2 fields (0 when inferredPrefs is null)
+  re_v2_spice_boost: number;
+  re_v2_complexity_boost: number;
+  re_v2_drift_boost: number;
+  re_v2_affinity_boost: number;
   total: number;
 }
 

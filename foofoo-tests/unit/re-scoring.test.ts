@@ -246,21 +246,35 @@ describe('RE Soft Scores', () => {
     expect(scoreA - scoreB).toBeCloseTo(0.2, 5); // 0.3 - 0.1 = 0.2
   });
 
-  it('Weather match adds +0.2', () => {
-    const dish = mockDish({ spice_level: 2, cook_time_mins: 20 }); // light, quick
+  it('Weather match adds +0.15 (cold + spicy dish)', () => {
+    // Cold weather (< 18°C) + spicy dish (spice_level >= 3) → +0.15 (RE_V1.WEATHER_BOOST)
+    const dish = mockDish({ spice_level: 3, cook_time_mins: 30 });
     const context = mockContext({
-      weather: { temperature_c: 38, humidity_percent: 60, condition: 'sunny' } // hot
+      weather: { temperature_c: 15, humidity_percent: 60, condition: 'cold' } // cold
     });
     const scored = scoreDish(dish, context, [], [], undefined, 0);
     expect(scored.score_breakdown.weather).toBe(WEIGHTS.weather_match);
-    expect(scored.score_breakdown.weather).toBe(0.2);
+    expect(scored.score_breakdown.weather).toBe(0.15);
   });
 
-  it('Home state match adds +0.1', () => {
+  it('Weather match adds +0.15 (hot + light non-spicy dish with low calories)', () => {
+    // Hot weather (> 32°C) + non-spicy (spice_level < 3) + light (calories < 350) → +0.15
+    const dish = mockDish({ spice_level: 2, cook_time_mins: 20, calories: 250 });
+    const context = mockContext({
+      weather: { temperature_c: 35, humidity_percent: 60, condition: 'sunny' } // hot
+    });
+    const scored = scoreDish(dish, context, [], [], undefined, 0);
+    expect(scored.score_breakdown.weather).toBe(WEIGHTS.weather_match);
+    expect(scored.score_breakdown.weather).toBe(0.15);
+  });
+
+  it('Home state match adds home_state_boost_max * 0.5 (fallback without affinity map)', () => {
+    // When no regionAffinityByCuisineId is provided, re-engine uses 50% of max as fallback
     const dish = mockDish({ regional_origin: 'KA' });
     const context = mockContext({ home_state: 'KA' });
     const scored = scoreDish(dish, context, [], [], undefined, 0);
-    expect(scored.score_breakdown.home_state).toBe(WEIGHTS.home_state);
+    // Fallback: home_state_boost_max (0.2) * 0.5 = 0.1
+    expect(scored.score_breakdown.home_state).toBe(WEIGHTS.home_state_boost_max * 0.5);
     expect(scored.score_breakdown.home_state).toBe(0.1);
   });
 
@@ -290,18 +304,21 @@ describe('RE Score Range', () => {
   });
 
   it('score formula: base(1.0) + boosts stays within range', () => {
-    // Max possible: 1.0 + 0.3 + 0.25 + 0.2 + 0.15 + 0.1 + 0.3 + 0.15 = 2.45, capped at 2.5
+    // RE v1 max (no v2): 1.0(base) + 0.3(cuisine) + 0.25(meal_item) + 0.15(weather)
+    //   + 0.05(weekend_slow) + 0.1(home_state_fallback) + 0.15(random) ≈ 2.0
+    // With v2 affinity and drift could reach 2.5 cap.
     const dish = mockDish({
       cuisine_id: 'south_indian',
       regional_origin: 'KA',
       cook_time_mins: 45,
-      spice_level: 2,
+      spice_level: 3,      // spicy for cold weather boost
+      calories: 200,       // light for hot weather boost (not used here — cold path)
     });
     const prefs = mockPreferences('south_indian', 'frequently');
     const context = mockContext({
       home_state: 'KA',
       date: new Date('2026-05-23T08:00:00'), // Saturday
-      weather: { temperature_c: 38, humidity_percent: 60, condition: 'sunny' },
+      weather: { temperature_c: 15, humidity_percent: 60, condition: 'cold' }, // cold + spicy → +0.15
     });
     const history = [
       mockLog({ action: 'locked' }),
