@@ -1,0 +1,3 @@
+# MCP server config and local settings (contain personal tokens — do not commit)
+.mcp.json
+.claude/settings.local.json
