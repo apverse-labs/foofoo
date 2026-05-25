@@ -16,6 +16,8 @@
  *   hero  → 1080 px wide, q_80, f_auto (Dish Detail)
  */
 
+// Intentionally hardcoded — the cloud name is public (it appears in every CDN
+// URL served to users) and does not change across environments. Not a secret.
 export const CLOUDINARY_CLOUD_NAME = 'dzlqsobol';
 
 const BASE_URL = `https://res.cloudinary.com/${CLOUDINARY_CLOUD_NAME}/image/upload`;

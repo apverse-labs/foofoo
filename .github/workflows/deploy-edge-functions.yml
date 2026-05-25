@@ -36,7 +36,10 @@ jobs:
       - name: Deploy selected functions
         working-directory: foofoo
         env:
-          PROJECT_REF: ufgfznpqixplcbhmsqqw
+          # SUPABASE_PROJECT_REF must be set in GitHub repo Secrets:
+          # Settings → Secrets and variables → Actions → New repository secret
+          # Value: the project ref from Supabase Dashboard → Settings → General
+          PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}
           INPUT: ${{ github.event.inputs.functions }}
         run: |
           set -e
@@ -75,6 +78,6 @@ jobs:
         if: always()
         run: |
           echo "### Edge Function Deployment" >> $GITHUB_STEP_SUMMARY
-          echo "- Project: ufgfznpqixplcbhmsqqw (dev/Mumbai)" >> $GITHUB_STEP_SUMMARY
+          echo "- Project: $PROJECT_REF" >> $GITHUB_STEP_SUMMARY
           echo "- Functions: ${{ github.event.inputs.functions }}" >> $GITHUB_STEP_SUMMARY
           echo "- Triggered by: ${{ github.actor }}" >> $GITHUB_STEP_SUMMARY

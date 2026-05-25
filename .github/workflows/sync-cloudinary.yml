@@ -25,7 +25,7 @@ jobs:
         run: npm install -g supabase@latest
 
       - name: Link Supabase project
-        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_ID }}
+        run: supabase link --project-ref ${{ secrets.SUPABASE_PROJECT_REF }}
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
 
@@ -38,7 +38,7 @@ jobs:
         run: |
           echo "Invoking sync-cloudinary-images..."
           RESPONSE=$(curl -s -X POST \
-            "https://${{ secrets.SUPABASE_PROJECT_ID }}.supabase.co/functions/v1/sync-cloudinary-images" \
+            "https://${{ secrets.SUPABASE_PROJECT_REF }}.supabase.co/functions/v1/sync-cloudinary-images" \
             -H "Authorization: Bearer ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{}')
