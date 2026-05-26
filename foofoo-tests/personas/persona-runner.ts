@@ -249,16 +249,23 @@ async function invokeGenerateFirstPlan(
   userId: string,
   date: string
 ): Promise<{ data: any; error: any }> {
-  // Function is deployed as 'generate-daily-plan' (service-role API requires
-  // targetUserId + planDate + forceRegenerate, not user_id + date)
+  // Explicitly pass service-role key as Authorization header.
+  // supabaseAdmin has persistSession:false so functions.invoke() may not
+  // reliably derive the auth header from the session — pass it directly.
   return supabaseAdmin.functions.invoke('generate-daily-plan', {
     body: { targetUserId: userId, planDate: date, forceRegenerate: true },
+    headers: {
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''}`,
+    },
   });
 }
 
 async function invokeCalculateInferredPrefs(userId: string): Promise<{ data: any; error: any }> {
   return supabaseAdmin.functions.invoke('calculate-inferred-prefs', {
     body: { user_id: userId },
+    headers: {
+      Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY ?? ''}`,
+    },
   });
 }
 
