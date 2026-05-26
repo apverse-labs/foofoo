@@ -146,9 +146,9 @@ async function seedPersonaData(userId: string, persona: FooFooPersona): Promise<
 
   const { error: drError } = await supabaseAdmin.from('user_diet_rules').upsert({
     user_id: userId,
-    diet_type: persona.diet_type,
-    allergen_ingredient_ids: allergenIds,
-    excluded_ingredient_ids: exclusionIds,
+    food_pref: persona.diet_type,        // DB column is food_pref not diet_type
+    excluded_ingredients: exclusionIds,  // DB column is excluded_ingredients (integer[])
+    // Note: allergens are stored on dishes.allergen_ids, not on user_diet_rules
   });
   if (drError) warn(`[${persona.id}] user_diet_rules upsert failed: ${drError.message}`);
 
@@ -599,7 +599,15 @@ async function runPersona(persona: FooFooPersona): Promise<PersonaResult> {
     const planDuration = Date.now() - efStart;
 
     if (planError) {
-      const gap = `generate-daily-plan error: ${planError.message}`;
+      // Try to extract the actual error body from the edge function response
+      let detail = planError.message;
+      try {
+        const body = await (planError as any).context?.json?.();
+        if (body?.error?.message) detail = body.error.message;
+        else if (body?.error) detail = JSON.stringify(body.error);
+        else if (body) detail = JSON.stringify(body);
+      } catch { /* ignore — context may not be available */ }
+      const gap = `generate-daily-plan error: ${detail}`;
       dataGaps.push(gap);
       log(`  ⚠️ [${persona.id}] DATA_GAP — ${gap}`);
 

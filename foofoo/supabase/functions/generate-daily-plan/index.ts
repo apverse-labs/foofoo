@@ -116,8 +116,8 @@ serve(async (req) => {
       await Promise.all([
         supabase.from('profiles').select('food_pref, home_state, current_city').eq('id', user.id).maybeSingle().then(r => r.data),
         supabase.from('user_diet_rules').select('food_pref, excluded_ingredients').eq('user_id', user.id).maybeSingle().then(r => r.data),
-        supabase.from('user_category_preferences').select('category_id, bucket').eq('user_id', user.id).eq('category_type', 'cuisine').then(r => r.data || []),
-        supabase.from('user_category_preferences').select('category_id, bucket').eq('user_id', user.id).eq('category_type', 'meal_item').then(r => r.data || []),
+        supabase.from('user_category_preferences').select('item_id, preference_bucket').eq('user_id', user.id).eq('category_type', 'cuisine').then(r => r.data || []),
+        supabase.from('user_category_preferences').select('item_id, preference_bucket').eq('user_id', user.id).eq('category_type', 'meal_item').then(r => r.data || []),
         supabase.from('never_list').select('dish_id').eq('user_id', user.id).eq('is_active', true).then(r => r.data || []),
         supabase.from('planner').select('breakfast_ref_id, lunch_ref_id, dinner_ref_id').eq('user_id', user.id).gte('plan_date', getDateDaysAgo(RE_V1.VARIETY_GUARD_DAYS)).lt('plan_date', planDate).then(r => r.data || []),
         // RE v2: inferred prefs + pre-computed affinity. Both are nullable —
@@ -137,10 +137,10 @@ serve(async (req) => {
     const neverDishIds = new Set<number>(neverList.map((n: any) => n.dish_id));
 
     const cuisineBuckets: Record<string, string> = {};
-    for (const p of cuisinePrefs as any[]) cuisineBuckets[p.category_id] = p.bucket;
+    for (const p of cuisinePrefs as any[]) cuisineBuckets[p.item_id] = p.preference_bucket;
 
     const mealItemBuckets: Record<string, string> = {};
-    for (const p of mealPrefs as any[]) mealItemBuckets[p.category_id] = p.bucket;
+    for (const p of mealPrefs as any[]) mealItemBuckets[p.item_id] = p.preference_bucket;
 
     const recentDishIds = new Set<number>(
       (recentPlans as any[]).flatMap(p => [p.breakfast_ref_id, p.lunch_ref_id, p.dinner_ref_id].filter(Boolean))
@@ -156,7 +156,7 @@ serve(async (req) => {
     // --- FETCH ELIGIBLE DISHES (hard diet filter) ---
     let dishQuery = supabase
       .from('dishes')
-      .select(`id, name, slug, cuisine_id, diet_type, spice_level, cook_time_mins, difficulty, calories, meal_types, dish_role, hero_image_url, blurhash, ingredient_ids, allergen_ids, cuisines(id, code, name)`)
+      .select(`id, name, slug, cuisine_id, diet_type, spice_level, cook_time_mins, difficulty, calories, meal_types, dish_role, hero_image_url, blurhash, ingredient_ids, allergen_ids, cuisines_master(id, code, name)`)
       .eq('is_active', true)
       .limit(2000);
 
