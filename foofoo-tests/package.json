@@ -12,6 +12,10 @@
     "test:e2e:build": "detox build",
     "test:e2e:ios": "detox test --configuration ios.sim.debug",
     "test:e2e:android": "detox test --configuration android.emu.debug",
+    "test:browser": "playwright test --config=e2e/playwright.config.ts",
+    "test:browser:ui": "playwright test --config=e2e/playwright.config.ts --ui",
+    "test:browser:report": "playwright show-report reports/e2e/html",
+    "test:browser:debug": "PWDEBUG=1 playwright test --config=e2e/playwright.config.ts",
     "test:security": "jest --testPathPattern='rls-security|dpdp'",
     "test:all": "npm run test && npm run test:personas",
     "report": "ts-node --project tsconfig.json reports/generate-html.ts",
@@ -22,6 +26,7 @@
     "@supabase/supabase-js": "^2.49.0"
   },
   "devDependencies": {
+    "@playwright/test": "^1.49.0",
     "@types/jest": "^29.5.14",
     "@types/node": "^22.0.0",
     "detox": "^20.30.0",
