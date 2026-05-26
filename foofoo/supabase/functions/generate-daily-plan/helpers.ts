@@ -111,7 +111,7 @@ export async function fetchCarousel(
       .select(`id, name, slug, cuisine_id, diet_type, spice_level,
                cook_time_mins, difficulty, calories, meal_types,
                dish_role, hero_image_url, blurhash,
-               cuisines(id, code, name)`)
+               cuisines_master(id, code, name)`)
       .in('id', dishIds);
     dishesById = new Map(((dishes || []) as any[]).map((d) => [d.id as number, d]));
   }
