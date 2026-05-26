@@ -1,0 +1,151 @@
+name: E2E Browser Tests
+
+on:
+  workflow_dispatch:
+    inputs:
+      base_url:
+        description: 'App URL to test (defaults to VERCEL_URL secret)'
+        required: false
+        default: ''
+      browser:
+        description: 'Browser to test (chromium/firefox/webkit/all)'
+        required: false
+        default: 'chromium'
+      suite:
+        description: 'Test suite filter (TC001/TC002/TC003/TC004 or blank for all)'
+        required: false
+        default: ''
+  push:
+    branches: [main]
+    paths:
+      - 'foofoo-tests/e2e/**'
+      - 'foofoo/app/**'
+      - 'foofoo/src/**'
+
+jobs:
+  e2e-browser-tests:
+    name: E2E Browser Tests
+    runs-on: ubuntu-latest
+
+    env:
+      # Test credentials for pre-seeded Supabase test accounts
+      E2E_VEG_USER_EMAIL:    ${{ secrets.E2E_VEG_USER_EMAIL }}
+      E2E_VEG_USER_PASSWORD: ${{ secrets.E2E_VEG_USER_PASSWORD }}
+      E2E_NONVEG_USER_EMAIL:    ${{ secrets.E2E_NONVEG_USER_EMAIL }}
+      E2E_NONVEG_USER_PASSWORD: ${{ secrets.E2E_NONVEG_USER_PASSWORD }}
+
+    defaults:
+      run:
+        working-directory: foofoo-tests
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Setup Node 22 ─────────────────────────────────────────────────────
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: foofoo-tests/package-lock.json
+
+      # ── 3. Install dependencies ───────────────────────────────────────────────
+      - name: Install dependencies
+        run: npm ci
+
+      # ── 4. Install Playwright browsers ───────────────────────────────────────
+      # Install only the requested browser in dispatch; all browsers on push/main
+      - name: Install Playwright browsers (single)
+        if: github.event_name == 'workflow_dispatch' && inputs.browser != 'all'
+        run: npx playwright install ${{ inputs.browser }} --with-deps
+
+      - name: Install Playwright browsers (all)
+        if: github.event_name != 'workflow_dispatch' || inputs.browser == 'all'
+        run: npx playwright install --with-deps
+
+      # ── 5. Resolve BASE_URL ───────────────────────────────────────────────────
+      # Priority: dispatch input → VERCEL_URL secret → default (localhost:8081)
+      - name: Set BASE_URL
+        id: set-url
+        run: |
+          if [ -n "${{ inputs.base_url }}" ]; then
+            echo "BASE_URL=${{ inputs.base_url }}" >> "$GITHUB_ENV"
+            echo "Resolved BASE_URL from dispatch input: ${{ inputs.base_url }}"
+          elif [ -n "${{ secrets.VERCEL_URL }}" ]; then
+            echo "BASE_URL=${{ secrets.VERCEL_URL }}" >> "$GITHUB_ENV"
+            echo "Resolved BASE_URL from VERCEL_URL secret"
+          else
+            echo "BASE_URL=http://localhost:8081" >> "$GITHUB_ENV"
+            echo "BASE_URL not set — defaulting to http://localhost:8081"
+          fi
+
+      # ── 6. Build Playwright project + grep filters ────────────────────────────
+      - name: Build test filters
+        id: filters
+        run: |
+          # Project filter based on requested browser
+          BROWSER="${{ inputs.browser }}"
+          if [ "$BROWSER" = "chromium" ] || [ -z "$BROWSER" ]; then
+            echo "PROJECT_FLAG=--project='Desktop Chrome'" >> "$GITHUB_OUTPUT"
+          elif [ "$BROWSER" = "webkit" ]; then
+            echo "PROJECT_FLAG=--project='Mobile Safari (iPhone 14)'" >> "$GITHUB_OUTPUT"
+          elif [ "$BROWSER" = "firefox" ]; then
+            # Firefox project not in default config — fall back to Chrome
+            echo "PROJECT_FLAG=--project='Desktop Chrome'" >> "$GITHUB_OUTPUT"
+          else
+            # all — run all projects
+            echo "PROJECT_FLAG=" >> "$GITHUB_OUTPUT"
+          fi
+
+          # Suite grep filter
+          SUITE="${{ inputs.suite }}"
+          if [ -n "$SUITE" ]; then
+            echo "GREP_FLAG=--grep='$SUITE'" >> "$GITHUB_OUTPUT"
+          else
+            echo "GREP_FLAG=" >> "$GITHUB_OUTPUT"
+          fi
+
+      # ── 7. Run Playwright tests ───────────────────────────────────────────────
+      - name: Run E2E browser tests
+        id: playwright
+        # Use eval so the flags expand correctly (they may be empty)
+        run: |
+          eval npx playwright test \
+            --config=e2e/playwright.config.ts \
+            --reporter=list \
+            ${{ steps.filters.outputs.PROJECT_FLAG }} \
+            ${{ steps.filters.outputs.GREP_FLAG }}
+        continue-on-error: true    # We fail the job explicitly below after uploading artifacts
+
+      # ── 8. Upload artifacts ───────────────────────────────────────────────────
+      - name: Upload E2E report artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: e2e-report-${{ github.run_number }}
+          path: |
+            foofoo-tests/reports/e2e/
+          retention-days: 30
+
+      # ── 9. Print QA summary to GitHub Step Summary ────────────────────────────
+      - name: Print QA summary to GitHub Step Summary
+        if: always()
+        run: |
+          SUMMARY="reports/e2e/qa-summary.md"
+          if [ -f "$SUMMARY" ]; then
+            cat "$SUMMARY" >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "## E2E QA Report" >> "$GITHUB_STEP_SUMMARY"
+            echo "qa-summary.md was not generated (reporter may have failed or tests did not run)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      # ── 10. Fail job if any test failed ──────────────────────────────────────
+      # Playwright exits with code 1 when tests fail. We captured that in
+      # continue-on-error above so artifacts upload first, then fail here.
+      - name: Fail job if tests failed
+        if: steps.playwright.outcome == 'failure'
+        run: |
+          echo "One or more E2E browser tests failed. See the uploaded report artifact for details."
+          exit 1
