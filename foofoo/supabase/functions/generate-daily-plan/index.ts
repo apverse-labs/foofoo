@@ -154,9 +154,12 @@ serve(async (req) => {
     ]);
 
     // --- FETCH ELIGIBLE DISHES (hard diet filter) ---
+    // Note: cuisine data is fetched via a separate query below (not embedded here)
+    // because PostgREST FK schema-cache is unreliable after migrations — using
+    // cuisines_master(id,code,name) embed fails with "relationship not found".
     let dishQuery = supabase
       .from('dishes')
-      .select(`id, name, slug, cuisine_id, diet_type, spice_level, cook_time_mins, difficulty, calories, meal_types, dish_role, hero_image_url, blurhash, ingredient_ids, allergen_ids, cuisines_master(id, code, name)`)
+      .select(`id, name, slug, cuisine_id, diet_type, spice_level, cook_time_mins, difficulty, calories, meal_types, dish_role, hero_image_url, blurhash, ingredient_ids, allergen_ids`)
       .eq('is_active', true)
       .limit(2000);
 
@@ -170,9 +173,21 @@ serve(async (req) => {
 
     console.log('[RE-v1] Eligible dish pool after diet filter:', allDishes?.length ?? 0);
 
+    // Separate cuisine lookup — avoids PostgREST FK embed dependency entirely.
+    const uniqueCuisineIds = [...new Set(
+      (allDishes as any[]).map((d: any) => d.cuisine_id).filter(Boolean)
+    )] as number[];
     const cuisineIdToCode: Record<number, string> = {};
-    for (const d of allDishes as any[]) {
-      if (d.cuisines?.code) cuisineIdToCode[d.cuisine_id] = d.cuisines.code;
+    const cuisineIdToName: Record<number, string> = {};
+    if (uniqueCuisineIds.length > 0) {
+      const { data: cuisineRows } = await supabase
+        .from('cuisines_master')
+        .select('id, code, name')
+        .in('id', uniqueCuisineIds);
+      for (const c of (cuisineRows || []) as Array<{ id: number; code: string; name: string }>) {
+        cuisineIdToCode[c.id] = c.code;
+        cuisineIdToName[c.id] = c.name;
+      }
     }
 
     const dayOfWeek = new Date(planDate + 'T00:00:00').getDay();
@@ -314,7 +329,7 @@ serve(async (req) => {
         ? buildReasoning(topDish, slotResult.slotComponents, weather, isWeekend)
         : `App chose ${topDish.name}`;
       return {
-        winner: { name: topDish.name, score: slotResult.slotScore, cuisine: topDish.cuisines?.name ?? '' },
+        winner: { name: topDish.name, score: slotResult.slotScore, cuisine: cuisineIdToName[topDish?.cuisine_id] ?? '' },
         alternatives: slotResult.slotAlternatives.map(a => ({ dish_name: a.dish_name, final_score: a.final_score, why_not_first: a.why_not_first })),
         reasoning,
       };
