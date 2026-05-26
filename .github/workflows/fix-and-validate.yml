@@ -1,0 +1,196 @@
+name: Fix and Validate (Deploy + SQL + Personas)
+
+# One-click workflow that:
+#   1. Applies pending SQL data fixes (missing ingredients)
+#   2. Redeploys the generate-daily-plan edge function (cuisines_master + column name fixes)
+#   3. Runs the full 50-persona RE validation
+#
+# Run this whenever edge function code or persona-runner changes are merged to main.
+
+on:
+  workflow_dispatch:
+    inputs:
+      skip_sql:
+        description: 'Skip SQL migration step (if already applied)'
+        required: false
+        default: 'false'
+      skip_deploy:
+        description: 'Skip edge function deploy (if already deployed)'
+        required: false
+        default: 'false'
+      persona_filter:
+        description: 'Run single persona (e.g. P001) or leave blank for all 50'
+        required: false
+        default: ''
+
+jobs:
+  # ─────────────────────────────────────────────────────────────────
+  # Step 1: Apply SQL migration — add 3 missing ingredients
+  # ─────────────────────────────────────────────────────────────────
+  apply-sql:
+    name: 1 · Apply SQL migration
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.skip_sql != 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Apply missing ingredients migration
+        env:
+          PROJECT_REF: ufgfznpqixplcbhmsqqw
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          set -e
+          echo "Inserting Mushroom, Beef, Pork into ingredients_master..."
+
+          RESPONSE=$(curl -s -w "\n%{http_code}" -X POST \
+            "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{
+              "query": "INSERT INTO public.ingredients_master (name, is_allergen) VALUES ('"'"'Mushroom'"'"', FALSE), ('"'"'Beef'"'"', FALSE), ('"'"'Pork'"'"', FALSE) ON CONFLICT (name) DO NOTHING;"
+            }')
+
+          HTTP_CODE=$(echo "$RESPONSE" | tail -1)
+          BODY=$(echo "$RESPONSE" | head -n -1)
+
+          echo "HTTP $HTTP_CODE: $BODY"
+
+          if [ "$HTTP_CODE" != "200" ] && [ "$HTTP_CODE" != "201" ]; then
+            echo "❌ SQL migration failed (HTTP $HTTP_CODE)"
+            echo "Response: $BODY"
+            exit 1
+          fi
+
+          echo "✅ SQL migration applied (or ingredients already exist)"
+
+      - name: Verify ingredients exist
+        env:
+          PROJECT_REF: ufgfznpqixplcbhmsqqw
+          SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+        run: |
+          RESPONSE=$(curl -s -X POST \
+            "https://api.supabase.com/v1/projects/${PROJECT_REF}/database/query" \
+            -H "Authorization: Bearer ${SUPABASE_ACCESS_TOKEN}" \
+            -H "Content-Type: application/json" \
+            -d '{"query": "SELECT name FROM public.ingredients_master WHERE name IN ('"'"'Mushroom'"'"', '"'"'Beef'"'"', '"'"'Pork'"'"') ORDER BY name;"}')
+          echo "Verification: $RESPONSE"
+
+  # ─────────────────────────────────────────────────────────────────
+  # Step 2: Deploy generate-daily-plan edge function
+  # ─────────────────────────────────────────────────────────────────
+  deploy-edge-function:
+    name: 2 · Deploy generate-daily-plan
+    runs-on: ubuntu-latest
+    if: ${{ github.event.inputs.skip_deploy != 'true' }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Authenticate Supabase CLI
+        run: supabase login --token "${{ secrets.SUPABASE_ACCESS_TOKEN }}"
+
+      - name: Deploy generate-daily-plan
+        working-directory: foofoo
+        env:
+          PROJECT_REF: ufgfznpqixplcbhmsqqw
+        run: |
+          set -e
+          echo "▶ Deploying generate-daily-plan..."
+          supabase functions deploy generate-daily-plan \
+            --project-ref "$PROJECT_REF" \
+            --no-verify-jwt
+          echo "✅ generate-daily-plan deployed"
+
+  # ─────────────────────────────────────────────────────────────────
+  # Step 3: Run 50-persona RE validation
+  # ─────────────────────────────────────────────────────────────────
+  persona-validation:
+    name: 3 · Persona Validation (50 personas)
+    runs-on: ubuntu-latest
+    # Wait for SQL and deploy to finish (if they ran)
+    needs: [apply-sql, deploy-edge-function]
+    # Run even if previous jobs were skipped, but not if they failed
+    if: |
+      always() &&
+      (needs.apply-sql.result == 'success' || needs.apply-sql.result == 'skipped') &&
+      (needs.deploy-edge-function.result == 'success' || needs.deploy-edge-function.result == 'skipped')
+
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+
+    defaults:
+      run:
+        working-directory: foofoo-tests
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: foofoo-tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build CLI flags
+        id: flags
+        run: |
+          FLAGS=""
+          if [ -n "${{ github.event.inputs.persona_filter }}" ]; then
+            FLAGS="$FLAGS --persona ${{ github.event.inputs.persona_filter }}"
+          fi
+          echo "flags=$FLAGS" >> $GITHUB_OUTPUT
+          echo "Running with flags: $FLAGS"
+
+      - name: Run persona validation
+        run: |
+          npx ts-node --project tsconfig.json personas/persona-runner.ts ${{ steps.flags.outputs.flags }}
+        continue-on-error: true
+        id: runner
+
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: persona-report-${{ github.run_number }}
+          path: |
+            foofoo-tests/reports/html/dashboard.html
+            foofoo-tests/reports/md/master-summary.md
+          retention-days: 30
+
+      - name: Print summary
+        if: always()
+        run: |
+          echo "## Fix-and-Validate Run #${{ github.run_number }}" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Step | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| SQL migration | ${{ needs.apply-sql.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "| Edge function deploy | ${{ needs.deploy-edge-function.result }} |" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          if [ -f reports/md/master-summary.md ]; then
+            echo "### Persona Validation Results" >> $GITHUB_STEP_SUMMARY
+            cat reports/md/master-summary.md >> $GITHUB_STEP_SUMMARY
+          else
+            echo "⚠️ No markdown report generated" >> $GITHUB_STEP_SUMMARY
+          fi
+
+      - name: Fail if CRITICAL_FAILs found
+        if: steps.runner.outcome == 'failure'
+        run: |
+          echo "❌ CRITICAL_FAIL constraint violations found. See HTML report artifact."
+          exit 1
