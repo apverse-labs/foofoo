@@ -41,10 +41,16 @@ serve(async (req) => {
     return new Response('ok', { headers: corsHeaders });
   }
 
-  try {
-    const authHeader = req.headers.get('Authorization');
-    if (!authHeader) throw new Error('No authorization header');
+  // Auth guard — must precede try/catch so auth failures return 401, not 500.
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader) {
+    return new Response(JSON.stringify({
+      success: false,
+      error: { code: 'AUTH_FAILED', message: 'No authorization header', retry: false },
+    }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+  }
 
+  try {
     const SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
     const isServiceRole = SERVICE_ROLE_KEY.length > 0 && authHeader === `Bearer ${SERVICE_ROLE_KEY}`;
 
@@ -71,7 +77,12 @@ serve(async (req) => {
       user = { id: targetUserId };
     } else {
       const { data: { user: authUser }, error: authError } = await supabase.auth.getUser();
-      if (authError || !authUser) throw new Error('Unauthorized');
+      if (authError || !authUser) {
+        return new Response(JSON.stringify({
+          success: false,
+          error: { code: 'AUTH_FAILED', message: 'Invalid or expired token', retry: false },
+        }), { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+      }
       user = authUser;
     }
 
@@ -193,6 +204,14 @@ serve(async (req) => {
     if (!breakfast.top && anyDishes.length > 0) breakfast.top = anyDishes[0];
     if (!lunch.top && anyDishes.length > 1) lunch.top = anyDishes[1];
     if (!dinner.top && anyDishes.length > 2) dinner.top = anyDishes[2];
+
+    // Hard-fail when the entire dish pool is empty (e.g. unsupported diet).
+    if (!breakfast.top && !lunch.top && !dinner.top && anyDishes.length === 0) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: { code: 'ELIGIBLE_POOL_EMPTY', message: 'No eligible dishes match the diet/allergen filters', retry: false },
+      }), { status: 422, headers: { ...corsHeaders, 'Content-Type': 'application/json' } });
+    }
     if (!breakfast.top || !lunch.top || !dinner.top) {
       console.warn('[RE-v1] FALLBACK: insufficient dish pool — check dishes table');
     }

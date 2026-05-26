@@ -32,8 +32,8 @@ serve(async (req) => {
     const authHeader = req.headers.get('Authorization');
     if (!authHeader) {
       return new Response(
-        JSON.stringify({ error: 'No authorization header' }),
-        { status: 401, headers: corsHeaders }
+        JSON.stringify({ success: false, error: { code: 'AUTH_FAILED', message: 'No authorization header', retry: false } }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -48,8 +48,8 @@ serve(async (req) => {
 
     if (authError || !requestingUser) {
       return new Response(
-        JSON.stringify({ error: 'Unauthorized' }),
-        { status: 401, headers: corsHeaders }
+        JSON.stringify({ success: false, error: { code: 'AUTH_FAILED', message: 'Invalid or expired token', retry: false } }),
+        { status: 401, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -58,8 +58,8 @@ serve(async (req) => {
 
     if (requestingUser.id !== userId) {
       return new Response(
-        JSON.stringify({ error: 'Forbidden — can only delete own account' }),
-        { status: 403, headers: corsHeaders }
+        JSON.stringify({ success: false, error: { code: 'AUTH_FAILED', message: 'Forbidden — can only delete own account', retry: false } }),
+        { status: 403, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
       );
     }
 
@@ -85,7 +85,7 @@ serve(async (req) => {
   } catch (err: any) {
     console.error('[DELETE-USER-ACCOUNT] Error:', err.message);
     return new Response(
-      JSON.stringify({ success: false, error: err.message }),
+      JSON.stringify({ success: false, error: { code: 'INTERNAL_ERROR', message: err.message, retry: false } }),
       { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
     );
   }

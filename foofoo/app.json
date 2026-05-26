@@ -24,7 +24,8 @@
         "backgroundColor": "#2D6A4F"
       },
       "package": "com.foofoo.app",
-      "versionCode": 1
+      "versionCode": 1,
+      "privacyPolicyUrl": "https://foofoo-privacy.vercel.app/privacy"
     },
     "web": {
       "bundler": "metro",
@@ -52,7 +53,7 @@
       [
         "onesignal-expo-plugin",
         {
-          "mode": "development"
+          "mode": "production"
         }
       ],
       "expo-localization"

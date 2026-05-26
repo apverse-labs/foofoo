@@ -43,8 +43,18 @@ function extractBaseSlug(publicId: string): string {
   return parts.slice(0, -1).join('_');
 }
 
-Deno.serve(async (_req) => {
+Deno.serve(async (req) => {
   try {
+    // Service-role auth guard — admin-only function, not callable by users.
+    const authHeader = req.headers.get('Authorization');
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+    if (!serviceRoleKey || !authHeader || authHeader !== `Bearer ${serviceRoleKey}`) {
+      return new Response(JSON.stringify({
+        success: false,
+        error: { code: 'AUTH_FAILED', message: 'Service role key required', retry: false },
+      }), { status: 401, headers: { 'Content-Type': 'application/json' } });
+    }
+
     // 1. SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are auto-injected by Supabase runtime.
     const supabaseUrl        = Deno.env.get('SUPABASE_URL')!;
     const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -118,7 +128,7 @@ Deno.serve(async (_req) => {
     if (dishErr || !dishes) {
       return new Response(JSON.stringify({
         success: false,
-        error: { code: 'DB_ERROR', message: dishErr?.message ?? 'Could not fetch dishes' },
+        error: { code: 'INTERNAL_ERROR', message: dishErr?.message ?? 'Could not fetch dishes', retry: true },
       }), { status: 500, headers: { 'Content-Type': 'application/json' } });
     }
 
