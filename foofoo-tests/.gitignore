@@ -21,3 +21,11 @@ reports/md/*.md
 !reports/md/rls-audit.md
 !reports/md/edge-function-audit.md
 !reports/md/play-store-audit.md
+
+# Playwright E2E generated output — artifacts, HTML report, junit, qa summaries
+reports/e2e/artifacts/
+reports/e2e/html/
+reports/e2e/junit.xml
+reports/e2e/qa-summary.md
+reports/e2e/qa-report.html
+!reports/e2e/.gitkeep
