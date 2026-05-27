@@ -5,8 +5,17 @@
       "mcp__supabase__list_edge_functions",
       "mcp__vercel__*"
     ]
+  },
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.sh"
+          }
+        ]
+      }
+    ]
   }
-  "env": {
-       "GH_TOKEN": "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"
-     }
 }

@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FooFoo — Persona Validation Findings · 2026-05-27</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Helvetica, Arial, sans-serif; font-size: 13px; color: #1a1a1a; background: #fff; padding: 40px 48px; max-width: 960px; margin: 0 auto; }
+  h1 { font-size: 22px; font-weight: 700; color: #2D6A4F; margin-bottom: 4px; }
+  .meta { font-size: 11px; color: #666; margin-bottom: 28px; }
+  h2 { font-size: 15px; font-weight: 700; margin: 28px 0 10px; color: #1a1a1a; border-bottom: 2px solid #2D6A4F; padding-bottom: 5px; }
+  h3 { font-size: 13px; font-weight: 600; margin: 18px 0 8px; color: #333; }
+  p { line-height: 1.6; margin-bottom: 10px; color: #333; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 20px; font-size: 12px; }
+  th { background: #2D6A4F; color: #fff; text-align: left; padding: 8px 10px; font-weight: 600; }
+  td { padding: 7px 10px; border-bottom: 1px solid #e8e8e8; vertical-align: top; }
+  tr:nth-child(even) td { background: #f7faf8; }
+  .tag-red    { display:inline-block; background:#fee2e2; color:#991b1b; border-radius:4px; padding:2px 7px; font-size:10px; font-weight:700; }
+  .tag-orange { display:inline-block; background:#ffedd5; color:#9a3412; border-radius:4px; padding:2px 7px; font-size:10px; font-weight:700; }
+  .tag-yellow { display:inline-block; background:#fef9c3; color:#854d0e; border-radius:4px; padding:2px 7px; font-size:10px; font-weight:700; }
+  .tag-green  { display:inline-block; background:#dcfce7; color:#166534; border-radius:4px; padding:2px 7px; font-size:10px; font-weight:700; }
+  .callout { background:#f0fdf4; border-left:4px solid #2D6A4F; padding:12px 16px; border-radius:0 6px 6px 0; margin-bottom:20px; }
+  .callout strong { color:#2D6A4F; }
+  .section-intro { color:#555; margin-bottom:14px; font-size:12px; }
+  .cuisine-list { font-family: monospace; font-size: 11px; color: #555; }
+  footer { margin-top: 40px; padding-top: 14px; border-top: 1px solid #ddd; font-size: 10px; color: #999; }
+</style>
+</head>
+<body>
+
+<h1>FooFoo — Recommendation Engine Persona Validation</h1>
+<p class="meta">Report generated: 2026-05-27 &nbsp;|&nbsp; Run: 50 personas &nbsp;|&nbsp; Source: GitHub Actions · Persona Validation workflow</p>
+
+<div class="callout">
+  <strong>Key finding:</strong> The recommendation engine code is now working correctly (auth bugs and schema cache bugs fixed). All 50 failures are <strong>data gaps</strong> — the dish database is missing the data the engine needs to generate personalised plans. No code changes are required to fix these.
+</div>
+
+<!-- ─── SUMMARY ─── -->
+<h2>Executive Summary</h2>
+<table>
+  <thead>
+    <tr><th>Issue</th><th>Personas Affected</th><th>Count</th><th>Severity</th><th>Type</th></tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Dishes not tagged with meal slots (breakfast / lunch / dinner)</td>
+      <td>P001 – P043</td>
+      <td>43</td>
+      <td><span class="tag-red">HIGH</span></td>
+      <td>Data gap — dishes table</td>
+    </tr>
+    <tr>
+      <td>No vegan dishes exist in the database</td>
+      <td>P044 – P050</td>
+      <td>7</td>
+      <td><span class="tag-red">HIGH</span></td>
+      <td>Data gap — dishes table</td>
+    </tr>
+    <tr>
+      <td>Cuisine codes in persona definitions missing from cuisines_master</td>
+      <td>20+ personas</td>
+      <td>~25 gaps</td>
+      <td><span class="tag-yellow">MEDIUM</span></td>
+      <td>Data gap — cuisines_master table</td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── ISSUE 1 ─── -->
+<h2>Issue 1 — Eligible Dish Pool = 0 (P001–P043, 43 personas)</h2>
+<p class="section-intro">Affects all non-vegan personas. The dish query succeeds and returns rows, but after the RE scoring filters (diet type + meal slot compatibility), zero dishes are eligible for any slot.</p>
+<table>
+  <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+  <tbody>
+    <tr><td><strong>What happened</strong></td><td>Plan generator ran, fetched dishes, applied scoring filters — but 0 dishes matched the breakfast / lunch / dinner slot requirements. A fallback assigned the first available dish, so the plan was saved, but the carousel was empty.</td></tr>
+    <tr><td><strong>Why</strong></td><td>The <code>meal_types</code> column on the <code>dishes</code> table is either NULL or contains values that don't match what the RE scoring engine expects (e.g. <code>"breakfast"</code>, <code>"lunch"</code>, <code>"dinner"</code>, <code>"all"</code>). Without this tag, no dish passes the slot filter.</td></tr>
+    <tr><td><strong>What the user sees</strong></td><td>App shows a plan with dishes, but they may not be contextually appropriate (breakfast dishes at dinner, etc.).</td></tr>
+    <tr><td><strong>How to fix</strong></td><td>Populate the <code>meal_types</code> column for all 818+ dishes in the <code>dishes</code> table. Use <code>UPDATE dishes SET meal_types = ARRAY['lunch','dinner'] WHERE ...</code> style SQL grouped by dish type (e.g. rice, curry, dal = lunch/dinner; idli, poha, upma = breakfast; snacks = all).</td></tr>
+    <tr><td><strong>Priority</strong></td><td><span class="tag-red">HIGH — fix first</span> — single change unblocks 43 of 50 personas</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── ISSUE 2 ─── -->
+<h2>Issue 2 — No Vegan Dishes in Database (P044–P050, 7 personas)</h2>
+<p class="section-intro">All 7 vegan personas hard-fail. The dish query itself returns 0 rows because no dishes have <code>diet_type = 'vegan'</code>.</p>
+<table>
+  <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+  <tbody>
+    <tr><td><strong>What happened</strong></td><td>Edge function returned HTTP 422 "No eligible dishes match the diet/allergen filters" — plan not generated at all.</td></tr>
+    <tr><td><strong>Why</strong></td><td>The <code>dishes</code> table contains no rows where <code>diet_type = 'vegan'</code>. Vegan is a sub-category of vegetarian — many veg dishes are technically vegan but are not tagged as such.</td></tr>
+    <tr><td><strong>How to fix</strong></td><td>Two options: (A) Add dishes with <code>diet_type = 'vegan'</code>, or (B) run <code>UPDATE dishes SET diet_type = 'vegan' WHERE ...</code> for dishes that contain no dairy/egg ingredients. Option B can be automated via the <code>derive-dish-attributes</code> Edge Function.</td></tr>
+    <tr><td><strong>Priority</strong></td><td><span class="tag-red">HIGH</span> — vegan is a supported user diet type in the app</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── ISSUE 3 ─── -->
+<h2>Issue 3 — Cuisine Codes Missing from cuisines_master (20+ personas)</h2>
+<p class="section-intro">Persona preference definitions reference cuisine codes that don't exist in the <code>cuisines_master</code> table. The RE cannot apply cuisine boosts for these preferences.</p>
+
+<h3>Missing Cuisine Codes by Category</h3>
+<table>
+  <thead><tr><th>Category</th><th>Missing Codes</th><th>Personas Affected</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>Jain variants</td>
+      <td class="cuisine-list">jain · rajasthani_jain · north_indian_jain · maharashtrian_jain · street_food_jain · gujarati_jain</td>
+      <td>P028–P035</td>
+    </tr>
+    <tr>
+      <td>Vegan variants</td>
+      <td class="cuisine-list">north_indian_vegan · continental_vegan · indo_chinese_vegan · street_food_vegan · bengali_vegan · tamil_vegan · kerala_vegan · maharashtrian_vegan</td>
+      <td>P044–P050</td>
+    </tr>
+    <tr>
+      <td>Regional South Indian</td>
+      <td class="cuisine-list">tamil_brahmin · telugu · kerala_vegan · south_indian_jain</td>
+      <td>P002, P011, P024, P034</td>
+    </tr>
+    <tr>
+      <td>Regional Bengali</td>
+      <td class="cuisine-list">bengali_veg · bengali_vegan</td>
+      <td>P009, P045, P049</td>
+    </tr>
+    <tr>
+      <td>Rajasthani / Marwari</td>
+      <td class="cuisine-list">marwari · rajasthani_jain</td>
+      <td>P014, P029, P033, P035</td>
+    </tr>
+    <tr>
+      <td>North East India</td>
+      <td class="cuisine-list">north_east</td>
+      <td>P027, P040</td>
+    </tr>
+    <tr>
+      <td>Coastal / Goan</td>
+      <td class="cuisine-list">seafood · coastal · konkan · goan_vegetarian</td>
+      <td>P017, P022, P038</td>
+    </tr>
+    <tr>
+      <td>Central India</td>
+      <td class="cuisine-list">madhya_pradeshi</td>
+      <td>P012</td>
+    </tr>
+    <tr>
+      <td>Mughlai / Awadhi variants</td>
+      <td class="cuisine-list">mughlai_veg_egg · awadhi_veg</td>
+      <td>P042</td>
+    </tr>
+    <tr>
+      <td>Fusion / Other</td>
+      <td class="cuisine-list">persian_influenced · all_others</td>
+      <td>P021, P030, P033, P035</td>
+    </tr>
+  </tbody>
+</table>
+
+<table>
+  <thead><tr><th>Question</th><th>Answer</th></tr></thead>
+  <tbody>
+    <tr><td><strong>Impact</strong></td><td>Cuisine boost doesn't apply for missing cuisines — but this alone doesn't cause plan failures. It means plan quality is lower for these personas (no personalisation on their preferred cuisines).</td></tr>
+    <tr><td><strong>How to fix</strong></td><td>Add the missing cuisine codes to the <code>cuisines_master</code> table, then tag existing dishes with the appropriate new cuisine IDs. Alternatively, map these codes to existing parent cuisines (e.g. <code>tamil_brahmin → south_indian</code>).</td></tr>
+    <tr><td><strong>Priority</strong></td><td><span class="tag-yellow">MEDIUM</span> — does not block plan generation; improves personalisation quality</td></tr>
+  </tbody>
+</table>
+
+<!-- ─── RECOMMENDED FIX ORDER ─── -->
+<h2>Recommended Fix Order</h2>
+<table>
+  <thead><tr><th>#</th><th>Action</th><th>Where</th><th>Impact</th><th>Effort</th></tr></thead>
+  <tbody>
+    <tr>
+      <td>1</td>
+      <td>Populate <code>meal_types</code> column on all dishes</td>
+      <td><code>dishes</code> table — bulk SQL UPDATE</td>
+      <td>Unblocks 43 personas</td>
+      <td><span class="tag-green">Low — SQL only</span></td>
+    </tr>
+    <tr>
+      <td>2</td>
+      <td>Tag veg dishes that are vegan as <code>diet_type = 'vegan'</code></td>
+      <td><code>dishes</code> table — SQL UPDATE or derive-dish-attributes Edge Fn</td>
+      <td>Unblocks 7 vegan personas</td>
+      <td><span class="tag-green">Low — SQL or Edge Fn</span></td>
+    </tr>
+    <tr>
+      <td>3</td>
+      <td>Add missing regional / sub-cuisine codes</td>
+      <td><code>cuisines_master</code> table + re-tag dishes</td>
+      <td>Improves RE personalisation quality</td>
+      <td><span class="tag-yellow">Medium — data work</span></td>
+    </tr>
+    <tr>
+      <td>4</td>
+      <td>Re-run Persona Validation workflow</td>
+      <td>GitHub Actions</td>
+      <td>Confirms fixes green</td>
+      <td><span class="tag-green">1 click</span></td>
+    </tr>
+  </tbody>
+</table>
+
+<!-- ─── WHAT IS WORKING ─── -->
+<h2>What IS Working (not broken)</h2>
+<table>
+  <thead><tr><th>Component</th><th>Status</th></tr></thead>
+  <tbody>
+    <tr><td>Edge function authentication (user JWT path)</td><td>✅ Fixed — was "Invalid or expired token", now resolved</td></tr>
+    <tr><td>PostgREST dishes query (cuisines_master embed removed)</td><td>✅ Fixed — was "relationship not found in schema cache", now resolved</td></tr>
+    <tr><td>RE scoring pipeline (diet filter, allergen filter, cuisine boost, weather boost)</td><td>✅ Working — filtering correctly, issue is data not code</td></tr>
+    <tr><td>Plan saving to DB (planner + planner_carousel tables)</td><td>✅ Working — fallback saves plan even when pool is 0</td></tr>
+    <tr><td>Test user creation + cleanup</td><td>✅ Working — 50 users created and deleted cleanly</td></tr>
+  </tbody>
+</table>
+
+<footer>
+  FooFoo · Recommendation Engine Persona Validation Report · 2026-05-27 · Generated by Claude Code
+</footer>
+</body>
+</html>
