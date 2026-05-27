@@ -4,7 +4,7 @@ on:
   workflow_dispatch:
     inputs:
       base_url:
-        description: 'App URL to test (defaults to VERCEL_URL secret)'
+        description: 'App URL to test (defaults to VERCEL_URL secret; falls back to local dev server)'
         required: false
         default: ''
       browser:
@@ -28,11 +28,19 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      # Test credentials for pre-seeded Supabase test accounts
+      # ── Test user credentials for pre-seeded Supabase accounts ───────────────
       E2E_VEG_USER_EMAIL:    ${{ secrets.E2E_VEG_USER_EMAIL }}
       E2E_VEG_USER_PASSWORD: ${{ secrets.E2E_VEG_USER_PASSWORD }}
       E2E_NONVEG_USER_EMAIL:    ${{ secrets.E2E_NONVEG_USER_EMAIL }}
       E2E_NONVEG_USER_PASSWORD: ${{ secrets.E2E_NONVEG_USER_PASSWORD }}
+      # ── Supabase credentials forwarded to the Expo webServer ─────────────────
+      # Mapped from SUPABASE_* secrets so playwright.config.ts can inject them
+      # into the local Expo dev server when VERCEL_URL is not set.
+      EXPO_PUBLIC_SUPABASE_URL:      ${{ secrets.SUPABASE_URL }}
+      EXPO_PUBLIC_SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+      # ── External app URL (optional) ───────────────────────────────────────────
+      # When set, Playwright skips the local webServer and tests the deployed app.
+      VERCEL_URL: ${{ secrets.VERCEL_URL }}
 
     defaults:
       run:
@@ -49,13 +57,24 @@ jobs:
         with:
           node-version: '22'
           cache: 'npm'
-          cache-dependency-path: foofoo-tests/package-lock.json
+          # Cache both lockfiles so both sets of node_modules are cached
+          cache-dependency-path: |
+            foofoo-tests/package-lock.json
+            foofoo/package-lock.json
 
-      # ── 3. Install dependencies ───────────────────────────────────────────────
-      - name: Install dependencies
+      # ── 3. Install foofoo-tests dependencies ─────────────────────────────────
+      - name: Install test dependencies
         run: npm ci
 
-      # ── 4. Install Playwright browsers ───────────────────────────────────────
+      # ── 4. Install foofoo app dependencies ────────────────────────────────────
+      # Required when VERCEL_URL is absent: playwright.config.ts starts the Expo
+      # web server via webServer.command which runs inside foofoo/. The cache
+      # step above makes this <5 s on cache hit.
+      - name: Install app dependencies
+        run: npm ci
+        working-directory: foofoo
+
+      # ── 5. Install Playwright browsers ───────────────────────────────────────
       # Install only the requested browser in dispatch; all browsers on push/main
       - name: Install Playwright browsers (single)
         if: github.event_name == 'workflow_dispatch' && inputs.browser != 'all'
@@ -65,8 +84,8 @@ jobs:
         if: github.event_name != 'workflow_dispatch' || inputs.browser == 'all'
         run: npx playwright install --with-deps
 
-      # ── 5. Resolve BASE_URL ───────────────────────────────────────────────────
-      # Priority: dispatch input → VERCEL_URL secret → default (localhost:8081)
+      # ── 6. Resolve BASE_URL ───────────────────────────────────────────────────
+      # Priority: dispatch input → VERCEL_URL secret → localhost (webServer)
       - name: Set BASE_URL
         id: set-url
         run: |
@@ -78,48 +97,58 @@ jobs:
             echo "Resolved BASE_URL from VERCEL_URL secret"
           else
             echo "BASE_URL=http://localhost:8081" >> "$GITHUB_ENV"
-            echo "BASE_URL not set — defaulting to http://localhost:8081"
+            echo "BASE_URL not set — playwright.config.ts will start a local Expo web server"
           fi
 
-      # ── 6. Build Playwright project + grep filters ────────────────────────────
+      # ── 7. Build Playwright project + grep filters ────────────────────────────
       - name: Build test filters
         id: filters
         run: |
-          # Project filter based on requested browser
+          # Project name (without quoting — passed via env var to avoid shell
+          # escaping issues with spaces in names like "Desktop Chrome")
           BROWSER="${{ inputs.browser }}"
-          if [ "$BROWSER" = "chromium" ] || [ -z "$BROWSER" ]; then
-            echo "PROJECT_FLAG=--project='Desktop Chrome'" >> "$GITHUB_OUTPUT"
-          elif [ "$BROWSER" = "webkit" ]; then
-            echo "PROJECT_FLAG=--project='Mobile Safari (iPhone 14)'" >> "$GITHUB_OUTPUT"
-          elif [ "$BROWSER" = "firefox" ]; then
-            # Firefox project not in default config — fall back to Chrome
-            echo "PROJECT_FLAG=--project='Desktop Chrome'" >> "$GITHUB_OUTPUT"
+          if [ "$BROWSER" = "webkit" ]; then
+            echo "PROJECT_NAME=Mobile Safari (iPhone 14)" >> "$GITHUB_OUTPUT"
+          elif [ "$BROWSER" = "all" ]; then
+            echo "PROJECT_NAME=" >> "$GITHUB_OUTPUT"
           else
-            # all — run all projects
-            echo "PROJECT_FLAG=" >> "$GITHUB_OUTPUT"
+            # chromium, firefox (mapped to Chrome), or empty → Desktop Chrome
+            echo "PROJECT_NAME=Desktop Chrome" >> "$GITHUB_OUTPUT"
           fi
 
           # Suite grep filter
           SUITE="${{ inputs.suite }}"
           if [ -n "$SUITE" ]; then
-            echo "GREP_FLAG=--grep='$SUITE'" >> "$GITHUB_OUTPUT"
+            echo "GREP=$SUITE" >> "$GITHUB_OUTPUT"
           else
-            echo "GREP_FLAG=" >> "$GITHUB_OUTPUT"
+            echo "GREP=" >> "$GITHUB_OUTPUT"
           fi
 
-      # ── 7. Run Playwright tests ───────────────────────────────────────────────
+      # ── 8. Run Playwright tests ───────────────────────────────────────────────
+      # Note: --reporter is intentionally NOT passed on the CLI.
+      # playwright.config.ts registers all reporters (html, junit, qa-reporter,
+      # github/list). Passing --reporter on the CLI overrides the config and
+      # prevents qa-summary.md from being written by the custom reporter.
+      #
+      # Project name and grep are passed via shell variables to handle spaces
+      # in project names (e.g. "Desktop Chrome") without quoting issues.
       - name: Run E2E browser tests
         id: playwright
-        # Use eval so the flags expand correctly (they may be empty)
+        env:
+          PW_PROJECT: ${{ steps.filters.outputs.PROJECT_NAME }}
+          PW_GREP:    ${{ steps.filters.outputs.GREP }}
         run: |
-          eval npx playwright test \
-            --config=e2e/playwright.config.ts \
-            --reporter=list \
-            ${{ steps.filters.outputs.PROJECT_FLAG }} \
-            ${{ steps.filters.outputs.GREP_FLAG }}
-        continue-on-error: true    # We fail the job explicitly below after uploading artifacts
+          CMD="npx playwright test --config=e2e/playwright.config.ts"
+          if [ -n "$PW_PROJECT" ]; then
+            CMD="$CMD --project '$PW_PROJECT'"
+          fi
+          if [ -n "$PW_GREP" ]; then
+            CMD="$CMD --grep '$PW_GREP'"
+          fi
+          eval "$CMD"
+        continue-on-error: true    # Fail the job explicitly below after uploading artifacts
 
-      # ── 8. Upload artifacts ───────────────────────────────────────────────────
+      # ── 9. Upload artifacts ───────────────────────────────────────────────────
       - name: Upload E2E report artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -129,7 +158,7 @@ jobs:
             foofoo-tests/reports/e2e/
           retention-days: 30
 
-      # ── 9. Print QA summary to GitHub Step Summary ────────────────────────────
+      # ── 10. Print QA summary to GitHub Step Summary ───────────────────────────
       - name: Print QA summary to GitHub Step Summary
         if: always()
         run: |
@@ -141,7 +170,7 @@ jobs:
             echo "qa-summary.md was not generated (reporter may have failed or tests did not run)." >> "$GITHUB_STEP_SUMMARY"
           fi
 
-      # ── 10. Fail job if any test failed ──────────────────────────────────────
+      # ── 11. Fail job if any test failed ──────────────────────────────────────
       # Playwright exits with code 1 when tests fail. We captured that in
       # continue-on-error above so artifacts upload first, then fail here.
       - name: Fail job if tests failed
