@@ -92,6 +92,45 @@
 
 ---
 
+## 🔴 RE Data Gaps — Dish Database (Persona Validation · 2026-05-27)
+
+> Source: `foofoo/reports/persona-validation-findings-2026-05-27.pdf`  
+> The RE code is **working correctly** (auth + schema-cache bugs fixed). All 50 test-persona failures are **data gaps** in the dish database — no code changes required.
+
+### Summary
+
+| # | Issue | Table | Personas | Severity | Done? |
+|---|-------|-------|----------|----------|-------|
+| R1 | `meal_types` column is NULL / unpopulated on all dishes — slot filter (breakfast/lunch/dinner) eliminates every dish | `dishes` | P001–P043 (43) | 🔴 HIGH | ⬜ |
+| R2 | No dishes tagged `diet_type = 'vegan'` — vegan personas get HTTP 422 "no eligible dishes" | `dishes` | P044–P050 (7) | 🔴 HIGH | ⬜ |
+| R3 | ~25 cuisine codes referenced in persona definitions are absent from `cuisines_master` — cuisine boost silently skipped for these personas | `cuisines_master` | 20+ personas | 🟡 MEDIUM | ⬜ |
+
+### Fix Actions
+
+| # | Action | How | Impact |
+|---|--------|-----|--------|
+| R1 | Populate `meal_types` on all 818+ dishes | `UPDATE dishes SET meal_types = ARRAY['lunch','dinner'] WHERE ...` (group by dish type) | Unblocks 43 personas |
+| R2 | Tag vegan-compatible veg dishes | `UPDATE dishes SET diet_type = 'vegan' WHERE ...` or run `derive-dish-attributes` Edge Fn | Unblocks 7 personas |
+| R3 | Add missing cuisine codes then re-tag dishes | `INSERT INTO cuisines_master ...` for jain variants, vegan variants, regional South Indian, Bengali, Rajasthani, North East, Coastal/Goan, Central India codes | Improves RE personalisation quality |
+| R4 | Re-run Persona Validation workflow | GitHub Actions → Persona Validation | Confirms all fixes green |
+
+### Missing Cuisine Codes (R3 detail)
+
+| Category | Missing codes |
+|----------|---------------|
+| Jain variants | `jain`, `rajasthani_jain`, `north_indian_jain`, `maharashtrian_jain`, `street_food_jain`, `gujarati_jain` |
+| Vegan variants | `north_indian_vegan`, `continental_vegan`, `indo_chinese_vegan`, `street_food_vegan`, `bengali_vegan`, `tamil_vegan`, `kerala_vegan`, `maharashtrian_vegan` |
+| Regional South Indian | `tamil_brahmin`, `telugu`, `kerala_vegan`, `south_indian_jain` |
+| Regional Bengali | `bengali_veg`, `bengali_vegan` |
+| Rajasthani / Marwari | `marwari`, `rajasthani_jain` |
+| North East India | `north_east` |
+| Coastal / Goan | `seafood`, `coastal`, `konkan`, `goan_vegetarian` |
+| Central India | `madhya_pradeshi` |
+| Mughlai / Awadhi | `mughlai_veg_egg`, `awadhi_veg` |
+| Fusion / Other | `persian_influenced`, `all_others` |
+
+---
+
 ## Reminder Schedule
 
 When starting a new sprint or session, check this file. Items to prioritise:
