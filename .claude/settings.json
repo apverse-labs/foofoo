@@ -6,4 +6,7 @@
       "mcp__vercel__*"
     ]
   }
+  "env": {
+       "GH_TOKEN": "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"
+     }
 }
