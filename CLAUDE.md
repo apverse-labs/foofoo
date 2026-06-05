@@ -25,7 +25,7 @@ Every response MUST open with the current ledger from `SYSTEM_STATE.md`, updated
   - Status: [Active / Deprecated]
 
 ## 🔀 Git Merge & Clean-up Constraints
-* PROTECTED BRANCHES (Never Delete / Never Merge without Explicit Command): `main`, `deploy-*`
+* PROTECTED BRANCHES (Never Delete / Never Merge without Explicit Command): `main`, `develop`, `deploy-*`
 * FEASIBLE MERGES CURRENTLY:
   - [branch] can be safely merged into [target] and then deleted.
 * BLOCKED MERGES:
@@ -52,6 +52,8 @@ Every response that writes or changes code MUST conclude with a **"Git Next Step
 1. Which branch the code lives on right now.
 2. Whether it is safe to merge into another branch, and exactly which branch.
 3. Explicit warning if applicable: "DO NOT delete branch [Name] — tied to active deployment [DEP-ID]."
+
+**Standard merge flow:** feature branch → `develop` (staging/QA) → `main` (production). Never skip `develop`.
 
 ---
 

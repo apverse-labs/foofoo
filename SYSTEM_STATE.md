@@ -1,4 +1,4 @@
-# SYSTEM STATE LEDGER
+# SYSTEM STATE LEDGER (v2.0)
 > Last updated: 2026-06-05
 > Maintained by: Lead Systems & Release Architect (Claude)
 > Rules: See CLAUDE.md § Architect Rules
@@ -7,34 +7,43 @@
 
 ## 📌 Active Checkpoints & Branches
 
-| CKPT ID   | Branch  | Description                                              | DB Schema Version |
-|-----------|---------|----------------------------------------------------------|-------------------|
-| CKPT-001  | main    | Baseline — React Native/Expo web + Supabase MVP + architect rules + Vercel deploy gate | SCHEMA-BASE-001 |
+| CKPT ID   | Branch    | Description                                                                 | DB Schema Version |
+|-----------|-----------|-----------------------------------------------------------------------------|-------------------|
+| CKPT-001  | main      | Baseline — React Native/Expo web + Supabase MVP + architect rules + deploy gate | SCHEMA-BASE-001 |
 
-> **Checkpoint Naming:** `CKPT-NNN` (sequential integer, zero-padded to 3 digits)
-> **Schema Naming:** `SCHEMA-<LABEL>-NNN` where LABEL is a short domain tag (BASE, AUTH, MENU, ORDER, etc.)
+> **Checkpoint Naming:** `CKPT-NNN` (sequential, zero-padded)
+> **Schema Naming:** `SCHEMA-<LABEL>-NNN` (e.g. BASE, AUTH, MENU, ORDER)
 
 ---
 
-## 🚀 Active Deployments & Infrastructure
+## 🚀 Active Cloud Deployments
+> ⚠️ **Supabase Free Tier Limit: 2 active projects max**
 
-| DEP ID    | CKPT     | DB Target         | Target / Persona   | Git Release Branch | Status      |
-|-----------|----------|-------------------|--------------------|--------------------|-------------|
-| DEP-INIT  | CKPT-001 | SCHEMA-BASE-001   | Internal QA        | main               | Active      |
+### DEP-STAGING (Project A — Supabase Staging)
+- **Project Ref:** `[PENDING — create Project A on Supabase free tier before activating staging]`
+- **Code Base / Checkpoint:** CKPT-001
+- **Git Release Branch:** `develop` ← PROTECTED (NEVER DELETE)
+- **Target Audience:** Internal QA / Beta Cohort
+- **Status:** Standby (no Supabase project yet)
 
-> **Deployment Naming:** `DEP-<ENV>-NNN` for future entries (e.g. `DEP-PROD-001`, `DEP-STG-001`, `DEP-QA-001`)
-> **Release branches** prefixed `deploy-*` are PROTECTED — never delete, never merge without explicit command.
+### DEP-PRODUCTION (Project B — Supabase Production)
+- **Project Ref:** `ufgfznpqixplcbhmsqqw` (foofoo-mvp, ap-south-1)
+- **Code Base / Checkpoint:** CKPT-001
+- **Git Release Branch:** `main` ← PROTECTED (NEVER DELETE)
+- **Target Audience:** Live Production Users
+- **Status:** Active
 
 ---
 
 ## 🔀 Git Merge & Clean-up Constraints
 
-### PROTECTED BRANCHES (Never Delete / Never Merge without Explicit Command)
-- `main`
-- `deploy-*` (any branch matching this prefix)
+### PROTECTED BRANCHES (Never Delete / Never Merge without Explicit Approval)
+- `main` — tied to **DEP-PRODUCTION**
+- `develop` — tied to **DEP-STAGING**
+- `deploy-*` — any future release branch matching this prefix
 
 ### FEASIBLE MERGES CURRENTLY
-- Branch `claude/cool-euler-wzNoS` → already squash-merged into `main` via PR #34. **Safe to delete** (no active deployment tied to it).
+- Feature branches → `develop` (for staging validation), then `develop` → `main` (for production release), with explicit approval at each step.
 
 ### BLOCKED MERGES
 - *(none at this time)*
@@ -53,4 +62,4 @@
 
 - **Auto-deploy:** DISABLED (Vercel `ignoreCommand: exit 1`)
 - **Deploy trigger:** Manual only — explicit human approval required each time, per conversation turn
-- **Deploy command:** `vercel deploy --prod --token $VERCEL_TOKEN` (run only after explicit go-ahead)
+- **Staging flow:** feature branch → PR → `develop` → QA sign-off → PR → `main` → manual `vercel deploy`
