@@ -1,16 +1,72 @@
-# Meal Planning RE Engine Implementation Build Tracker
+# RE Module — Implementation Build Tracker
 
-| Build ID | Status | Branch | PR | Main output | Tests required | Notes |
-|---|---|---|---|---|---|---|
-| BUILD-00A | Not started |  |  | Module guardrails | No | Create RE module CLAUDE.md and tracker |
-| BUILD-00B | Not started |  |  | Existing project integration audit | No | No app code changes |
-| BUILD-01 | Not started |  |  | Data model + seed import | Yes | Additive DB changes only |
-| BUILD-02 | Not started |  |  | Onboarding profile builder | Yes | No UI rewrite yet |
-| BUILD-03 | Not started |  |  | Cohort/persona assignment | Yes | Supports overlaps |
-| BUILD-04 | Not started |  |  | Weekly class-first planner | Yes | Classes first, not dishes |
-| BUILD-05 | Not started |  |  | Add-on component engine | Yes | Member-specific add-ons |
-| BUILD-06 | Not started |  |  | Dish expansion + Food DNA ranking | Yes | Match class-to-dish only |
-| BUILD-07 | Not started |  |  | Feedback learning loop | Yes | Revealed preference learning |
-| BUILD-08 | Not started |  |  | API/app integration | Yes | Stable RE API |
-| BUILD-09 | Not started |  |  | Admin/data operations | Yes | Taxonomy maintenance |
-| BUILD-10 | Not started |  |  | Analytics/experimentation/governance | Yes | RE version comparison |
+> Branch: `apverse-labs-RE`
+> Last updated: 2026-06-13
+> Source of build sequence: `Meal_Planning_RE_Technical_Docs_v1/README_IMPLEMENTATION_WALKTHROUGH_FOR_CLAUDE_v1.0.md`
+
+---
+
+## Build Status Legend
+
+| Symbol | Meaning |
+|--------|---------|
+| ⬜ | Not started |
+| 🔄 | In progress |
+| ✅ | Complete — committed to `apverse-labs-RE` |
+| ❌ | Blocked — see notes |
+
+---
+
+## Build Tracker
+
+| Build ID | Name | Status | Primary Docs | Notes |
+|----------|------|--------|--------------|-------|
+| BUILD-00A | RE Module Guardrails Setup | ✅ | DOC-00, README_WALKTHROUGH | `Meal_Planning_RE_Engine/CLAUDE.md` + this tracker created. Root `CLAUDE.md` updated with Rule 6 and RE module section. |
+| BUILD-00B | Existing Project Integration Audit | ⬜ | — | Inspect current FooFoo app: onboarding flow, user profile model, Supabase schema, feature flags, test setup, deployment config. Audit only — no code written. |
+| BUILD-01 | RE Data Model & Seed Import | ⬜ | DOC-05, DOC-07, DOC-08, DOC-22 | DB schema for RE tables (`re_` prefix). Seed import from `Indian_Meal_Cohort_Persona_DB_v3.xlsx`. Additive only. |
+| BUILD-02 | Onboarding & Household Profile Builder | ⬜ | DOC-03, DOC-04, DOC-10, DOC-11, DOC-16, DOC-17, DOC-18, DOC-20 | Dynamic onboarding, household/member capture, diet and city inputs, profile object. |
+| BUILD-03 | Cohort / Persona Assignment Engine | ⬜ | DOC-03, DOC-09, DOC-11, DOC-15, DOC-20 | Profile → main cohort → sub-cohort → backend persona → overlapping overlay personas. |
+| BUILD-04 | Weekly Class-First Plan Engine | ⬜ | DOC-12, DOC-13, DOC-14 | 7-day meal-class plan. Weekday/weekend rhythm. Variety and rotation rules. City overlay applied. |
+| BUILD-05 | Member-Specific Add-on Engine | ⬜ | DOC-04, DOC-06, DOC-17 | Infant / toddler / elderly / pregnancy / diabetic / fitness add-ons. Never replaces family primary meal. |
+| BUILD-06 | Dish Expansion & Food DNA Ranking | ⬜ | DOC-07, DOC-08, DOC-18, DOC-19 | Class → dish candidate pool → ranked by Food DNA + hard constraints + context. |
+| BUILD-07 | Feedback Learning Loop | ⬜ | DOC-19, DOC-21 | Swipes, locks, Not Today, Never list, accepted repeats → class affinity and dish-level weight updates. |
+| BUILD-08 | API / App Integration | ⬜ | DOC-23, DOC-25 | Stable JSON endpoints. App-facing `generateMealPlan` contract. RE version resolver wired in. |
+| BUILD-09 | Admin / Data Operations | ⬜ | DOC-27, DOC-28 | CMS workflows for class, dish, add-on, Food DNA tag maintenance. Data QA and release management. |
+| BUILD-10 | Analytics, QA, Experimentation & Governance | ⬜ | DOC-25, DOC-26, DOC-28 | Funnel tracking, plan quality metrics, A/B experiments, taxonomy change governance. |
+
+---
+
+## Completion Gates (must pass before moving to next build)
+
+- Every build must have unit tests before the next build begins (per DOC-00 Claude implementation instruction).
+- Every DB migration must have both Up and Down scripts registered in `SYSTEM_STATE.md` before it is applied.
+- No production deployment without explicit user approval in the current conversation turn.
+- All builds stay on `apverse-labs-RE` until merged through `develop` → `main` with explicit approval.
+
+---
+
+## MVP Phases (from DOC-00)
+
+| Phase | Builds | Output |
+|-------|--------|--------|
+| MVP-1 | BUILD-00 through BUILD-04 | Onboarding → household profile → cohort assignment → 7-day primary class plan |
+| MVP-2 | BUILD-05 + BUILD-06 | Member-specific add-ons + dish candidates under each class |
+| MVP-3 | BUILD-07 | Feedback learning, class affinity updates, dish-level ranking |
+| MVP-4 | BUILD-08 | Production-grade endpoints and app integration contracts |
+| Ops-1 | BUILD-09 + BUILD-10 | Admin CMS, QA dashboards, experimentation, governance |
+
+---
+
+## Missing Files Log
+
+| File | Expected Location | Status | Action |
+|------|------------------|--------|--------|
+| `RE_V2_Summary.md` | `Meal_Planning_RE_Engine/` | NOT FOUND on `apverse-labs-RE` | Recreate in a future session or confirm if it was only on a previous branch |
+
+---
+
+## Notes
+
+- BUILD-00A is complete. `Meal_Planning_RE_Engine/CLAUDE.md` confirmed present and complete on this branch.
+- Before starting BUILD-00B, run the existing project audit checklist (see `CLAUDE.md` § Integration Guardrails).
+- Do not proceed to BUILD-01 until BUILD-00B audit findings are documented here.
