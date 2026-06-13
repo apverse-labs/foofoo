@@ -220,3 +220,16 @@ For each build, produce:
 6. Assumptions
 7. Open questions
 8. Next build recommendation
+
+
+## Session Rule — Branch Discipline (CRITICAL)
+- NEVER commit or push directly to `main` under any circumstances, even for documentation-only changes.
+- NEVER commit or push directly to `develop` without explicit instruction.
+- All RE module work happens on `apverse-labs-RE` or `feature/re-engine-build-*` branches only.
+- If a task seems to require touching `main` or `develop`, STOP and ask for explicit confirmation — do not proceed.
+- Root CLAUDE.md changes that need to reach `main` happen ONLY through the normal PR/merge process with founder approval, never via direct push.
+
+Commit this on apverse-labs-RE only:
+git add Meal_Planning_RE_Engine/CLAUDE.md
+git commit -m "build(re-00a): add branch discipline rule to prevent direct main pushes"
+git push origin apverse-labs-RE
