@@ -55,6 +55,15 @@ Every response that writes or changes code MUST conclude with a **"Git Next Step
 
 **Standard merge flow:** feature branch → `develop` (staging/QA) → `main` (production). Never skip `develop`.
 
+### Rule 6 — GitHub is Ground Truth (No Local Shortcuts)
+**The local git clone is never a reliable source of truth.** It can be stale, incomplete, or polluted by the current session's filesystem operations.
+
+Before asserting anything about branches, files, or folder structure:
+1. **Always verify via GitHub MCP tools** (`mcp__github__list_branches`, `mcp__github__get_file_contents`) — not `git branch -a`, `ls`, or `git ls-files`.
+2. **Never infer file existence from the local filesystem.** A folder or file on disk may be a session artifact, not a committed file.
+3. **When a branch is not found locally**, check GitHub via MCP tools before concluding it doesn't exist.
+4. **No shortcuts.** If in doubt, look it up on GitHub. The cost of one MCP call is always lower than the cost of a wrong assumption.
+
 ---
 
 ## Nomenclature
@@ -71,3 +80,17 @@ Every response that writes or changes code MUST conclude with a **"Git Next Step
 
 ## Persistent State File
 `SYSTEM_STATE.md` is the source of truth. Read it at session start; write updates at session end.
+
+---
+
+## Meal Planning RE Module
+
+A versioned Recommendation Engine module lives at `Meal_Planning_RE_Engine/`.
+It has its own rules file at `Meal_Planning_RE_Engine/CLAUDE.md` — read it at the start of any RE session.
+
+Key constraints (summary — full rules in module CLAUDE.md):
+- The RE module must never break the existing production FooFoo app.
+- The app calls a stable interface only; it never imports a specific RE version directly.
+- All RE DB migrations are additive only and must be registered in `SYSTEM_STATE.md`.
+- Canonical source workbook (`Indian_Meal_Cohort_Persona_DB_v3.xlsx`) and docs folder are read-only.
+- RE versions (V1–V4) are independently testable and deployable.
