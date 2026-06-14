@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Foofoo — Onboarding Redesign Prototype</title>
+<style>
+  :root{
+    --green:#2D6A4F; --green-d:#1F4E39; --orange:#FF6B35; --bg:#FAFAF8;
+    --surface:#FFFFFF; --ink:#1A1A1A; --ink2:#6B6B6B; --border:#E8E8E6;
+    --ok:#2D6A4F; --no:#D84315; --maybe:#FF8F00;
+    --radius:24px; --radius-sm:16px;
+    --shadow:0 10px 40px rgba(0,0,0,.12);
+  }
+  *{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:Inter,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+    background:linear-gradient(135deg,#e9efe9,#f6efe8);
+    display:flex;align-items:center;justify-content:center;min-height:100vh;padding:24px;color:var(--ink);
+  }
+  /* Phone frame */
+  .phone{
+    width:390px;height:844px;background:var(--bg);border-radius:44px;position:relative;
+    box-shadow:var(--shadow),0 0 0 12px #111,0 0 0 14px #333;overflow:hidden;display:flex;flex-direction:column;
+  }
+  .notch{position:absolute;top:0;left:50%;transform:translateX(-50%);width:150px;height:30px;background:#111;border-radius:0 0 18px 18px;z-index:50}
+  /* Progress */
+  .topbar{padding:46px 22px 10px;display:flex;align-items:center;gap:12px}
+  .back{width:34px;height:34px;border-radius:50%;border:none;background:transparent;font-size:22px;color:var(--ink);cursor:pointer;display:flex;align-items:center;justify-content:center}
+  .back:disabled{opacity:0;pointer-events:none}
+  .segs{flex:1;display:flex;gap:6px}
+  .seg{flex:1;height:5px;border-radius:99px;background:var(--border);overflow:hidden}
+  .seg > i{display:block;height:100%;width:0;background:var(--green);transition:width .4s ease}
+  .seg.done > i{width:100%}
+  .seg.active > i{width:55%}
+  /* Screen container */
+  .stage{flex:1;position:relative;overflow:hidden}
+  .screen{position:absolute;inset:0;padding:8px 22px 22px;display:none;flex-direction:column;overflow-y:auto}
+  .screen.show{display:flex;animation:slideIn .35s ease}
+  @keyframes slideIn{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+  .kicker{font-size:13px;font-weight:700;letter-spacing:1.4px;text-transform:uppercase;color:var(--orange);margin:6px 0 0}
+  h1{font-size:27px;line-height:1.18;font-weight:800;letter-spacing:-.5px;margin:8px 0 6px}
+  .sub{font-size:15px;color:var(--ink2);line-height:1.45;margin:0 0 18px}
+  .grow{flex:1}
+  /* Buttons */
+  .cta{margin-top:auto;border:none;border-radius:99px;height:56px;background:var(--green);color:#fff;font-size:17px;font-weight:700;cursor:pointer;transition:transform .12s,background .2s}
+  .cta:active{transform:scale(.98)}
+  .cta:disabled{background:var(--border);color:#fff;cursor:not-allowed}
+  .ghost{background:none;border:none;color:var(--ink2);font-size:15px;font-weight:600;cursor:pointer;padding:14px;margin-top:6px}
+  /* Goal cards */
+  .goal{display:flex;align-items:center;gap:14px;background:var(--surface);border:2px solid var(--border);border-radius:var(--radius-sm);padding:16px;margin-bottom:12px;cursor:pointer;transition:.18s}
+  .goal .ic{font-size:30px;width:46px;text-align:center}
+  .goal b{display:block;font-size:16px}
+  .goal span{font-size:13px;color:var(--ink2)}
+  .goal.sel{border-color:var(--green);background:#2d6a4f0f;transform:translateY(-2px)}
+  /* Diet photo cards */
+  .diet-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .diet{position:relative;height:120px;border-radius:var(--radius-sm);overflow:hidden;cursor:pointer;border:3px solid transparent;background:#ddd}
+  .diet .img{position:absolute;inset:0;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:46px}
+  .diet .veil{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.6),rgba(0,0,0,.05))}
+  .diet .lbl{position:absolute;left:12px;bottom:10px;color:#fff;font-weight:800;font-size:17px;z-index:2}
+  .diet .desc{position:absolute;left:12px;bottom:-4px;color:#fff;opacity:.85;font-size:10px;z-index:2}
+  .diet.sel{border-color:var(--green)}
+  .diet.sel:after{content:"✓";position:absolute;top:8px;right:8px;width:24px;height:24px;background:var(--green);color:#fff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;z-index:3;font-size:13px}
+  .span2{grid-column:span 2;height:96px}
+  /* Allergy chips */
+  .chips{display:flex;flex-wrap:wrap;gap:10px}
+  .chip{border:2px solid var(--border);background:var(--surface);border-radius:99px;padding:10px 16px;font-size:14px;font-weight:600;cursor:pointer;transition:.15s}
+  .chip.sel{background:var(--green);color:#fff;border-color:var(--green)}
+  /* Swipe deck */
+  .deck-wrap{flex:1;position:relative;display:flex;flex-direction:column}
+  .taste{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;min-height:28px}
+  .taste .t{font-size:11px;font-weight:700;padding:5px 10px;border-radius:99px;background:#2d6a4f14;color:var(--green);opacity:0;transform:scale(.6);transition:.3s}
+  .taste .t.on{opacity:1;transform:none}
+  .deck{position:relative;flex:1;margin:4px 0 12px}
+  .card{position:absolute;inset:0;border-radius:var(--radius);overflow:hidden;box-shadow:var(--shadow);background:#ccc;cursor:grab;will-change:transform;user-select:none}
+  .card .img{position:absolute;inset:0;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:90px}
+  .card .veil{position:absolute;inset:0;background:linear-gradient(to top,rgba(0,0,0,.78),transparent 55%)}
+  .card .meta{position:absolute;left:18px;right:18px;bottom:18px;color:#fff;z-index:2}
+  .card .meta h3{margin:0;font-size:24px;font-weight:800}
+  .card .meta p{margin:4px 0 0;font-size:13px;opacity:.9}
+  .stamp{position:absolute;top:26px;font-size:26px;font-weight:900;padding:6px 14px;border:4px solid;border-radius:12px;opacity:0;z-index:3;transition:opacity .1s}
+  .stamp.like{left:20px;color:var(--ok);border-color:var(--ok);transform:rotate(-16deg)}
+  .stamp.nope{right:20px;color:var(--no);border-color:var(--no);transform:rotate(16deg)}
+  .stamp.maybe{left:50%;transform:translateX(-50%);top:auto;bottom:90px;color:var(--maybe);border-color:var(--maybe)}
+  .swipe-btns{display:flex;justify-content:center;gap:18px;padding-bottom:6px}
+  .sbtn{width:60px;height:60px;border-radius:50%;border:none;font-size:26px;cursor:pointer;box-shadow:0 4px 16px rgba(0,0,0,.15);background:#fff;display:flex;align-items:center;justify-content:center;transition:transform .12s}
+  .sbtn:active{transform:scale(.9)}
+  .sbtn.no{color:var(--no)} .sbtn.maybe{color:var(--maybe);width:50px;height:50px;font-size:20px;align-self:center} .sbtn.yes{color:var(--ok)}
+  .counter{text-align:center;font-size:13px;color:var(--ink2);font-weight:600;margin-bottom:6px}
+  /* Inputs */
+  .field{margin-bottom:14px}
+  .field label{font-size:13px;font-weight:700;color:var(--ink2);display:block;margin-bottom:6px}
+  .field input,.field .select{width:100%;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:14px;font-size:16px;color:var(--ink);font-family:inherit}
+  .stepper{display:flex;align-items:center;gap:16px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:10px 16px}
+  .stepper button{width:38px;height:38px;border-radius:50%;border:none;background:#2d6a4f14;color:var(--green);font-size:20px;font-weight:800;cursor:pointer}
+  .stepper b{font-size:22px;flex:1;text-align:center}
+  /* Reveal */
+  .reveal-hero{text-align:center;padding:6px 0 14px}
+  .reveal-hero .big{font-size:46px}
+  .meal{display:flex;gap:14px;align-items:center;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px;margin-bottom:12px;animation:pop .5s ease backwards}
+  .meal:nth-child(2){animation-delay:.12s}.meal:nth-child(3){animation-delay:.24s}.meal:nth-child(4){animation-delay:.36s}
+  @keyframes pop{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
+  .meal .thumb{width:64px;height:64px;border-radius:12px;background-size:cover;background-position:center;display:flex;align-items:center;justify-content:center;font-size:30px;flex-shrink:0;background-color:#eee}
+  .meal .slot{font-size:11px;font-weight:800;letter-spacing:1px;text-transform:uppercase;color:var(--orange)}
+  .meal .dish{font-size:16px;font-weight:700;margin-top:2px}
+  .meal .tags{font-size:12px;color:var(--ink2);margin-top:2px}
+  .confetti{position:absolute;inset:0;pointer-events:none;overflow:hidden;z-index:60}
+  .confetti i{position:absolute;width:9px;height:14px;opacity:.9;animation:fall linear forwards}
+  @keyframes fall{to{transform:translateY(900px) rotate(540deg)}}
+  .note{font-size:11px;color:var(--ink2);text-align:center;margin-top:10px;line-height:1.4}
+</style>
+</head>
+<body>
+<div class="phone">
+  <div class="notch"></div>
+  <div class="topbar">
+    <button class="back" id="back" onclick="prev()">←</button>
+    <div class="segs" id="segs"></div>
+  </div>
+  <div class="stage" id="stage"></div>
+  <div class="confetti" id="confetti"></div>
+</div>
+
+<script>
+/* ---- image helper: Unsplash with emoji-gradient fallback ---- */
+function dish(emoji, q, grad){
+  // background-image tries the photo; emoji shows behind/while loading
+  const url = `https://source.unsplash.com/400x500/?${encodeURIComponent(q)}`;
+  return `background-image:linear-gradient(135deg,${grad});background-blend-mode:overlay;`+
+         `background-size:cover;`;
+}
+// We render emoji as the visible content and a gradient as bg (always works offline).
+// Photo URLs are referenced in data but the prototype leans on emoji+gradient so it
+// renders with zero network — swap for real Cloudinary dish images in the app.
+
+const GRAD = {
+  veg:'#43a047,#2d6a4f', nonveg:'#c62828,#8d2f1f', egg:'#fbc02d,#f57f17',
+  vegan:'#66bb6a,#1b5e20', jain:'#7e57c2,#4527a0', warm:'#ff8a65,#d84315',
+  cool:'#4db6ac,#00695c', spice:'#ef5350,#b71c1c', sweet:'#ffb74d,#ef6c00'
+};
+
+const ACTS = 5; // segmented progress acts
+const SCREENS = ['goal','diet','allergy','swipe','location','profile','reveal'];
+const ACT_OF = {goal:0,diet:1,allergy:1,swipe:1,location:2,profile:2,reveal:3};
+// 4 visual segments: Hook / Taste / You / Done
+const SEG_COUNT = 4;
+const SEG_OF = {goal:0,diet:1,allergy:1,swipe:1,location:2,profile:2,reveal:3};
+
+let idx = 0;
+const state = {goal:null,diet:null,allergies:new Set(),swiped:0,likes:[],cuisines:new Set(),household:2};
+
+const DECK = [
+  {n:'Masala Dosa',e:'🥞',c:'South Indian',g:GRAD.veg,t:'Crispy · Light · 20 min'},
+  {n:'Paneer Butter Masala',e:'🍛',c:'North Indian',g:GRAD.warm,t:'Rich · Creamy · 30 min'},
+  {n:'Chole Bhature',e:'🫓',c:'North Indian',g:GRAD.spice,t:'Hearty · Spicy · Weekend'},
+  {n:'Idli Sambar',e:'🍚',c:'South Indian',g:GRAD.cool,t:'Steamed · Light · 15 min'},
+  {n:'Pav Bhaji',e:'🍲',c:'Street Food',g:GRAD.spice,t:'Buttery · Spicy · 25 min'},
+  {n:'Rajma Chawal',e:'🍛',c:'North Indian',g:GRAD.warm,t:'Comfort · Filling · 35 min'},
+  {n:'Dhokla',e:'🟡',c:'West Indian',g:GRAD.egg,t:'Steamed · Light · Snack'},
+  {n:'Hyderabadi Biryani',e:'🍚',c:'Hyderabadi',g:GRAD.spice,t:'Aromatic · Festive · 50 min'},
+  {n:'Aloo Paratha',e:'🫓',c:'North Indian',g:GRAD.warm,t:'Stuffed · Hearty · 20 min'},
+  {n:'Vegetable Upma',e:'🥣',c:'South Indian',g:GRAD.cool,t:'Quick · Savoury · 15 min'},
+  {n:'Misal Pav',e:'🍲',c:'West Indian',g:GRAD.spice,t:'Spicy · Tangy · 30 min'},
+  {n:'Palak Paneer',e:'🥬',c:'North Indian',g:GRAD.veg,t:'Healthy · Creamy · 25 min'},
+  {n:'Medu Vada',e:'🍩',c:'South Indian',g:GRAD.egg,t:'Crispy · Fried · Snack'},
+  {n:'Veg Pulao',e:'🍚',c:'North Indian',g:GRAD.cool,t:'Mild · One-pot · 30 min'},
+  {n:'Gulab Jamun',e:'🍮',c:'Dessert',g:GRAD.sweet,t:'Sweet · Indulgent · Treat'},
+];
+
+function segsHtml(){
+  let h='';
+  const cur = SEG_OF[SCREENS[idx]];
+  for(let i=0;i<SEG_COUNT;i++){
+    const cls = i<cur?'done':(i===cur?'active':'');
+    h+=`<div class="seg ${cls}"><i></i></div>`;
+  }
+  return h;
+}
+
+function render(){
+  document.getElementById('segs').innerHTML=segsHtml();
+  document.getElementById('back').disabled = idx===0;
+  const stage=document.getElementById('stage');
+  stage.innerHTML = SCR[SCREENS[idx]]();
+  const sc=stage.firstElementChild; if(sc) sc.classList.add('show');
+  if(SCREENS[idx]==='swipe') initDeck();
+  if(SCREENS[idx]==='reveal') burst();
+}
+function next(){ if(idx<SCREENS.length-1){idx++;render();} }
+function prev(){ if(idx>0){idx--;render();} }
+function goReveal(){ idx=SCREENS.indexOf('reveal'); render(); }
+
+/* ---------- Screen templates ---------- */
+const SCR = {
+  goal:()=>`<div class="screen">
+    <p class="kicker">Let's get you sorted</p>
+    <h1>What's driving you nuts about food right now?</h1>
+    <p class="sub">Pick what fits best — we'll shape everything around it.</p>
+    ${[
+      ['😩','Daily "what to cook" stress','Decide for me, every morning'],
+      ['🥗','Eat healthier','Balanced meals without the effort'],
+      ['🌍','More variety','Break out of the same 5 dishes'],
+      ['👨‍👩‍👧','Feed my family well','Plans that work for everyone'],
+    ].map((g,i)=>`<div class="goal ${state.goal===i?'sel':''}" onclick="pickGoal(${i})">
+        <div class="ic">${g[0]}</div><div><b>${g[1]}</b><span>${g[2]}</span></div></div>`).join('')}
+    <button class="cta" ${state.goal===null?'disabled':''} onclick="next()">Continue</button>
+  </div>`,
+
+  diet:()=>{
+    const D=[['veg','🌱','Veg','No meat or fish'],['non_veg','🍗','Non-Veg','Meat, poultry, seafood'],
+      ['egg','🥚','Egg','Veg + eggs'],['vegan','🌿','Vegan','No animal products'],['jain','✨','Jain','No onion/garlic/roots']];
+    return `<div class="screen">
+    <p class="kicker">The one hard rule</p>
+    <h1>How do you eat?</h1>
+    <p class="sub">This is the core filter — we'll never suggest anything outside it. Change it anytime.</p>
+    <div class="diet-grid">
+      ${D.map((d,i)=>`<div class="diet ${state.diet===d[0]?'sel':''} ${i===4?'span2':''}" onclick="pickDiet('${d[0]}')">
+        <div class="img" style="background:linear-gradient(135deg,${GRAD[d[0]]||GRAD.veg})">${d[1]}</div>
+        <div class="veil"></div><div class="lbl">${d[2]}<div class="desc">${d[3]}</div></div></div>`).join('')}
+    </div>
+    <button class="cta" style="margin-top:18px" ${!state.diet?'disabled':''} onclick="next()">Continue</button>
+  </div>`;},
+
+  allergy:()=>{
+    const A=['Peanut','Dairy','Gluten','Soy','Tree nuts','Shellfish','Egg','Sesame'];
+    return `<div class="screen">
+    <p class="kicker">Keeping you safe</p>
+    <h1>Anything you're allergic to?</h1>
+    <p class="sub">Tap any that apply. Most people skip this — totally fine.</p>
+    <div class="chips">
+      ${A.map(a=>`<div class="chip ${state.allergies.has(a)?'sel':''}" onclick="toggleAllergy('${a}')">${a}</div>`).join('')}
+    </div>
+    <div class="grow"></div>
+    <button class="cta" onclick="next()">${state.allergies.size?`Continue (${state.allergies.size})`:'Continue'}</button>
+    <button class="ghost" onclick="next()">No allergies — skip</button>
+  </div>`;},
+
+  swipe:()=>`<div class="screen">
+    <p class="kicker">Build your taste</p>
+    <h1>Swipe what looks good</h1>
+    <p class="sub" style="margin-bottom:8px">Right if you love it · Left if it's not for you · Up for "sometimes". This trains your engine.</p>
+    <div class="taste" id="taste"></div>
+    <div class="deck-wrap">
+      <div class="counter" id="counter"></div>
+      <div class="deck" id="deck"></div>
+      <div class="swipe-btns">
+        <button class="sbtn no" onclick="swipe('left')">✕</button>
+        <button class="sbtn maybe" onclick="swipe('up')">~</button>
+        <button class="sbtn yes" onclick="swipe('right')">♥</button>
+      </div>
+    </div>
+  </div>`,
+
+  location:()=>`<div class="screen">
+    <p class="kicker">Make it local</p>
+    <h1>Where are you cooking from?</h1>
+    <p class="sub">So we can lean into what's fresh, seasonal and regional near you.</p>
+    <div class="field"><label>City</label><input placeholder="e.g. Mumbai" value="Mumbai"/></div>
+    <div class="field"><label>State</label>
+      <select class="select">
+        <option>Maharashtra</option><option>Karnataka</option><option>Tamil Nadu</option>
+        <option>Delhi</option><option>Kerala</option><option>West Bengal</option><option>Gujarat</option>
+      </select></div>
+    <div class="grow"></div>
+    <button class="cta" onclick="next()">Continue</button>
+  </div>`,
+
+  profile:()=>`<div class="screen">
+    <p class="kicker">Last bit</p>
+    <h1>Make it yours</h1>
+    <p class="sub">No username, no fuss. Just enough to greet you properly.</p>
+    <div class="field"><label>Your name</label><input placeholder="e.g. Priya" value="Priya"/></div>
+    <div class="field"><label>How many are you cooking for?</label>
+      <div class="stepper"><button onclick="hh(-1)">−</button><b id="hh">${state.household}</b><button onclick="hh(1)">+</button></div>
+    </div>
+    <div class="field"><label>Morning plan reminder</label><input value="08:00" /></div>
+    <div class="grow"></div>
+    <button class="cta" onclick="goReveal()">See my first plan ✨</button>
+  </div>`,
+
+  reveal:()=>{
+    const meals=[
+      ['Breakfast','Masala Dosa','🥞','South Indian · 20 min',GRAD.veg],
+      ['Lunch','Rajma Chawal','🍛','North Indian · Comfort',GRAD.warm],
+      ['Dinner','Palak Paneer + Roti','🥬','Healthy · Creamy',GRAD.veg],
+    ];
+    return `<div class="screen">
+    <div class="reveal-hero"><div class="big">🍽️</div>
+      <p class="kicker" style="text-align:center">Made for you</p>
+      <h1 style="text-align:center">Here's tomorrow,<br/>${state.diet==='non_veg'?'your way':'all veg, sorted'}</h1>
+    </div>
+    ${meals.map(m=>`<div class="meal">
+        <div class="thumb" style="background:linear-gradient(135deg,${m[4]})">${m[2]}</div>
+        <div><div class="slot">${m[0]}</div><div class="dish">${m[1]}</div><div class="tags">${m[3]}</div></div>
+      </div>`).join('')}
+    <p class="note">Don't like one? Swipe it away on your home screen — your engine learns instantly.</p>
+    <button class="cta" style="margin-top:14px" onclick="alert('→ This is where the user lands on the Home screen. End of onboarding prototype.')">Start cooking with Foofoo</button>
+    <button class="ghost" onclick="idx=0;render()">↺ Replay prototype</button>
+  </div>`;}
+};
+
+/* ---------- interactions ---------- */
+function pickGoal(i){state.goal=i;render();}
+function pickDiet(d){state.diet=d;render();}
+function toggleAllergy(a){state.allergies.has(a)?state.allergies.delete(a):state.allergies.add(a);render();}
+function hh(d){state.household=Math.max(1,Math.min(12,state.household+d));document.getElementById('hh').textContent=state.household;}
+
+/* ---------- swipe deck ---------- */
+let deckEls=[];
+function initDeck(){
+  state.swiped=0;state.cuisines=new Set();state.likes=[];
+  const deck=document.getElementById('deck');deck.innerHTML='';
+  deckEls=[];
+  // render top 4 for performance feel, but track all
+  DECK.forEach((d,i)=>{
+    const el=document.createElement('div');el.className='card';el.dataset.i=i;
+    el.style.zIndex=DECK.length-i;
+    el.style.transform=`scale(${1-Math.min(i,3)*0.03}) translateY(${Math.min(i,3)*8}px)`;
+    el.innerHTML=`
+      <div class="img" style="background:linear-gradient(135deg,${d.g})">${d.e}</div>
+      <div class="veil"></div>
+      <span class="stamp like">LOVE</span><span class="stamp nope">NOPE</span><span class="stamp maybe">SOMETIMES</span>
+      <div class="meta"><h3>${d.n}</h3><p>${d.c} · ${d.t}</p></div>`;
+    if(i>3) el.style.display='none';
+    deck.appendChild(el);deckEls.push(el);
+    if(i===0) drag(el);
+  });
+  updateCounter();updateTaste();
+}
+function updateCounter(){const c=document.getElementById('counter');if(c)c.textContent=`${Math.min(state.swiped+1,DECK.length)} of ${DECK.length}`;}
+function updateTaste(){
+  const t=document.getElementById('taste');if(!t)return;
+  const arr=[...state.cuisines];
+  t.innerHTML=arr.map(c=>`<span class="t on">❤ ${c}</span>`).join('') || `<span class="t on" style="opacity:.4;background:#eee;color:#999">Your taste profile builds here →</span>`;
+}
+function topCard(){return deckEls.find(e=>e.style.display!=='none' && !e.dataset.gone);}
+function swipe(dir){
+  const card=topCard();if(!card)return;
+  const d=DECK[+card.dataset.i];
+  if(dir==='right'){state.cuisines.add(d.c);state.likes.push(d.n);}
+  if(dir==='up'){state.cuisines.add(d.c);}
+  flyOut(card,dir);
+}
+function flyOut(card,dir){
+  card.dataset.gone=1;
+  const x=dir==='left'?-600:dir==='right'?600:0;
+  const y=dir==='up'?-800:120;
+  const rot=dir==='left'?-30:dir==='right'?30:0;
+  card.style.transition='transform .45s ease, opacity .45s';
+  card.style.transform=`translate(${x}px,${y}px) rotate(${rot}deg)`;
+  card.style.opacity='0';
+  state.swiped++;
+  // promote next cards
+  const remaining=deckEls.filter(e=>!e.dataset.gone);
+  remaining.forEach((e,i)=>{
+    e.style.display='block';
+    e.style.transition='transform .3s';
+    e.style.transform=`scale(${1-Math.min(i,3)*0.03}) translateY(${Math.min(i,3)*8}px)`;
+  });
+  if(remaining[0]) drag(remaining[0]);
+  updateCounter();updateTaste();
+  if(state.swiped>=DECK.length){ setTimeout(()=>{ if(SCREENS[idx]==='swipe') next(); },500); }
+}
+function drag(card){
+  let sx=0,sy=0,dx=0,dy=0,active=false;
+  const like=card.querySelector('.like'),nope=card.querySelector('.nope'),maybe=card.querySelector('.maybe');
+  const down=e=>{active=true;const p=pt(e);sx=p.x;sy=p.y;card.style.transition='none';card.style.cursor='grabbing';};
+  const move=e=>{if(!active)return;const p=pt(e);dx=p.x-sx;dy=p.y-sy;
+    card.style.transform=`translate(${dx}px,${dy}px) rotate(${dx/18}deg)`;
+    like.style.opacity=dx>30?Math.min(dx/120,1):0;
+    nope.style.opacity=dx<-30?Math.min(-dx/120,1):0;
+    maybe.style.opacity=(dy<-40&&Math.abs(dx)<60)?Math.min(-dy/120,1):0;};
+  const up=()=>{if(!active)return;active=false;card.style.cursor='grab';
+    if(dx>110)return swipe('right');
+    if(dx<-110)return swipe('left');
+    if(dy<-110&&Math.abs(dx)<80)return swipe('up');
+    card.style.transition='transform .3s';card.style.transform='';
+    like.style.opacity=nope.style.opacity=maybe.style.opacity=0;};
+  function pt(e){return e.touches?{x:e.touches[0].clientX,y:e.touches[0].clientY}:{x:e.clientX,y:e.clientY};}
+  card.onmousedown=down;document.addEventListener('mousemove',move);document.addEventListener('mouseup',up);
+  card.ontouchstart=down;card.ontouchmove=e=>{move(e);};card.ontouchend=up;
+}
+
+/* ---------- confetti on reveal ---------- */
+function burst(){
+  const c=document.getElementById('confetti');c.innerHTML='';
+  const cols=['#2D6A4F','#FF6B35','#FFB74D','#66BB6A','#FF8F00'];
+  for(let i=0;i<40;i++){const s=document.createElement('i');
+    s.style.left=Math.random()*100+'%';s.style.top='-20px';
+    s.style.background=cols[i%cols.length];
+    s.style.animationDuration=(1.4+Math.random()*1.4)+'s';
+    s.style.animationDelay=(Math.random()*.4)+'s';
+    s.style.transform=`rotate(${Math.random()*360}deg)`;
+    c.appendChild(s);}
+  setTimeout(()=>c.innerHTML='',2600);
+}
+
+render();
+</script>
+</body>
+</html>
