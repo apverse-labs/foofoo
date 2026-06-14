@@ -69,6 +69,7 @@ interface WeeklyClassPlanRow {
   snack_secondary_class: string | null;
   dinner_primary_class: string | null;
   dinner_secondary_class: string | null;
+  scheduled_nonveg_slot: string | null;
 }
 
 interface MealClassRow {
@@ -131,7 +132,8 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
         + 'breakfast_primary_class, breakfast_secondary_class, '
         + 'lunch_primary_class, lunch_secondary_class, '
         + 'snack_primary_class, snack_secondary_class, '
-        + 'dinner_primary_class, dinner_secondary_class',
+        + 'dinner_primary_class, dinner_secondary_class, '
+        + 'scheduled_nonveg_slot',
       )
       .eq('cohort_id', cohortId);
     if (planErr) throw planErr;
@@ -181,6 +183,7 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
         snack_display: sn ? (displayMap.get(sn) ?? deriveMealClassDisplayName(sn)) : null,
         dinner_display: dn ? (displayMap.get(dn) ?? deriveMealClassDisplayName(dn)) : null,
         city_overlay_applied: cityOverlayApplied,
+        nonveg_scheduled_slot: r.scheduled_nonveg_slot ?? null,
         engine_version: ENGINE_VERSION,
       };
     });

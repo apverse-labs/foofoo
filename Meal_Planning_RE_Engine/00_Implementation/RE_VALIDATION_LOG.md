@@ -171,4 +171,62 @@ A household with MC4 (Joint/elders/care) → SC4F (child_plus_diabetic_elder_ove
 - [x] resolver code exists and is table-driven
 - [ ] routing_trace persisted (not stored — DEFECT, fix staged)
 
-**PACK 3: validation complete; 1 defect found (missing confidence + routing_trace); fix to apply.**
+**Additional gaps (backlog — validate-all-first mode):**
+- `re_routing_rules` 8 rows are inert data — no runtime code reads them to drive onboarding screen sequence. BUILD-02 onboarding hard-codes R01-R08 flow in screen files. Backlog: wire onboarding steps to re_routing_rules at runtime.
+- `Meal_Planning_RE_Engine/00_Implementation/resolver/` and `versions/` directories do not exist. BUILD-03 resolver lives at `foofoo/src/repositories/re-cohort-resolver.repository.ts` (correct for app integration). The RE module CLAUDE.md target structure (`resolver/engineResolver.ts`, `versions/RE_V1/`) is a BUILD-08 deliverable — not blocking current PACKs.
+
+**PACK 3: PASS (after SCHEMA-RE-009 fix). 2 backlog items noted.**
+
+---
+
+## PACK 4 — BUILD-04: Weekly Class-First Plan Engine ⚠️ 1 DEFECT FOUND → FIX APPLIED
+
+**Binary docs read:** DOC-13 (Weekly_Meal_Plan_Generation_Algorithm), DOC-14 (Class_Rotation_Variety_Balance_Rules), DOC-19 (RE_Scoring_Rules — applicable BUILD-06/07), DOC-06 (Primary_vs_Addon_Meal_Architecture). All extracted from git via zipfile.
+
+**Workbook sheets read:** Cohort_Matrix_v3 (2952 data rows, 38 cols), Weekly_Class_Plan_v3 (20,664 data rows, 23 cols), Weekly_Plan_Join_Rules (4 rules).
+
+**DB-vs-workbook reference-table diff:**
+
+| Table | Expected | Actual | |
+|---|---|---|---|
+| re_weekly_class_plans total rows | 20,664 | 20,664 | ✅ |
+| Distinct cohorts in re_weekly_class_plans | 2,952 | 2,952 | ✅ |
+| Rows per cohort (min/max) | 7/7 | 7/7 | ✅ |
+| scheduled_nonveg_slot populated | yes | yes (e.g. "Breakfast:egg_state_prior", "Lunch:nonveg_state_prior") | ✅ |
+
+**Column name rename (minor):** Workbook uses `scheduled_nonveg_or_egg_slot`; DB column is `scheduled_nonveg_slot`. Functionally equivalent. ✅
+
+**Code audit — `re-plan.repository.ts` (`generateUserWeeklyPlan`):**
+- Table-driven: reads from `re_weekly_class_plans` keyed on `cohort_id`. ✅
+- Class-first: stores class codes, not dish names. ✅
+- Weekday/weekend column preserved in `re_user_weekly_plans`. ✅
+- City overlay flag (`city_overlay_applied`) set correctly. ✅
+- Chains to `generateUserAddonPlan` (BUILD-05) immediately after. ✅
+
+**DEFECT FOUND — `nonveg_scheduled_slot` not fetched or stored (DOC-13/DOC-15 violation):**
+
+DOC-15 §4 and DOC-13 §6 require the scheduled nonveg/egg slot to be carried into the user's generated plan so BUILD-06 dish expander can activate nonveg dish candidates in the correct slot. The `scheduled_nonveg_slot` column in `re_weekly_class_plans` was populated (confirmed: 2 rows per cohort-week have non-null values) but was never SELECT-ed in `generateUserWeeklyPlan()` and `re_user_weekly_plans` had no column to store it.
+
+**Safety verified:** No nonveg class code is written to primary class slots for veg/Jain cohorts (nonveg_mode = 'veg' / 'jain' in Cohort_Matrix_v3 correctly uses veg class codes only). The nonveg scheduling column is an instruction to dish expander, not a class override — so missing it doesn't serve wrong food, just misses the activation signal for BUILD-06.
+
+**Correction applied (additive, SCHEMA-RE-010):**
+- `migrations/up/20260614_011_re_user_weekly_plans_nonveg_slot.sql` — ADD COLUMN `nonveg_scheduled_slot TEXT` to `re_user_weekly_plans`.
+- `re-plan.repository.ts` — updated `WeeklyClassPlanRow` interface, added `scheduled_nonveg_slot` to SELECT, writes `nonveg_scheduled_slot` in upsert rows.
+- Applied to staging. Down script provided.
+
+**Remaining BUILD-04 code gaps (backlog — validate-all-first mode):**
+1. Diet constraint check before class selection — Jain/veg users could theoretically get a cohort row with nonveg primary class (non-issue in practice since Cohort_Matrix_v3 uses veg codes for veg cohorts, but not programmatically enforced).
+2. City migration overlay weights (60%/20%/10% from `re_city_migration_overlays`) are seeded but not applied at class selection time — `city_overlay_applied` is a boolean flag only. Class blend per city is BUILD-04 algorithmic work, not a schema gap.
+3. DOC-14 variety/rotation rules (max 3× same class per week) — not implemented; plan is a direct copy of cohort row. Acceptable for V1 cold-start.
+
+**STATUS: APPLIED to staging (SCHEMA-RE-010).** Post-apply verification: `re_user_weekly_plans` now has `nonveg_scheduled_slot` column.
+
+**Exit criteria:**
+- [x] `re_weekly_class_plans` = 20,664 rows (2,952 cohorts × 7 days, all complete) ✅
+- [x] Class-first: plan stores class codes, dishes not assigned at this stage ✅
+- [x] Weekday/weekend rhythm preserved ✅
+- [x] nonveg slot carried into generated plan (after fix)
+- [~] City overlay weight blending (data seeded; consumption in BUILD-04 algorithm pending)
+- [~] Variety/rotation rules (DOC-14 backlog)
+
+**PACK 4: PASS (after SCHEMA-RE-010 fix). 2 algorithm backlog items noted.**
