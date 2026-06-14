@@ -56,6 +56,7 @@
 |------------------|---------------------------------------------|------------|----------------|--------------------------------------------------------------------------|
 | SCHEMA-BASE-001  | (pre-existing / remote baseline)            | ✅          | ❌ (pre-ledger) | 42 MVP tables, ap-south-1                                                |
 | SCHEMA-RE-001    | 20260614_001_re_seed_tables.sql             | ✅ staging  | ✅              | 19 RE tables + household_members + profiles.re_engine_version; foofoo-staging only; NOT yet on production |
+| SCHEMA-RE-002    | 20260614_003_re_user_weekly_plans.sql       | ⏳ pending  | ✅              | BUILD-04: `re_user_weekly_plans` (per-user 7-day class plan, RLS own-rows). foofoo-staging ONLY. Up+Down written; NOT yet applied — staging project unreachable via current MCP connection (connection points at production). Apply manually to kwypxyqxojauhiehuirz before BUILD-04 QA. |
 
 ---
 
