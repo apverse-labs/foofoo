@@ -1,103 +1,137 @@
 import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../src/services/supabase';
+import { supabaseRE } from '../../src/services/supabase-re';
 import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
-import { saveREHealthOverlay } from '../../src/repositories/re-onboarding.repository';
+import { saveREDietPrefs } from '../../src/repositories/re-onboarding.repository';
+import { fetchUserDietRules } from '../../src/repositories/onboarding.repository';
+import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
+import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
 import { PostHogService } from '../../src/services/posthog.service';
-import type { HealthOverlayCode, HealthScope } from '../../src/types';
+import type { FoodPref } from '../../src/types';
 
-interface HealthOption {
-  value: HealthOverlayCode;
-  label: string;
-  allowsScope: boolean;
-}
-
-const HEALTH_OPTIONS: HealthOption[] = [
-  { value: 'weight_loss',          label: 'Weight loss / calorie control', allowsScope: true },
-  { value: 'high_protein_fitness', label: 'Gym / high protein',            allowsScope: true },
-  { value: 'veg_protein_seeker',   label: 'Vegetarian protein focus',      allowsScope: true },
-  { value: 'diabetic_management',  label: 'Diabetic / low-GI',             allowsScope: true },
-  { value: 'hypertension_heart',   label: 'Hypertension / heart health',   allowsScope: true },
-  { value: 'fasting_ritual',       label: 'Fasting / ritual days',         allowsScope: true },
-  { value: 'pregnancy_support',    label: 'Pregnancy nutrition',           allowsScope: false },
-  { value: 'postpartum_lactation', label: 'Postpartum / lactation',        allowsScope: false },
+interface DietOption { value: FoodPref; label: string; ack: string; }
+const DIET_OPTIONS: DietOption[] = [
+  { value: 'veg', label: 'Veg',
+    ack: 'Pure veg — I\'ve got a huge range for you. Indian vegetarian is its own universe.' },
+  { value: 'non_veg', label: 'Non-Veg',
+    ack: 'Good variety — I\'ll mix non-veg days naturally so it feels balanced.' },
+  { value: 'egg', label: 'Eggetarian',
+    ack: 'Egg-friendly — one of the most versatile ingredients. Great.' },
+  { value: 'jain', label: 'Jain',
+    ack: 'Jain preferences noted — I\'ll keep root vegetables and underground produce out.' },
+  { value: 'vegan', label: 'Vegan',
+    ack: 'Plant-based all the way — I\'ll make sure it\'s satisfying, not just healthy.' },
 ];
 
-const SCOPE_OPTIONS: Array<{ value: HealthScope; label: string; description: string }> = [
-  { value: 'all',         label: 'For everyone',   description: 'Health-appropriate classes enter the main weekly plan' },
-  { value: 'member_only', label: 'One member only', description: 'Main family plan stays unchanged — add-on for that member only' },
+const NONVEG_FREQ_OPTIONS = [
+  { label: '1-2 times/week', value: 2 },
+  { label: '3-4 times/week', value: 4 },
+  { label: '5-6 times/week', value: 6 },
+  { label: 'Daily',          value: 7 },
+];
+
+const PROTEIN_OPTIONS = [
+  { label: 'Chicken', value: 'chicken' },
+  { label: 'Fish',    value: 'fish' },
+  { label: 'Mutton',  value: 'mutton' },
+  { label: 'Egg',     value: 'egg' },
+  { label: 'Prawn',   value: 'prawn' },
 ];
 
 /**
- * @summary RE Onboarding Step 7 — Health and lifestyle overlay (skippable).
+ * @summary RE Onboarding Step 7 — "What do you eat?" (diet + proteins combined).
  *
- * @description Always shown; user can skip by pressing "No health goals right now."
- *   Health scope (all vs. member_only) shown when the selected overlay supports it.
- *   Saves to re_user_household_profiles.health_overlay_code + health_scope.
+ * @description Saves food_pref to production and nonveg frequency + protein types
+ *   to the RE household profile. Allergens are not collected in this flow ([]).
  */
 export default function REStep7() {
   const router = useRouter();
   const [userId, setUserId] = useState('');
-  const [selectedOverlay, setSelectedOverlay] = useState<HealthOverlayCode | null>(null);
-  const [selectedScope, setSelectedScope] = useState<HealthScope | null>(null);
+  const [foodPref, setFoodPref] = useState<FoodPref | null>(null);
+  const [nonvegFreq, setNonvegFreq] = useState<number | null>(null);
+  const [proteins, setProteins] = useState<string[]>([]);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     PostHogService.screen('re_onboarding_step_7');
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace('/(auth)/sign-in' as never); return; }
-      setUserId(user.id);
+      try {
+        const { data: { user } } = await supabaseRE.auth.getUser();
+        if (!user) { router.replace('/(auth)/sign-in' as never); return; }
+        setUserId(user.id);
+        const rules = await fetchUserDietRules(user.id);
+        if (rules?.food_pref) setFoodPref(rules.food_pref);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'unknown';
+        Logger.error('RE_STEP7', 'init failed', { error: message });
+      }
     })();
   }, []);
 
-  const allowsScope = HEALTH_OPTIONS.find((o) => o.value === selectedOverlay)?.allowsScope ?? false;
-  const isValid = selectedOverlay === null || !allowsScope || selectedScope !== null;
+  const isNonVeg = foodPref === 'non_veg';
+  const isValid = foodPref !== null && (!isNonVeg || (nonvegFreq !== null && proteins.length > 0));
 
-  const handleSave = async (overlay: HealthOverlayCode | null, scope: HealthScope | null) => {
-    if (saving) return;
+  const selectedOption = DIET_OPTIONS.find((o) => o.value === foodPref) ?? null;
+  const ackMessage = selectedOption?.ack ?? '';
+  const tags: PersonaTag[] = selectedOption
+    ? [{ emoji: '🥗', label: selectedOption.label }]
+    : [];
+
+  const toggleProtein = (value: string) => {
+    setProteins((prev) =>
+      prev.includes(value) ? prev.filter((p) => p !== value) : [...prev, value]
+    );
+  };
+
+  const handleNext = async () => {
+    if (!isValid || saving || !foodPref) return;
     setSaving(true);
     try {
-      await saveREHealthOverlay(userId, overlay, scope);
-      Logger.info('RE_STEP7', 'health overlay saved', { userId, overlay, scope });
-      await UserJourneyLogger.logOnboardingStep(userId, 7, 'RE Health Overlay', {
-        'Overlay': overlay ?? 'none',
-        'Scope': scope ?? 'n/a',
+      await saveREDietPrefs(
+        userId, foodPref, [],
+        isNonVeg ? nonvegFreq : null,
+        isNonVeg ? proteins : [],
+      );
+      Logger.info('RE_STEP7', 'diet prefs saved', { userId, foodPref });
+      await UserJourneyLogger.logOnboardingStep(userId, 7, 'RE Diet Preference', {
+        'Diet': foodPref,
+        'NonVeg freq': isNonVeg ? String(nonvegFreq) : 'n/a',
       });
-      router.replace('/(re-onboarding)/re-step-8' as never);
-    } catch {
-      Alert.alert('Save failed', 'Could not save health preference. Please try again.');
+      router.replace('/(re-onboarding)/re-step-8-reveal' as never);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'unknown';
+      Logger.error('RE_STEP7', 'save failed', { error: message, userId });
+      Alert.alert('Save failed', 'Could not save diet preference. Please try again.');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleNext = () => handleSave(selectedOverlay, allowsScope ? selectedScope : null);
-  const handleSkip = () => handleSave(null, null);
-
   return (
     <OnboardingLayout
       step={7}
-      title="Any health goals for your household?"
-      subtitle="We'll shape meals around it. You can skip this and set it later."
+      title="Almost there — just your diet."
+      subtitle="What do you eat?"
       onNext={handleNext}
       onBack={() => router.replace('/(re-onboarding)/re-step-6' as never)}
       nextDisabled={!isValid || saving}
       nextLabel={saving ? 'Saving…' : 'Next'}
     >
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.chipGrid}>
-          {HEALTH_OPTIONS.map((opt) => {
-            const isSel = selectedOverlay === opt.value;
+        <View style={styles.chipRow}>
+          {DIET_OPTIONS.map((opt) => {
+            const isSel = foodPref === opt.value;
             return (
               <Pressable
                 key={opt.value}
                 style={[styles.chip, isSel && styles.chipSelected]}
-                onPress={() => { setSelectedOverlay(isSel ? null : opt.value); setSelectedScope(null); }}
+                onPress={() => setFoodPref(opt.value)}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSel }}
               >
                 <Text style={[styles.chipText, isSel && styles.chipTextSelected]}>{opt.label}</Text>
               </Pressable>
@@ -105,36 +139,45 @@ export default function REStep7() {
           })}
         </View>
 
-        {selectedOverlay && allowsScope && (
-          <View style={styles.scopeSection}>
-            <Text style={styles.sectionLabel}>This goal is for…</Text>
-            {SCOPE_OPTIONS.map((s) => {
-              const isSel = selectedScope === s.value;
-              return (
-                <Pressable
-                  key={s.value}
-                  style={[styles.scopeCard, isSel && styles.scopeCardSelected]}
-                  onPress={() => setSelectedScope(s.value)}
-                >
-                  {isSel && <Text style={styles.scopeCheck}>✓</Text>}
-                  <Text style={[styles.scopeLabel, isSel && styles.scopeLabelSelected]}>{s.label}</Text>
-                  <Text style={styles.scopeDesc}>{s.description}</Text>
-                </Pressable>
-              );
-            })}
+        {isNonVeg && (
+          <View style={styles.nonvegSection}>
+            <Text style={styles.sectionLabel}>How often do you eat non-veg?</Text>
+            <View style={styles.chipRow}>
+              {NONVEG_FREQ_OPTIONS.map((f) => {
+                const isSel = nonvegFreq === f.value;
+                return (
+                  <Pressable key={f.value} style={[styles.chip, isSel && styles.chipSelected]} onPress={() => setNonvegFreq(f.value)}>
+                    <Text style={[styles.chipText, isSel && styles.chipTextSelected]}>{f.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
+
+            <Text style={styles.sectionLabel}>Which proteins do you eat?</Text>
+            <View style={styles.chipRow}>
+              {PROTEIN_OPTIONS.map((p) => {
+                const isSel = proteins.includes(p.value);
+                return (
+                  <Pressable key={p.value} style={[styles.chip, isSel && styles.chipSelected]} onPress={() => toggleProtein(p.value)}>
+                    <Text style={[styles.chipText, isSel && styles.chipTextSelected]}>{p.label}</Text>
+                  </Pressable>
+                );
+              })}
+            </View>
           </View>
         )}
 
-        <Pressable style={styles.skipButton} onPress={handleSkip} disabled={saving}>
-          <Text style={styles.skipText}>No health goals right now →</Text>
-        </Pressable>
+        <AcknowledgementBubble message={ackMessage} visible={foodPref !== null} />
+        <View style={styles.personaWrap}>
+          <PersonaCard tags={tags} />
+        </View>
       </ScrollView>
     </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.lg },
+  chipRow: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm },
   chip: {
     paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm + 2,
     borderRadius: BORDER_RADIUS.full ?? 999, borderWidth: 1.5, borderColor: COLORS.border,
@@ -143,20 +186,7 @@ const styles = StyleSheet.create({
   chipSelected: { borderColor: COLORS.primary, backgroundColor: `${COLORS.primary}10` },
   chipText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '500' },
   chipTextSelected: { color: COLORS.primary, fontWeight: '700' },
-  scopeSection: { gap: SPACING.sm, marginBottom: SPACING.lg },
-  sectionLabel: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary },
-  scopeCard: {
-    backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 2, borderColor: COLORS.border, padding: SPACING.md, gap: 4,
-  },
-  scopeCardSelected: { borderColor: COLORS.primary, backgroundColor: `${COLORS.primary}0F` },
-  scopeCheck: {
-    position: 'absolute', top: SPACING.sm, right: SPACING.sm,
-    fontSize: 14, color: COLORS.primary, fontWeight: '700',
-  },
-  scopeLabel: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  scopeLabelSelected: { color: COLORS.primary },
-  scopeDesc: { fontSize: 12, color: COLORS.textSecondary, lineHeight: 16 },
-  skipButton: { alignItems: 'center', paddingVertical: SPACING.lg, marginBottom: SPACING.xl },
-  skipText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500' },
+  nonvegSection: { gap: SPACING.sm, marginTop: SPACING.md },
+  sectionLabel: { fontSize: 14, fontWeight: '600', color: COLORS.textSecondary, marginTop: SPACING.md },
+  personaWrap: { marginTop: SPACING.lg, paddingBottom: SPACING.xl },
 });
