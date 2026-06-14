@@ -9,6 +9,7 @@ import {
 import {
   fetchDishAffinities,
   fetchRecentAcceptDates,
+  fetchClassAffinities,
   clampHistoryModifier,
   computeVarietyPenalty,
   isOnCooldown,
@@ -100,6 +101,7 @@ export function isDietCompatible(dishDietType: string, userFoodPref: string): bo
  * @param {boolean} isWeekend        - Whether the day is a weekend.
  * @param {number}  historyModifier  - Clamped affinity score from re_user_dish_affinity.
  * @param {number}  varietyPenalty   - 0 or -0.30 from computeVarietyPenalty.
+ * @param {number}  [classAffinity]  - Behavioral class-affinity score (DOC-19 class_affinity, clamped -0.30..+0.35).
  * @param {number}  [seed]           - Optional deterministic random (for tests).
  * @returns {number} Final score (higher is better).
  */
@@ -109,6 +111,7 @@ export function computeDishScore(
   isWeekend: boolean,
   historyModifier: number = 0,
   varietyPenalty: number = 0,
+  classAffinity: number = 0,
   seed?: number,
 ): number {
   const base = 1.0;
@@ -119,8 +122,11 @@ export function computeDishScore(
     ? 0.05
     : 0.0;
 
+  // DOC-19 class_affinity: behavioral preference for the meal class (from swipes/locks).
+  const classScore = Math.max(-0.30, Math.min(+0.35, classAffinity));
+
   const random = seed !== undefined ? seed : Math.random() * 0.10;
-  return base + regionScore + daySlotBoost + historyModifier + varietyPenalty + random;
+  return base + regionScore + daySlotBoost + classScore + historyModifier + varietyPenalty + random;
 }
 
 // ── Internal DB types ─────────────────────────────────────────────────────────
@@ -174,6 +180,7 @@ export async function expandClassToDishes(
   affinities: REDishAffinityMap = {},
   recentDates: Record<string, string> = {},
   today: string = new Date().toISOString().slice(0, 10),
+  classAffinity: number = 0,
   topN: number = TOP_DISHES_PER_SLOT,
 ): Promise<RESlotDishCandidates> {
   const { data, error } = await supabaseRE
@@ -201,7 +208,7 @@ export async function expandClassToDishes(
         dishName: r.dish_name,
         dietType: r.diet_type,
         regionRelevance: r.region_relevance,
-        score: computeDishScore(r.region_relevance, regionArchetype, isWeekend, history, variety),
+        score: computeDishScore(r.region_relevance, regionArchetype, isWeekend, history, variety, classAffinity),
       };
     })
     .sort((a, b) => b.score - a.score)
@@ -283,10 +290,12 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
 
     // Affinities loaded lazily — empty map if user has no history yet (cold start)
     const todayISO = new Date().toISOString().slice(0, 10);
-    const [affinityMap, recentDates] = await Promise.all([
-      fetchDishAffinities(userId, []),   // batch by class below — placeholder, per-class below
+    const slotClassCodes = SLOTS.map((s) => s.classCode).filter((c): c is string => !!c);
+    const [affinityMap, recentDates, classAffinityMap] = await Promise.all([
+      fetchDishAffinities(userId, []),
       fetchRecentAcceptDates(userId, []),
-    ]).catch(() => [{}, {}] as [Record<string, never>, Record<string, never>]);
+      fetchClassAffinities(userId, slotClassCodes),
+    ]).catch(() => [{}, {}, {}] as [Record<string, never>, Record<string, never>, Record<string, never>]);
 
     const results = await Promise.all(
       SLOTS.map(async ({ classCode, display }) => {
@@ -300,6 +309,7 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
           affinityMap,
           recentDates,
           todayISO,
+          (classAffinityMap as Record<string, number>)[classCode] ?? 0,
         );
       }),
     );

@@ -80,8 +80,8 @@ describeIfRE('RE module: re-dish-expander.repository (pure)', () => {
 
   it('cold-start dish score falls within the expected band', () => {
     // No history, no variety penalty, seed=0 → pure base + region/day boosts.
-    const minScore = computeDishScore('unknown region', 'SOUTH_RICE', false, 0, 0, 0);
-    const maxScore = computeDishScore('south kerala weekend', 'SOUTH_RICE', true, 0, 0, 0.10);
+    const minScore = computeDishScore('unknown region', 'SOUTH_RICE', false, 0, 0, 0, 0);
+    const maxScore = computeDishScore('south kerala weekend', 'SOUTH_RICE', true, 0, 0, 0, 0.10);
     expect(minScore).toBeGreaterThanOrEqual(GATES.COLD_START_SCORE_MIN);
     expect(maxScore).toBeLessThanOrEqual(GATES.COLD_START_SCORE_MAX);
   });

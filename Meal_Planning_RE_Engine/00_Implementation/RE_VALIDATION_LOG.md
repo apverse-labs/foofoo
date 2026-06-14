@@ -316,3 +316,47 @@ Query across all 12 primary/secondary/tertiary class columns of `re_weekly_class
 - [~] explanation tags (minor build)
 
 **PACK 6: PASS (faithful to v3 data). 6 backlog items — all are forward builds, none are cheap data fixes, so deferred under validate-all-first mode.**
+
+---
+
+## PACK 7 — BUILD-07: Feedback Learning Loop ⚠️ 1 DEFECT FOUND → FIX APPLIED (code-only)
+
+**Binary doc read:** DOC-21 (Feedback_Learning_Loop). Signal table, learning targets, update-frequency rules, pseudocode all extracted.
+
+**DB tables present (SCHEMA-RE-004):**
+
+| Table | Cols | Role | |
+|---|---|---|---|
+| re_user_feedback | 8 | raw event log | ✅ |
+| re_user_dish_affinity | 11 | materialized dish scores + is_never + not_today_until | ✅ |
+| re_user_class_affinity | 6 | class-level scores | ✅ |
+
+**Code audit — `re-feedback.repository.ts` (`recordFeedback`):**
+- Signal weights map (LOCK +0.40 … NOT_TODAY −0.30) ✅ matches DOC-21 §5 intensity ordering.
+- NEVER → `is_never=true` hard exclude; NEVER_REMOVE → false. ✅ (DOC-21 §8 pseudocode)
+- NOT_TODAY → 3-day cooldown via `computeNotTodayExpiry` ✅ (DOC-21 pseudocode days=3)
+- Dish affinity cumulative weighted sum, clamped −0.30..+0.40 ✅
+- **Class affinity** propagated for LOCK/ACCEPT/VIEW/SWIPE_PAST into `re_user_class_affinity` ✅ (DOC-21 §10 acceptance: "Learning updates class-level preferences, not only dish-level")
+- Raw event log append ✅; real-time update ✅ (DOC-21 §7).
+
+**DEFECT FOUND — class-level learning loop was HALF-OPEN:**
+`re_user_class_affinity` and `fetchClassAffinities()` were referenced ONLY inside re-feedback.repository.ts. The dish expander (`re-dish-expander.repository.ts`) imported `fetchDishAffinities` and `fetchRecentAcceptDates` but NOT `fetchClassAffinities`, and `computeDishScore` had no `class_affinity` term. Net effect: class-level feedback was faithfully RECORDED but had ZERO influence on recommendations — directly contradicting DOC-21 §10 and DOC-19's `class_affinity` (+0.10..+0.35) scoring component.
+
+**Correction applied (code-only — tables already exist, no migration):**
+- `re-dish-expander.repository.ts`: imported `fetchClassAffinities`; `fetchTodayDishCandidates` now batch-loads class affinities for the day's slot classes and passes each class's score into expansion.
+- `computeDishScore` gained a `classAffinity` parameter (clamped −0.30..+0.35) added to the final score. The class-level learning loop is now CLOSED — swipe/lock behavior on a class measurably boosts/demotes that class's dishes in future plans.
+- Unit tests updated to the new signature; 2 new tests added (class-affinity applied + clamped). **re-dish-expander: 30/30 pass; re-feedback: 19/19 pass.**
+
+**Backlog (forward builds):**
+- Food DNA preference vector (DOC-21 §6) — no DNA data in v3 (shared with PACK 6).
+- Repeat-tolerance / cuisine-drift / cook-complexity-tolerance vectors (DOC-21 §6) — V2+ personalization, not V1.
+- "Search/add dish" explicit-intent signal (DOC-21 §5) — minor signal type not yet wired.
+
+**Exit criteria:**
+- [x] NEVER hard-excludes; NOT_TODAY 3-day cooldown (behave differently) ✅
+- [x] class-level preferences learned AND now applied to scoring (loop closed) ✅
+- [x] dish affinity + variety + history modifiers feed scoring ✅
+- [x] revealed behavior can override priors (history + class affinity in score) ✅
+- [~] DNA / repeat-tolerance / drift vectors (V2+ backlog)
+
+**PACK 7: PASS (after code-only fix closing the class-affinity loop). 3 backlog items (V2+).**
