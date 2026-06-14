@@ -1,6 +1,7 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useEffect, useState } from 'react';
 import { COLORS, SPACING, BORDER_RADIUS, APP_NAME } from '../../src/config/constants';
 
 /**
@@ -17,12 +18,19 @@ import { COLORS, SPACING, BORDER_RADIUS, APP_NAME } from '../../src/config/const
 export default function AuthGate() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
+  // useSafeAreaInsets() returns 0 on the server and real values on the client.
+  // Applying insets before mount causes React hydration error #418 on Expo Web.
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => { setMounted(true); }, []);
+
+  const paddingTop = mounted ? insets.top + SPACING.xxl : SPACING.xxl;
+  const paddingBottom = mounted ? insets.bottom + SPACING.xl : SPACING.xl;
 
   return (
     <View
       style={[
         styles.container,
-        { paddingTop: insets.top + SPACING.xxl, paddingBottom: insets.bottom + SPACING.xl },
+        { paddingTop, paddingBottom },
       ]}
     >
       <View style={styles.logoSection}>
