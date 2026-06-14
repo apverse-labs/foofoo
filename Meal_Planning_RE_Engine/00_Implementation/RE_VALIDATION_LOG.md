@@ -405,3 +405,46 @@ After fix: **`tsc --noEmit` exits 0** (whole foofoo app type-clean).
 - [~] DOC-23 structured validation error codes (backlog — no REST layer yet)
 
 **PACK 8: PASS (after code-only fixes: 2 boundary reroutes + 2 TS bug fixes).**
+
+---
+
+## PACK 9 — BUILD-09: Admin CMS & Data Operations / Governance ⚠️ 2 COLUMN BUGS → FIXED (code-only)
+
+**Binary docs read:** DOC-27 (Admin_CMS_Data_Operations), DOC-28 (Versioning_Governance_Changelog).
+
+**DB:** `re_taxonomy_releases` (SCHEMA-RE-005) present — taxonomy release audit log with version_from/to, changed_entities, risk_level, qa_status, approved_by, rollback_plan, released_at. SELECT-only RLS for authenticated; writes require service role. ✅
+
+**Code audit — `re-admin.repository.ts` (DOC-27):**
+- Pure QA helpers: `detectClassesWithNoDishes`, `detectAddonOnlyAsPrimary`, `isDietTagConsistent` — match DOC-27 §7 data-quality alerts. ✅
+- `runTaxonomyQAChecks()` — runs the §7 checks against live DB.
+- `createTaxonomyRelease()` / `fetchTaxonomyReleases()` / `fetchActiveTaxonomyVersion()` — DOC-27 §6 tagging workflow + DOC-28 release records. ✅
+
+**Code audit — `re-governance.service.ts` (DOC-28):**
+- `parseSemver`, `bumpVersion`, `classifyVersionBump`, `riskLevelForBump` — implement DOC-28 §5 semantic release rules (patch/minor/major) and risk mapping. ✅
+
+**DEFECT FOUND — 2 column-name bugs that made `runTaxonomyQAChecks()` always throw:**
+1. Queried `re_meal_classes.allowed_as_weekly_primary_v3` — actual column is `allowed_as_weekly_primary` (no `_v3`).
+2. Queried `re_weekly_class_plans.breakfast_class/lunch_class/snack_class/dinner_class` — those `_class` columns live on `re_user_weekly_plans`; the reference table's columns are `*_primary_class`.
+Both produce a Supabase column error → the entire QA function throws → admin QA was non-functional.
+
+**Fix (code-only):**
+- `allowed_as_weekly_primary_v3` → `allowed_as_weekly_primary` (select + filter).
+- `*_class` → `*_primary_class` (select + column loop).
+
+**Live-DB verification of the corrected checks (run via SQL):**
+- Classes with zero dish options → **0** (131/131 have dishes, per PACK 6). ✅
+- Add-on-only (allowed_as_weekly_primary=false) classes used as PRIMARY in weekly plans → **0**. ✅
+So the corrected `runTaxonomyQAChecks()` now returns `passedAllChecks=true` against live staging data.
+
+**Validation:** admin + governance unit suites **28/28 pass**; `tsc --noEmit` exits 0.
+
+**Backlog:** Admin CMS UI (DOC-27 manager roles: Meal Class / Dish Catalog / Food DNA Tagger / etc.) — the repository + governance logic exist; no admin-facing screens built. Non-engineer editing workflow is a forward UI build.
+
+**Exit criteria:**
+- [x] DOC-27 §7 data-quality checks implemented and now functional (column bugs fixed) ✅
+- [x] checks pass against live staging data (0 / 0) ✅
+- [x] taxonomy release records + semantic versioning (DOC-28) implemented ✅
+- [x] no new enum/IDs created in app code (governance respected) ✅
+- [~] Admin CMS UI screens (backlog — repo/logic ready)
+
+**PACK 9: PASS (after code-only fix of 2 column-name bugs in QA checks).**

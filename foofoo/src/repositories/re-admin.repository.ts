@@ -118,13 +118,13 @@ export async function runTaxonomyQAChecks(): Promise<TaxonomyQAReport> {
     // Fetch all meal classes
     const { data: classData, error: classErr } = await supabaseRE
       .from('re_meal_classes')
-      .select('meal_class_code, allowed_as_weekly_primary_v3');
+      .select('meal_class_code, allowed_as_weekly_primary');
     if (classErr) throw classErr;
 
     const allClassCodes = (classData ?? []).map((r: { meal_class_code: string }) => r.meal_class_code);
     const addonOnlyCodes = new Set(
       (classData ?? [])
-        .filter((r: { allowed_as_weekly_primary_v3: boolean }) => !r.allowed_as_weekly_primary_v3)
+        .filter((r: { allowed_as_weekly_primary: boolean }) => !r.allowed_as_weekly_primary)
         .map((r: { meal_class_code: string }) => r.meal_class_code),
     );
 
@@ -142,12 +142,12 @@ export async function runTaxonomyQAChecks(): Promise<TaxonomyQAReport> {
     // Fetch class codes currently used as primary in weekly plans
     const { data: planData, error: planErr } = await supabaseRE
       .from('re_weekly_class_plans')
-      .select('breakfast_class, lunch_class, snack_class, dinner_class');
+      .select('breakfast_primary_class, lunch_primary_class, snack_primary_class, dinner_primary_class');
     if (planErr) throw planErr;
 
     const primaryInPlans = new Set<string>();
     for (const row of (planData ?? []) as Record<string, string | null>[]) {
-      for (const col of ['breakfast_class', 'lunch_class', 'snack_class', 'dinner_class']) {
+      for (const col of ['breakfast_primary_class', 'lunch_primary_class', 'snack_primary_class', 'dinner_primary_class']) {
         if (row[col]) primaryInPlans.add(row[col] as string);
       }
     }
