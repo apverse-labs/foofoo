@@ -1,11 +1,13 @@
 import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../src/services/supabase';
+import { supabaseRE } from '../../src/services/supabase-re';
 import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
 import {
   fetchREHouseholdProfile, saveREHouseholdMembers,
 } from '../../src/repositories/re-onboarding.repository';
+import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
+import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
@@ -53,24 +55,36 @@ export default function REStep4() {
   useEffect(() => {
     PostHogService.screen('re_onboarding_step_4');
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace('/(auth)/sign-in' as never); return; }
-      setUserId(user.id);
+      try {
+        const { data: { user } } = await supabaseRE.auth.getUser();
+        if (!user) { router.replace('/(auth)/sign-in' as never); return; }
+        setUserId(user.id);
 
-      const profile = await fetchREHouseholdProfile(user.id);
-      const subCohortId = profile?.sub_cohort_id ?? '';
-      const config = MEMBER_CONFIG_BY_SUBCOHORT[subCohortId] ?? null;
+        const profile = await fetchREHouseholdProfile(user.id);
+        const subCohortId = profile?.sub_cohort_id ?? '';
+        const config = MEMBER_CONFIG_BY_SUBCOHORT[subCohortId] ?? null;
 
-      if (!config) {
-        router.replace('/(re-onboarding)/re-step-5' as never);
-        return;
+        if (!config) {
+          router.replace('/(re-onboarding)/re-step-5' as never);
+          return;
+        }
+        setMemberConfig(config);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'unknown';
+        Logger.error('RE_STEP4', 'init failed', { error: message });
       }
-      setMemberConfig(config);
     })();
   }, []);
 
   const needsAgeBand = (memberConfig?.ageBands?.length ?? 0) > 0;
   const isValid = !needsAgeBand || selectedAgeBand !== null;
+
+  const ackMessage = isValid && memberConfig
+    ? 'Got it — I\'ll make sure their needs are covered, without changing your family\'s main meals.'
+    : '';
+  const tags: PersonaTag[] = isValid && memberConfig
+    ? [{ emoji: '🍽️', label: memberConfig.label }]
+    : [];
 
   const handleNext = async () => {
     if (!isValid || saving || !memberConfig) return;
@@ -86,7 +100,9 @@ export default function REStep4() {
         'Age band': selectedAgeBand ?? 'n/a',
       });
       router.replace('/(re-onboarding)/re-step-5' as never);
-    } catch {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'unknown';
+      Logger.error('RE_STEP4', 'save failed', { error: message, userId });
       Alert.alert('Save failed', 'Could not save household member. Please try again.');
     } finally {
       setSaving(false);
@@ -98,8 +114,8 @@ export default function REStep4() {
   return (
     <OnboardingLayout
       step={4}
-      title={`Tell us about the ${memberConfig.label.toLowerCase()}`}
-      subtitle="This helps us add a separate component to meals that suits their needs."
+      title="I noticed you mentioned someone special."
+      subtitle="This helps me add the right side dishes for them."
       onNext={handleNext}
       onBack={() => router.replace('/(re-onboarding)/re-step-3' as never)}
       nextDisabled={!isValid || saving}
@@ -133,6 +149,11 @@ export default function REStep4() {
             </>
           )}
         </View>
+
+        <AcknowledgementBubble message={ackMessage} visible={isValid} />
+        <View style={styles.personaWrap}>
+          <PersonaCard tags={tags} />
+        </View>
       </ScrollView>
     </OnboardingLayout>
   );
@@ -155,4 +176,5 @@ const styles = StyleSheet.create({
   bandChipSelected: { borderColor: COLORS.primary, backgroundColor: `${COLORS.primary}10` },
   bandText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '500' },
   bandTextSelected: { color: COLORS.primary, fontWeight: '700' },
+  personaWrap: { marginTop: SPACING.lg, paddingBottom: SPACING.xl },
 });

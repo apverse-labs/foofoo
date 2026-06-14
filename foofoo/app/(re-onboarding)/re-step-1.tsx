@@ -4,10 +4,12 @@ import {
   Modal, FlatList, ActivityIndicator, Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../src/services/supabase';
+import { supabaseRE } from '../../src/services/supabase-re';
 import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
 import { fetchREStates, saveRELocation } from '../../src/repositories/re-onboarding.repository';
-import { fetchProfile } from '../../src/repositories/profiles.repository';
+import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
+import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
+import { STATE_TIER_CITIES } from '../../src/config/re-city-constants';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
@@ -15,11 +17,10 @@ import { PostHogService } from '../../src/services/posthog.service';
 import type { REState } from '../../src/types';
 
 /**
- * @summary RE Onboarding Step 1 — Home state and current city.
+ * @summary RE Onboarding Step 1 — "Where's home?" (conversational redesign).
  *
- * @description Loads state options from re_states (staging) — not from the
- *   hardcoded INDIAN_STATES list — so new signups write the canonical RE state name.
- *   City is free text for now; BUILD-03 resolves it to a destination group code.
+ * @description Captures home state (picker modal) + current city (free text).
+ *   On completion shows a FooFoo acknowledgement bubble and seeds the persona card.
  */
 export default function REStep1() {
   const router = useRouter();
@@ -34,38 +35,58 @@ export default function REStep1() {
   useEffect(() => {
     PostHogService.screen('re_onboarding_step_1');
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace('/(auth)/sign-in' as never); return; }
-      setUserId(user.id);
-
-      const [profile, reStates] = await Promise.all([
-        fetchProfile(user.id),
-        fetchREStates(),
-      ]);
-
-      if (profile) {
-        setCity(profile.current_city ?? '');
-        setSelectedState(profile.home_state ?? '');
+      try {
+        const { data: { user } } = await supabaseRE.auth.getUser();
+        if (!user) { router.replace('/(auth)/sign-in' as never); return; }
+        setUserId(user.id);
+        const reStates = await fetchREStates();
+        setStates(reStates);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'unknown';
+        Logger.error('RE_STEP1', 'init failed', { error: message });
+      } finally {
+        setLoadingStates(false);
       }
-      setStates(reStates);
-      setLoadingStates(false);
     })();
   }, []);
 
-  const isValid = city.trim().length > 0 && selectedState.length > 0;
+  const trimmedCity = city.trim();
+  const isValid = trimmedCity.length > 0 && selectedState.length > 0;
+
+  const isHomeTurf = (): boolean => {
+    const stateRow = states.find((s) => s.state_ut === selectedState);
+    const normCity = trimmedCity.toLowerCase();
+    const normState = selectedState.toLowerCase();
+    if (normState.includes(normCity) || normCity.includes(normState)) return true;
+    const tiers = stateRow ? STATE_TIER_CITIES[stateRow.state_id] : undefined;
+    if (!tiers) return false;
+    return tiers.t1.includes(normCity) || tiers.t2.includes(normCity);
+  };
+
+  const ackMessage = isValid
+    ? (isHomeTurf()
+        ? `Home turf! ${selectedState} food is in your DNA. 🏠`
+        : `${selectedState} roots, ${trimmedCity} life. Classic blend. I'll honor both. 🌆`)
+    : '';
+
+  const tags: PersonaTag[] = isValid
+    ? [{ emoji: '🏠', label: selectedState }, { emoji: '🌆', label: trimmedCity }]
+    : [];
 
   const handleNext = async () => {
     if (!isValid || saving) return;
     setSaving(true);
     try {
-      await saveRELocation(userId, selectedState, city.trim());
+      await saveRELocation(userId, selectedState, trimmedCity);
       Logger.info('RE_STEP1', 'location saved', { userId, state: selectedState });
       await UserJourneyLogger.logOnboardingStep(userId, 1, 'RE Location', {
         State: selectedState,
-        City: city.trim(),
+        City: trimmedCity,
       });
       router.replace('/(re-onboarding)/re-step-2' as never);
-    } catch {
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'unknown';
+      Logger.error('RE_STEP1', 'save failed', { error: message, userId });
       Alert.alert('Save failed', 'Could not save your location. Please try again.');
     } finally {
       setSaving(false);
@@ -75,8 +96,8 @@ export default function REStep1() {
   return (
     <OnboardingLayout
       step={1}
-      title="Where are you from?"
-      subtitle="Your home state shapes your food identity. Your city adds a lifestyle layer."
+      title="Let's start with the basics."
+      subtitle="Where you're from shapes your food identity."
       onNext={handleNext}
       nextDisabled={!isValid || saving}
       nextLabel={saving ? 'Saving…' : 'Next'}
@@ -100,7 +121,7 @@ export default function REStep1() {
           }
         </Pressable>
 
-        <Text style={styles.label}>Current City</Text>
+        <Text style={styles.label}>Where do you live now?</Text>
         <TextInput
           style={styles.input}
           value={city}
@@ -110,6 +131,11 @@ export default function REStep1() {
           autoCapitalize="words"
           returnKeyType="done"
         />
+      </View>
+
+      <AcknowledgementBubble message={ackMessage} visible={isValid} />
+      <View style={styles.personaWrap}>
+        <PersonaCard tags={tags} />
       </View>
 
       <Modal visible={statePickerOpen} animationType="slide" onRequestClose={() => setStatePickerOpen(false)}>
@@ -157,6 +183,7 @@ const styles = StyleSheet.create({
   pickerText: { fontSize: 16, color: COLORS.textPrimary },
   pickerPlaceholder: { fontSize: 16, color: COLORS.textSecondary },
   chevron: { fontSize: 20, color: COLORS.textSecondary },
+  personaWrap: { marginTop: SPACING.lg },
   modalContainer: { flex: 1, backgroundColor: COLORS.background },
   modalHeader: {
     flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center',
