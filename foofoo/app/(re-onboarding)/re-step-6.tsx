@@ -1,68 +1,78 @@
 import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../src/services/supabase';
+import { supabaseRE } from '../../src/services/supabase-re';
 import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
-import {
-  saveRECookDependency, fetchREHouseholdProfile,
-} from '../../src/repositories/re-onboarding.repository';
+import { saveREHealthOverlay } from '../../src/repositories/re-onboarding.repository';
+import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
+import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
 import { PostHogService } from '../../src/services/posthog.service';
-import type { CookDependency } from '../../src/types';
+import type { HealthOverlayCode, HealthScope } from '../../src/types';
 
-interface CookOption {
-  value: CookDependency;
-  emoji: string;
-  label: string;
-  description: string;
-}
+interface HealthOption { value: HealthOverlayCode; emoji: string; label: string; }
 
-const COOK_OPTIONS: CookOption[] = [
-  { value: 'self_cook',           emoji: '🧑‍🍳', label: 'I cook myself',                    description: 'You plan and cook — full flexibility' },
-  { value: 'skilled_cook',        emoji: '👨‍🍳', label: 'Skilled cook / knows recipes',       description: 'Cook knows dishes, needs a list' },
-  { value: 'cook_needs_instruction', emoji: '📋', label: 'Cook needs step-by-step instructions', description: 'Simpler dishes, detailed guidance' },
-  { value: 'maid_simple',         emoji: '🧹', label: 'Maid / helper — simple dishes only',  description: 'Basic, repeat-friendly recipes' },
-  { value: 'tiffin_pg_no_kitchen', emoji: '🥡', label: 'Tiffin / PG / hostel',               description: 'No kitchen — planning meals to order' },
-  { value: 'delivery_heavy',      emoji: '🛵', label: 'Mostly delivery + occasional home',   description: 'Mixed home and ordered meals' },
+const HEALTH_OPTIONS: HealthOption[] = [
+  { value: 'weight_loss',          emoji: '⚖️', label: 'Weight management' },
+  { value: 'high_protein_fitness', emoji: '💪', label: 'High protein / fitness' },
+  { value: 'veg_protein_seeker',   emoji: '🌱', label: 'Vegetarian protein' },
+  { value: 'diabetic_management',  emoji: '🩺', label: 'Diabetic / low GI' },
+  { value: 'hypertension_heart',   emoji: '❤️', label: 'Heart / BP conscious' },
+  { value: 'fasting_ritual',       emoji: '🙏', label: 'Fasting / ritual diet' },
+  { value: 'pregnancy_support',    emoji: '🤰', label: 'Pregnancy support' },
+  { value: 'postpartum_lactation', emoji: '👶', label: 'Postpartum / lactation' },
 ];
 
 /**
- * @summary RE Onboarding Step 6 — Cooking system / cook dependency.
+ * @summary RE Onboarding Step 6 — "Any food goals right now?" (skippable).
  *
- * @description Selection written to re_user_household_profiles.cook_dependency.
- *   Influences meal complexity, instruction depth, and class pool in BUILD-04.
+ * @description Single-select health overlay; saves to
+ *   re_user_household_profiles.health_overlay_code (scope null). Skippable.
  */
 export default function REStep6() {
   const router = useRouter();
   const [userId, setUserId] = useState('');
-  const [selected, setSelected] = useState<CookDependency | null>(null);
+  const [selected, setSelected] = useState<HealthOverlayCode | null>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
     PostHogService.screen('re_onboarding_step_6');
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { router.replace('/(auth)/sign-in' as never); return; }
-      setUserId(user.id);
-      const profile = await fetchREHouseholdProfile(user.id);
-      if (profile?.cook_dependency) setSelected(profile.cook_dependency);
+      try {
+        const { data: { user } } = await supabaseRE.auth.getUser();
+        if (!user) { router.replace('/(auth)/sign-in' as never); return; }
+        setUserId(user.id);
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : 'unknown';
+        Logger.error('RE_STEP6', 'init failed', { error: message });
+      }
     })();
   }, []);
 
-  const handleNext = async () => {
-    if (!selected || saving) return;
+  const selectedOption = HEALTH_OPTIONS.find((o) => o.value === selected) ?? null;
+  const ackMessage = selectedOption
+    ? `I'll keep ${selectedOption.label} in mind. It'll shape your meal suggestions quietly, without making everything feel like a diet plan.`
+    : '';
+  const tags: PersonaTag[] = selectedOption
+    ? [{ emoji: selectedOption.emoji, label: selectedOption.label }]
+    : [];
+
+  const handleSave = async (overlay: HealthOverlayCode | null) => {
+    if (saving) return;
     setSaving(true);
     try {
-      await saveRECookDependency(userId, selected);
-      Logger.info('RE_STEP6', 'cook dependency saved', { userId, cookDependency: selected });
-      await UserJourneyLogger.logOnboardingStep(userId, 6, 'RE Cooking System', {
-        'Cook type': selected,
+      await saveREHealthOverlay(userId, overlay, null);
+      Logger.info('RE_STEP6', 'health overlay saved', { userId, overlay });
+      await UserJourneyLogger.logOnboardingStep(userId, 6, 'RE Health Overlay', {
+        'Overlay': overlay ?? 'none',
       });
       router.replace('/(re-onboarding)/re-step-7' as never);
-    } catch {
-      Alert.alert('Save failed', 'Could not save your cooking setup. Please try again.');
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'unknown';
+      Logger.error('RE_STEP6', 'save failed', { error: message, userId });
+      Alert.alert('Save failed', 'Could not save health preference. Please try again.');
     } finally {
       setSaving(false);
     }
@@ -71,59 +81,60 @@ export default function REStep6() {
   return (
     <OnboardingLayout
       step={6}
-      title="How does cooking work in your home?"
-      subtitle="This shapes how detailed and flexible your meal plan will be."
-      onNext={handleNext}
+      title="Last question — promise."
+      subtitle="This is optional but helps a lot."
+      onNext={() => handleSave(selected)}
       onBack={() => router.replace('/(re-onboarding)/re-step-5' as never)}
-      nextDisabled={!selected || saving}
+      nextDisabled={saving}
       nextLabel={saving ? 'Saving…' : 'Next'}
     >
       <ScrollView showsVerticalScrollIndicator={false}>
-        <View style={styles.cardList}>
-          {COOK_OPTIONS.map((opt) => {
-            const isSelected = selected === opt.value;
+        <View style={styles.chipGrid}>
+          {HEALTH_OPTIONS.map((opt) => {
+            const isSel = selected === opt.value;
             return (
               <Pressable
                 key={opt.value}
-                style={[styles.card, isSelected && styles.cardSelected]}
-                onPress={() => setSelected(opt.value)}
+                style={[styles.chip, isSel && styles.chipSelected]}
+                onPress={() => setSelected(isSel ? null : opt.value)}
                 accessibilityRole="radio"
-                accessibilityState={{ selected: isSelected }}
+                accessibilityState={{ selected: isSel }}
               >
-                {isSelected && <Text style={styles.checkmark}>✓</Text>}
-                <View style={styles.cardContent}>
-                  <Text style={styles.emoji}>{opt.emoji}</Text>
-                  <View style={styles.cardText}>
-                    <Text style={[styles.cardLabel, isSelected && styles.cardLabelSelected]}>
-                      {opt.label}
-                    </Text>
-                    <Text style={styles.cardDesc}>{opt.description}</Text>
-                  </View>
-                </View>
+                <Text style={styles.chipEmoji}>{opt.emoji}</Text>
+                <Text style={[styles.chipText, isSel && styles.chipTextSelected]}>{opt.label}</Text>
               </Pressable>
             );
           })}
         </View>
+
+        <AcknowledgementBubble message={ackMessage} visible={selected !== null} />
+        {selected !== null && (
+          <View style={styles.personaWrap}>
+            <PersonaCard tags={tags} />
+          </View>
+        )}
+
+        <Pressable style={styles.skipButton} onPress={() => handleSave(null)} disabled={saving}>
+          <Text style={styles.skipText}>No goals right now →</Text>
+        </Pressable>
       </ScrollView>
     </OnboardingLayout>
   );
 }
 
 const styles = StyleSheet.create({
-  cardList: { gap: SPACING.md, paddingBottom: SPACING.xl },
-  card: {
-    backgroundColor: COLORS.surface, borderRadius: BORDER_RADIUS.lg,
-    borderWidth: 2, borderColor: COLORS.border, padding: SPACING.md,
+  chipGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: SPACING.sm, marginBottom: SPACING.lg },
+  chip: {
+    flexDirection: 'row', alignItems: 'center', gap: SPACING.xs,
+    paddingHorizontal: SPACING.md, paddingVertical: SPACING.sm + 2,
+    borderRadius: BORDER_RADIUS.full ?? 999, borderWidth: 1.5, borderColor: COLORS.border,
+    backgroundColor: COLORS.surface,
   },
-  cardSelected: { borderColor: COLORS.primary, backgroundColor: `${COLORS.primary}0F` },
-  checkmark: {
-    position: 'absolute', top: SPACING.sm, right: SPACING.sm,
-    fontSize: 14, color: COLORS.primary, fontWeight: '700',
-  },
-  cardContent: { flexDirection: 'row', alignItems: 'center', gap: SPACING.md },
-  emoji: { fontSize: 28 },
-  cardText: { flex: 1 },
-  cardLabel: { fontSize: 15, fontWeight: '700', color: COLORS.textPrimary },
-  cardLabelSelected: { color: COLORS.primary },
-  cardDesc: { fontSize: 12, color: COLORS.textSecondary, marginTop: 2, lineHeight: 16 },
+  chipSelected: { borderColor: COLORS.primary, backgroundColor: `${COLORS.primary}10` },
+  chipEmoji: { fontSize: 16 },
+  chipText: { fontSize: 14, color: COLORS.textPrimary, fontWeight: '500' },
+  chipTextSelected: { color: COLORS.primary, fontWeight: '700' },
+  personaWrap: { marginTop: SPACING.lg },
+  skipButton: { alignItems: 'center', paddingVertical: SPACING.lg, marginTop: SPACING.md, marginBottom: SPACING.xl },
+  skipText: { fontSize: 14, color: COLORS.textSecondary, fontWeight: '500' },
 });
