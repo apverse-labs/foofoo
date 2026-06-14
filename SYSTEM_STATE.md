@@ -1,5 +1,5 @@
 # SYSTEM STATE LEDGER (v2.0)
-> Last updated: 2026-06-05
+> Last updated: 2026-06-14
 > Maintained by: Lead Systems & Release Architect (Claude)
 > Rules: See CLAUDE.md § Architect Rules
 
@@ -20,11 +20,11 @@
 > ⚠️ **Supabase Free Tier Limit: 2 active projects max**
 
 ### DEP-STAGING (Project A — Supabase Staging)
-- **Project Ref:** `[PENDING — create Project A on Supabase free tier before activating staging]`
-- **Code Base / Checkpoint:** CKPT-001
+- **Project Ref:** `kwypxyqxojauhiehuirz` (foofoo-staging, ap-south-1)
+- **Code Base / Checkpoint:** CKPT-001 + RE BUILD-01 (apverse-labs-RE)
 - **Git Release Branch:** `develop` ← PROTECTED (NEVER DELETE)
-- **Target Audience:** Internal QA / Beta Cohort
-- **Status:** Standby (no Supabase project yet)
+- **Target Audience:** Internal QA / Beta Cohort — RE module validation
+- **Status:** Active — RE BUILD-01 DDL applied; seed import in progress (2026-06-14)
 
 ### DEP-PRODUCTION (Project B — Supabase Production)
 - **Project Ref:** `ufgfznpqixplcbhmsqqw` (foofoo-mvp, ap-south-1)
@@ -52,9 +52,10 @@
 
 ## 🗄️ DB Schema Registry
 
-| Schema ID        | Migration File                   | Up Applied | Down Available | Notes                        |
-|------------------|----------------------------------|------------|----------------|------------------------------|
-| SCHEMA-BASE-001  | (pre-existing / remote baseline) | ✅          | ❌ (pre-ledger) | 42 MVP tables, ap-south-1    |
+| Schema ID        | Migration File                              | Up Applied | Down Available | Notes                                                                    |
+|------------------|---------------------------------------------|------------|----------------|--------------------------------------------------------------------------|
+| SCHEMA-BASE-001  | (pre-existing / remote baseline)            | ✅          | ❌ (pre-ledger) | 42 MVP tables, ap-south-1                                                |
+| SCHEMA-RE-001    | 20260614_001_re_seed_tables.sql             | ✅ staging  | ✅              | 19 RE tables + household_members + profiles.re_engine_version; foofoo-staging only; NOT yet on production |
 
 ---
 
