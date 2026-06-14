@@ -10,7 +10,7 @@
  * @calledBy MealCard Plus icon, Meal Detail 'Add to date' button
  */
 
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, Modal,
   ScrollView, ActivityIndicator, Alert,
@@ -61,10 +61,18 @@ function nextNDates(days: number): string[] {
  * @calledBy MealCard, Meal Detail
  */
 export default function DatePickerModal({ dish, userId, currentSlot, onConfirm, onCancel }: Props) {
-  const dates = useMemo(() => nextNDates(7), []);
-  const [selectedDate, setSelectedDate] = useState(dates[1] ?? dates[0]); // default tomorrow
+  // nextNDates() calls Date.now() which differs between SSR and client render.
+  // Initialise with empty array (safe on server) and populate after mount to avoid #418.
+  const [dates, setDates] = useState<string[]>([]);
+  const [selectedDate, setSelectedDate] = useState('');
   const [selectedSlot, setSelectedSlot] = useState<SlotChoice>(currentSlot);
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    const d = nextNDates(7);
+    setDates(d);
+    setSelectedDate(d[1] ?? d[0] ?? ''); // default tomorrow
+  }, []);
 
   const handleConfirm = async () => {
     setLoading(true);

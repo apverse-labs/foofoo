@@ -17,10 +17,11 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable,
-  useWindowDimensions, Platform,
+  Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useClientInsets } from '../../src/hooks/useClientInsets';
+import { useClientWindowDimensions } from '../../src/hooks/useClientWindowDimensions';
 import { COLORS, SPACING, BORDER_RADIUS, TIMING } from '../../src/config/constants';
 import { supabase } from '../../src/services/supabase';
 import {
@@ -68,7 +69,7 @@ function activeFilterNames(filters: SearchFilters): string[] {
 export default function SearchTab() {
   const router = useRouter();
   const insets = useClientInsets();
-  const { width } = useWindowDimensions();
+  const { width } = useClientWindowDimensions();
 
   const [userId, setUserId] = useState<string>('');
   const [query, setQuery] = useState('');

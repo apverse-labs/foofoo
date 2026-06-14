@@ -13,11 +13,12 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, Pressable, ActivityIndicator,
-  ScrollView, useWindowDimensions,
+  ScrollView,
 } from 'react-native';
 import { Image } from 'expo-image';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
 import { getCloudinaryUrl } from '../../utils/cloudinary';
+import { useClientWindowDimensions } from '../../hooks/useClientWindowDimensions';
 
 const PLACEHOLDER_IMG = require('../../../assets/images/dish-placeholder.png') as number;
 const CELL_PLACEHOLDER_HASH = 'L6PZfSi_.AyE_3t7t7R**0o#DgR4';
@@ -74,7 +75,7 @@ function cmp(a: string, b: string): number { return a < b ? -1 : a > b ? 1 : 0; 
  * @returns {JSX.Element}
  */
 export default function WeekView({ userId, initialDate, onDaySelect }: Props) {
-  const { width } = useWindowDimensions();
+  const { width } = useClientWindowDimensions();
   const today = getTodayIST();
   const [weekStart, setWeekStart] = useState<string>(() => weekStartFromDate(initialDate));
   const [days, setDays] = useState<DayPlan[]>([]);

@@ -13,7 +13,7 @@
  * stretching to the full window width and looking absurd.
  */
 
-import { useWindowDimensions } from 'react-native';
+import { useClientWindowDimensions } from '../hooks/useClientWindowDimensions';
 
 export const BREAKPOINT_TABLET = 600;
 export const BREAKPOINT_DESKTOP = 1200;
@@ -38,7 +38,7 @@ export interface Responsive {
 }
 
 export function useResponsive(): Responsive {
-  const { width, height } = useWindowDimensions();
+  const { width, height } = useClientWindowDimensions();
   const isMobile = width < BREAKPOINT_TABLET;
   const isTablet = width >= BREAKPOINT_TABLET && width < BREAKPOINT_DESKTOP;
   const isDesktop = width >= BREAKPOINT_DESKTOP;
