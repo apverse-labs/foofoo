@@ -18,21 +18,27 @@
  *   - signInRETestUser / createRETestUser / deleteRETestUser — RLS/DPDP helpers
  *
  * Run: imported by integration/re-*.test.ts and personas/re-persona-runner.ts
- * Requires: SUPABASE_RE_URL + SUPABASE_RE_ANON_KEY (or EXPO_PUBLIC_ variants).
- *           SUPABASE_RE_SERVICE_KEY only for persona creation / RLS / DPDP tests.
+ * Requires: SUPABASE_STAGING_URL + SUPABASE_STAGING_ANON_KEY (GitHub Secrets).
+ *           SUPABASE_STAGING_SERVICE_ROLE_KEY for RLS / DPDP / seed-count tests.
+ *           EXPO_PUBLIC_SUPABASE_RE_* accepted as local-dev fallback.
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
 
 export const RE_URL =
-  process.env.SUPABASE_RE_URL || process.env.EXPO_PUBLIC_SUPABASE_RE_URL || '';
+  process.env.SUPABASE_STAGING_URL ||
+  process.env.SUPABASE_RE_URL ||
+  process.env.EXPO_PUBLIC_SUPABASE_RE_URL ||
+  '';
 
 export const RE_ANON_KEY =
+  process.env.SUPABASE_STAGING_ANON_KEY ||
   process.env.SUPABASE_RE_ANON_KEY ||
   process.env.EXPO_PUBLIC_SUPABASE_RE_ANON_KEY ||
   '';
 
 export const RE_SERVICE_KEY =
+  process.env.SUPABASE_STAGING_SERVICE_ROLE_KEY ||
   process.env.SUPABASE_RE_SERVICE_KEY ||
   process.env.SUPABASE_RE_SERVICE_ROLE_KEY ||
   '';

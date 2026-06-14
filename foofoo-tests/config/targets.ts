@@ -12,12 +12,18 @@ export type QATarget = 're-staging' | 'mvp-prod';
 
 /** RE staging Supabase env (anon-key only by default; service key optional). */
 export const RE_STAGING = {
-  url: process.env.SUPABASE_RE_URL || process.env.EXPO_PUBLIC_SUPABASE_RE_URL || '',
+  url:
+    process.env.SUPABASE_STAGING_URL ||
+    process.env.SUPABASE_RE_URL ||
+    process.env.EXPO_PUBLIC_SUPABASE_RE_URL ||
+    '',
   anonKey:
+    process.env.SUPABASE_STAGING_ANON_KEY ||
     process.env.SUPABASE_RE_ANON_KEY ||
     process.env.EXPO_PUBLIC_SUPABASE_RE_ANON_KEY ||
     '',
   serviceKey:
+    process.env.SUPABASE_STAGING_SERVICE_ROLE_KEY ||
     process.env.SUPABASE_RE_SERVICE_KEY ||
     process.env.SUPABASE_RE_SERVICE_ROLE_KEY ||
     '',

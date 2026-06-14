@@ -1,0 +1,112 @@
+name: RE QA Suite
+
+on:
+  push:
+    branches:
+      - apverse-labs-RE
+  pull_request:
+    branches:
+      - develop
+      - main
+    paths:
+      - 'foofoo/src/repositories/re-*.ts'
+      - 'foofoo/src/services/re-*.ts'
+      - 'foofoo/src/re-engine/**'
+      - 'foofoo/src/components/re/**'
+      - 'foofoo-tests/unit/re-*.ts'
+      - 'foofoo-tests/integration/re-*.ts'
+      - 'foofoo-tests/personas/re-*.ts'
+      - 'Meal_Planning_RE_Engine/**'
+
+jobs:
+  re-qa:
+    name: RE QA — ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: foofoo-tests
+
+    strategy:
+      fail-fast: false   # run all suites; see full picture on failure
+      matrix:
+        suite:
+          - unit
+          - schema
+          - personas
+          - security
+
+    env:
+      # RE staging (apverse-labs-RE / foofoo-staging project)
+      SUPABASE_STAGING_URL: ${{ secrets.SUPABASE_STAGING_URL }}
+      SUPABASE_STAGING_ANON_KEY: ${{ secrets.SUPABASE_STAGING_ANON_KEY }}
+      SUPABASE_STAGING_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_STAGING_SERVICE_ROLE_KEY }}
+      # MVP production (main / foofoo-mvp project)
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_ANON_KEY: ${{ secrets.SUPABASE_ANON_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: foofoo-tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run unit tests (RE module)
+        if: matrix.suite == 'unit'
+        run: npx jest --testPathPattern='unit/re-' --no-coverage --ci
+
+      - name: Run schema validation (RE staging)
+        if: matrix.suite == 'schema'
+        run: npx jest --testPathPattern='integration/re-schema-validation|integration/re-seed-integrity' --no-coverage --ci
+
+      - name: Run persona journeys — 50 personas, hard constraint gate
+        if: matrix.suite == 'personas'
+        run: npx jest --testPathPattern='integration/re-persona-journey' --no-coverage --ci
+
+      - name: Run security + DPDP (RE staging)
+        if: matrix.suite == 'security'
+        run: npx jest --testPathPattern='integration/re-rls-security|integration/re-dpdp-compliance' --no-coverage --ci
+
+  # Hard gate: any constraint violation blocks merge to develop/main
+  constraint-gate:
+    name: Hard Constraint Gate
+    runs-on: ubuntu-latest
+    needs: re-qa
+    if: always()
+    defaults:
+      run:
+        working-directory: foofoo-tests
+
+    env:
+      SUPABASE_STAGING_URL: ${{ secrets.SUPABASE_STAGING_URL }}
+      SUPABASE_STAGING_ANON_KEY: ${{ secrets.SUPABASE_STAGING_ANON_KEY }}
+      SUPABASE_STAGING_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_STAGING_SERVICE_ROLE_KEY }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: foofoo-tests/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Verify zero hard constraint violations
+        run: |
+          npx jest --testPathPattern='integration/re-persona-journey' \
+            --no-coverage --ci \
+            --testNamePattern='total hard constraint violations'
+
+      - name: Fail if any suite failed
+        if: needs.re-qa.result == 'failure'
+        run: |
+          echo "One or more RE QA suites failed. Merge to develop/main is blocked."
+          exit 1
