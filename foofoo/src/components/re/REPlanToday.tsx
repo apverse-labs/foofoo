@@ -3,8 +3,15 @@ import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
 import { fetchUserWeeklyPlan } from '../../repositories/re-plan.repository';
 import { fetchTodayAddons } from '../../repositories/re-addon.repository';
+import { fetchTodayDishCandidates } from '../../repositories/re-dish-expander.repository';
 import { Logger } from '../../utils/systemLogger';
-import type { REAddonComponent, REDayPlan, REMealClassRef, RESlotAddons } from '../../types';
+import type {
+  REAddonComponent,
+  REDayDishCandidates,
+  REDayPlan,
+  REMealClassRef,
+  RESlotAddons,
+} from '../../types';
 
 const DAY_NAMES = [
   'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
@@ -94,15 +101,17 @@ export default function REPlanToday({ userId }: { userId: string }) {
   const [loading, setLoading] = useState(true);
   const [today, setToday] = useState<REDayPlan | null>(null);
   const [addons, setAddons] = useState<RESlotAddons>({ breakfast: [], lunch: [], snack: [], dinner: [] });
+  const [dishes, setDishes] = useState<REDayDishCandidates | null>(null);
   const [weekStart, setWeekStart] = useState<string>('');
 
   useEffect(() => {
     let active = true;
     (async () => {
       try {
-        const [plan, addonData] = await Promise.all([
+        const [plan, addonData, dishData] = await Promise.all([
           fetchUserWeeklyPlan(userId),
           fetchTodayAddons(userId),
+          fetchTodayDishCandidates(userId),
         ]);
         if (!active) return;
         if (plan) {
@@ -111,6 +120,7 @@ export default function REPlanToday({ userId }: { userId: string }) {
           setToday(plan.days.find((d) => d.dayOfWeek === name) ?? plan.days[0] ?? null);
         }
         setAddons(addonData);
+        setDishes(dishData);
       } catch (err: unknown) {
         Logger.error('RE_PLAN_TODAY', 'load failed', {
           error: err instanceof Error ? err.message : String(err), userId,
@@ -143,6 +153,7 @@ export default function REPlanToday({ userId }: { userId: string }) {
         {SLOT_META.map(({ key, addonKey, label, emoji }) => {
           const ref = today[key];
           const slotAddons = addons[addonKey];
+          const slotDishes = dishes?.[key]?.topDishes ?? [];
           return (
             <View key={key} style={styles.slot}>
               <Text style={styles.slotEmoji}>{emojiForClass(ref, emoji)}</Text>
@@ -150,6 +161,11 @@ export default function REPlanToday({ userId }: { userId: string }) {
               <Text style={styles.slotClass} numberOfLines={2}>
                 {ref ? ref.display : '—'}
               </Text>
+              {slotDishes.length > 0 && (
+                <Text style={styles.dishPicks} numberOfLines={2}>
+                  {slotDishes.slice(0, 3).map((d) => d.dishName).join(' · ')}
+                </Text>
+              )}
               {slotAddons.length > 0 && (
                 <View style={styles.badgeRow}>
                   {slotAddons.map((a) => (
@@ -191,6 +207,7 @@ const styles = StyleSheet.create({
   slotEmoji: { fontSize: 20 },
   slotLabel: { fontSize: 11, fontWeight: '600', color: COLORS.textSecondary, textTransform: 'uppercase' },
   slotClass: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary },
+  dishPicks: { fontSize: 11, color: COLORS.textSecondary, fontStyle: 'italic', marginTop: 2 },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
   badge: {
     backgroundColor: '#EEF7F1',

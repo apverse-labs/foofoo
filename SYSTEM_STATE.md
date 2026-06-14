@@ -24,7 +24,7 @@
 - **Code Base / Checkpoint:** CKPT-001 + RE BUILD-01 (apverse-labs-RE)
 - **Git Release Branch:** `develop` ← PROTECTED (NEVER DELETE)
 - **Target Audience:** Internal QA / Beta Cohort — RE module validation
-- **Status:** Active — RE BUILD-01 through BUILD-04 DDL fully applied (2026-06-14). SCHEMA-RE-001 + SCHEMA-RE-002 live on staging.
+- **Status:** Active — RE BUILD-01 through BUILD-06 complete (2026-06-14). SCHEMA-RE-001/002/003 live on staging.
 
 ### DEP-PRODUCTION (Project B — Supabase Production)
 - **Project Ref:** `ufgfznpqixplcbhmsqqw` (foofoo-mvp, ap-south-1)

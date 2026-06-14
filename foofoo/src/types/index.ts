@@ -405,3 +405,27 @@ export interface REWeeklyAddonPlan {
   days: REDayAddonPlan[];
   engineVersion: string;
 }
+
+// ── RE BUILD-06: Dish Expansion & Food DNA Ranking ────────────────────────────
+
+export interface REDishCandidate {
+  dishOptionId: string;
+  dishName: string;
+  dietType: string;
+  regionRelevance: string;
+  score: number;
+}
+
+export interface RESlotDishCandidates {
+  classCode: string;
+  classDisplay: string;
+  topDishes: REDishCandidate[];
+}
+
+export interface REDayDishCandidates {
+  dayOfWeek: string;
+  breakfast: RESlotDishCandidates | null;
+  lunch: RESlotDishCandidates | null;
+  snack: RESlotDishCandidates | null;
+  dinner: RESlotDishCandidates | null;
+}
