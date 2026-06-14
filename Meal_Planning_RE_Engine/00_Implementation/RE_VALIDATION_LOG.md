@@ -230,3 +230,44 @@ DOC-15 §4 and DOC-13 §6 require the scheduled nonveg/egg slot to be carried in
 - [~] Variety/rotation rules (DOC-14 backlog)
 
 **PACK 4: PASS (after SCHEMA-RE-010 fix). 2 algorithm backlog items noted.**
+
+---
+
+## PACK 5 — BUILD-05: Member-Specific Add-on Engine ✅ PASS (no fix needed)
+
+**Binary docs read:** DOC-04 (Household_Composition_Member_Needs), DOC-17 (Health_Fitness_Lifestyle_Overlays), DOC-06 (Primary_vs_Addon_Meal_Architecture). All extracted via zipfile.
+
+**Workbook sheets read:** Addon_Component_Class_Master (24 data rows), Household_Addon_Component_Plan (7992 data rows), Addon_Dish_Options (142 data rows).
+
+**DB-vs-workbook reference-table diff — all match:**
+
+| Table | Expected | Actual | |
+|---|---|---|---|
+| re_addon_classes | 24 | 24 | ✅ |
+| re_addon_dish_options | 142 | 142 | ✅ |
+| re_household_addon_plans | 7992 | 7992 | ✅ |
+
+**CORE ISOLATION INVARIANT VERIFIED (DOC-06/DOC-04 non-negotiable rule):**
+Query across all 12 primary/secondary/tertiary class columns of `re_weekly_class_plans` (20,664 rows) for any `ADD_*` add-on class code → **0 leaks**. No member-specific add-on class ever appears as a family primary/secondary/tertiary meal. The "member add-ons never hijack the family meal" rule is structurally enforced. ✅
+
+**Member-segment coverage:** All 19 add-on target segments are member-specific (elderly_member, diabetic_member, baby_6_18m, pregnant_member, school_child, toddler, teen_high_appetite, picky_child, lactating_or_postpartum_mother, recovery_member, fasting_member, gym_high_protein_member, weight_loss_member, hypertension_heart_member, jain_member, cook_needs_instruction, working_kitchen_manager, etc.). No "adult general" segment generates an add-on — correct per DOC-04 §5. ✅
+
+**Code audit — `re-addon.repository.ts` (`generateUserAddonPlan`):**
+- Reads from `re_household_addon_plans` keyed on `persona_id`. ✅
+- Writes to a SEPARATE table `re_user_addon_plans` — never touches `re_user_weekly_plans` primary classes. ✅
+- Each add-on carries `attached_to_primary_class` (component-not-replacement). ✅
+- Day-code expansion (Mon→Monday) and slot normalisation handled. ✅
+- Chained automatically after `generateUserWeeklyPlan` (same planning pass). ✅
+- "Elderly-only / infant-only household → soft classes become primary" case is handled at the COHORT MATRIX level (e.g. P14 elderly-couple cohort already has elderly-soft primary classes in re_weekly_class_plans), not in add-on code — correct architecture per DOC-04 §6. ✅
+
+**Backlog (carry-over from PACK 2, not a BUILD-05 engine defect):**
+- Add-on plan is keyed on `persona_id` (cohort prior) rather than the actual `household_members[]` captured in onboarding. DOC-04 §7 envisions per-member add-on generation. Currently the add-on set comes from the workbook's pre-computed Household_Addon_Component_Plan per persona. This is faithful to v3 but means a real multi-member household (e.g. infant + diabetic elder simultaneously) only gets the add-ons the persona prior encodes. Tied to the PACK 2 multi-member capture gap.
+
+**Exit criteria:**
+- [x] reference counts == workbook (24 / 142 / 7992) ✅
+- [x] add-on isolation: 0 ADD_* leaks into primary rotation (20,664 rows checked) ✅
+- [x] add-ons stored separately, attached_to_primary_class (never replaces) ✅
+- [x] all target segments member-specific ✅
+- [~] per-member (vs per-persona) add-on generation — backlog (PACK 2 capture gap)
+
+**PACK 5: PASS. No schema or code fix required. 1 backlog item (shared with PACK 2).**
