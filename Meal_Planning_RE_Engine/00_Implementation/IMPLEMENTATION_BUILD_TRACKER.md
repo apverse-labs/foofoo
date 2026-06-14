@@ -23,7 +23,7 @@
 |----------|------|--------|--------------|-------|
 | BUILD-00A | RE Module Guardrails Setup | ✅ | DOC-00, README_WALKTHROUGH | `Meal_Planning_RE_Engine/CLAUDE.md` + this tracker created. Root `CLAUDE.md` updated with Rule 6 and RE module section. |
 | BUILD-00B | Existing Project Integration Audit | ✅ | — | Full 17-section audit written to `BUILD-00B_Existing_Project_Integration_Audit.md`. Key finding: existing RE scores dishes directly (no class concept). 10 open questions logged for founder. No code written. |
-| BUILD-01 | RE Data Model & Seed Import | ✅ | DOC-05, DOC-07, DOC-08, DOC-22 | Migration + seed import complete on foofoo-staging. 20 tables created. All seed data loaded (36 states, 41 personas, 131 meal classes, 1050 dish options, 2952 cohorts, 20664 weekly plans, 7992 addon plans). Validation tests passing (VAL-01–VAL-15). See `BUILD-01_README.md`. |
+| BUILD-01 | RE Data Model & Seed Import | ✅ | DOC-05, DOC-07, DOC-08, DOC-22 | Migration + seed import verified complete on foofoo-staging (2026-06-14). 20 tables created. Seed: 36 states, 41 personas, 131 meal classes, 946 primary dish options (104 addon-only dishes excluded per VAL-03), 2952 cohorts, 20664 weekly plans, 7992 addon plans. 19/19 validation checks passing (VAL-01–VAL-15 + VAL-13 idempotency). foofoo-mvp (production) untouched. See `BUILD-01_README.md`. |
 | BUILD-02 | Onboarding & Household Profile Builder | ⬜ | DOC-03, DOC-04, DOC-10, DOC-11, DOC-16, DOC-17, DOC-18, DOC-20 | Dynamic onboarding, household/member capture, diet and city inputs, profile object. |
 | BUILD-03 | Cohort / Persona Assignment Engine | ⬜ | DOC-03, DOC-09, DOC-11, DOC-15, DOC-20 | Profile → main cohort → sub-cohort → backend persona → overlapping overlay personas. |
 | BUILD-04 | Weekly Class-First Plan Engine | ⬜ | DOC-12, DOC-13, DOC-14 | 7-day meal-class plan. Weekday/weekend rhythm. Variety and rotation rules. City overlay applied. |
@@ -69,5 +69,5 @@
 
 - BUILD-00A is complete. `Meal_Planning_RE_Engine/CLAUDE.md` confirmed present and complete on this branch.
 - BUILD-00B is complete. Audit document at `00_Implementation/BUILD-00B_Existing_Project_Integration_Audit.md`. 10 open questions answered by founder (see BUILD-01 prompt context).
-- BUILD-01 plan is complete. Documents at `BUILD-01_Data_Model_Seed_Import_Implementation_Plan.md` and `ONBOARDING_FIELD_MAPPING.md`. 4 open questions remain (OQ-1 through OQ-4 in plan). Awaiting founder approval to begin implementation.
-- Do not begin BUILD-01 implementation until founder reviews and approves the plan.
+- BUILD-01 is complete (2026-06-14). DDL migration applied to foofoo-staging only. All 33,452 seed rows loaded and verified. 19/19 validation checks passing. One deviation from plan: 104 dishes for addon-only classes removed from re_class_dish_options per VAL-03; seed script updated to exclude them on future runs. Open item for BUILD-05: decide storage for addon-only class dish options (currently excluded from both primary and addon_dish pools).
+- Next: BUILD-02 (Onboarding Profile Builder).

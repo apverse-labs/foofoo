@@ -27,7 +27,7 @@ No app code changes. No production rollout. No plan generation logic.
 | `re_routing_rules` | 8 | Onboarding branching logic |
 | `re_meal_classes` | 131 | 118 primary + 13 addon-only |
 | `re_meal_class_overlap_rules` | 0 | Populated in BUILD-04 |
-| `re_class_dish_options` | 1050 | Primary meal class dishes |
+| `re_class_dish_options` | 946 | Primary meal class dishes (1050 in workbook; 104 excluded — addon-only class dishes filtered out per VAL-03) |
 | `re_addon_classes` | 24 | Member-specific addon classes |
 | `re_addon_dish_options` | 142 | Addon component dishes |
 | `re_cohorts` | 2952 | State × city-tier × persona |
@@ -113,6 +113,7 @@ Expected: 20 tests passing (VAL-01 through VAL-15).
 | Weekly plans | Full table (20664 rows) | Precomputed; avoids real-time generation in cold-start |
 | addon_class_code in weekly_plans | TEXT (no FK) | Source data uses sentinel 'none'; FK would fail |
 | home_state normalization | UT_NORMALIZATION dict in seed script | 3 spelling differences between app and workbook |
+| Addon-only class dishes excluded from re_class_dish_options | 104 rows removed (13 classes × 8 dishes) | VAL-03: dishes for allowed_as_weekly_primary=FALSE classes must not be in primary dish pool; BUILD-05 will handle these via the addon flow |
 
 ---
 

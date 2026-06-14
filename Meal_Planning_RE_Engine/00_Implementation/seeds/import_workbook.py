@@ -255,10 +255,22 @@ ON CONFLICT (version_code) DO NOTHING;""")
     )
 
     # ── 9. CLASS DISH OPTIONS ─────────────────────────────────
+    # Exclude dishes for addon-only classes (allowed_as_weekly_primary=FALSE).
+    # The workbook includes dishes for all 131 classes; we keep only primary-eligible ones here.
+    # The 13 excluded classes' dishes are handled by the addon flow in BUILD-05.
+    ADDON_ONLY_CLASS_CODES = {
+        'BF_INFANT_6M_SOFT', 'BF_KID_TIFFIN', 'BF_LACTATION_MOTHER',
+        'DN_CHILD_FRIENDLY_DINNER', 'DN_EARLY_ELDERLY_DINNER', 'DN_FAMILY_COMFORT_MEAL',
+        'LD_CHILD_MILD_PLATE', 'LD_ELDERLY_SOFT_DIGESTIVE', 'LD_LACTATION_POSTPARTUM',
+        'LD_PREGNANCY_BALANCED', 'LD_RECOVERY_SOFT_PROTEIN', 'LD_TEEN_HIGH_CALORIE',
+        'SN_KIDS_TIFFIN_SNACK',
+    }
     _, cdo_rows = sheet_rows(wb, 'Class_Dish_Options_v3')
     vals = []
     for r in cdo_rows:
         if not r[0]:
+            continue
+        if str(r[1]).strip() in ADDON_ONLY_CLASS_CODES:
             continue
         vals.append('  (' + ','.join([esc(r[i]) for i in range(11)]) + ')')
     vals_str = ',\n'.join(vals)
