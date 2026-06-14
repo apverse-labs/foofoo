@@ -9,11 +9,15 @@ dotenv.config({ path: path.resolve(__dirname, ".env.test") });
 const config: Config = {
   preset: "ts-jest",
   testEnvironment: "node",
+  globalSetup: "<rootDir>/jest.global-setup.ts",
   roots: [
     "<rootDir>/unit",
     "<rootDir>/integration",
     "<rootDir>/tests",
     "<rootDir>/../Meal_Planning_RE_Engine/00_Implementation/__tests__",
+    "<rootDir>/personas",
+    "<rootDir>/config",
+    "<rootDir>/lib",
   ],
   testMatch: [
     "**/__tests__/**/*.ts",
