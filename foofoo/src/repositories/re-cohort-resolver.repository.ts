@@ -1,5 +1,4 @@
 import { supabaseRE } from '../services/supabase-re';
-import { supabase } from '../services/supabase';
 import { Logger } from '../utils/systemLogger';
 import {
   STATE_TIER_CITIES,
@@ -146,7 +145,7 @@ async function verifyCohortExists(cohortId: string): Promise<boolean> {
  */
 export async function runCohortAssignment(userId: string): Promise<void> {
   // 1. Load production profile (home_state, current_city)
-  const { data: prodProfile, error: prodErr } = await supabase
+  const { data: prodProfile, error: prodErr } = await supabaseRE
     .from('profiles')
     .select('home_state, current_city')
     .eq('id', userId)

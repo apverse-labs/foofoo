@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { View, Text, ActivityIndicator, StyleSheet, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import { supabase } from '../../src/services/supabase';
+import { supabaseRE } from '../../src/services/supabase-re';
 import { completeREOnboarding } from '../../src/repositories/re-onboarding.repository';
 import { runCohortAssignment } from '../../src/repositories/re-cohort-resolver.repository';
 import { COLORS, SPACING } from '../../src/config/constants';
@@ -24,7 +24,7 @@ export default function REStep8() {
   useEffect(() => {
     PostHogService.screen('re_onboarding_step_8');
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await supabaseRE.auth.getUser();
       if (!user) { router.replace('/(auth)/sign-in' as never); return; }
 
       try {

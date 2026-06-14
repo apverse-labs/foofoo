@@ -1,5 +1,4 @@
 import { supabaseRE } from '../services/supabase-re';
-import { supabase } from '../services/supabase';
 import { Logger } from '../utils/systemLogger';
 import type {
   REState, REMainCohort, RESubcohort,
@@ -101,7 +100,7 @@ export async function saveRELocation(
   currentCity: string,
 ): Promise<void> {
   try {
-    const { error } = await supabase
+    const { error } = await supabaseRE
       .from('profiles')
       .update({ home_state: homeState, current_city: currentCity })
       .eq('id', userId);
@@ -194,14 +193,14 @@ export async function saveREDietPrefs(
   preferredProteinTypes: string[],
 ): Promise<void> {
   try {
-    const prodResults = await Promise.all([
-      supabase.from('user_diet_rules').upsert(
+    const reDietResults = await Promise.all([
+      supabaseRE.from('user_diet_rules').upsert(
         { user_id: userId, food_pref: foodPref, excluded_ingredients: allergenIds },
         { onConflict: 'user_id' }
       ),
-      supabase.from('profiles').update({ food_pref: foodPref }).eq('id', userId),
+      supabaseRE.from('profiles').update({ food_pref: foodPref }).eq('id', userId),
     ]);
-    for (const r of prodResults) {
+    for (const r of reDietResults) {
       if (r.error) throw r.error;
     }
 
@@ -275,7 +274,7 @@ export async function saveREHealthOverlay(
  */
 export async function completeREOnboarding(userId: string): Promise<void> {
   try {
-    const { error: profileErr } = await supabase
+    const { error: profileErr } = await supabaseRE
       .from('profiles')
       .update({ re_engine_version: 'classfirst_v1' })
       .eq('id', userId);
