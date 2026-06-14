@@ -97,3 +97,78 @@ RE flow = 9 steps (state→main cohort→sub-cohort→members→cook→health→
 [~] all contract fields persisted (schema ready; capture UI pending) · [ ] swipe=class-level (pending) ·
 [x] dynamic branching live (member-step + nonveg gates present) · [ ] cold-start defaults on skip (pending).
 **PACK 2: validation complete; schema corrected; UI build outstanding.**
+
+---
+
+## PACK 3 — BUILD-03: Cohort/Persona Assignment Engine ⚠️ 1 DEFECT FOUND → FIX STAGED
+
+**Binary docs read:** DOC-03 (Cohort Hierarchy + Persona Mapping), DOC-09 (State/Region/City/Migration Overlay), DOC-15 (Non-Veg Consumption Patterns), DOC-20 (Cold Start Safe Assumptions). All extracted from git via zipfile.
+
+**Workbook sheets read:** Routing_Rules_v3 (8 rules R01-R08), Persona_Master_v3 (41 rows P01-P41), Subcohort_Routing (41 rows SC1A-SC5P), State_Profile_v3 (36 states/UTs), City_Migration_Overlay_v3 (324 rows — 36 states × 9 destination groups), NonVeg_Logic_v3 (36 rows).
+
+**DB-vs-workbook reference-table diff:**
+
+| Table | Expected | Actual | |
+|---|---|---|---|
+| re_routing_rules | 8 | 8 (R01-R08) | ✅ |
+| re_personas | 41 | 41 | ✅ |
+| re_main_cohorts | 5 | 5 | ✅ |
+| re_subcohorts | 41 | 41 | ✅ |
+| re_cohorts | 2952 | 2952 | ✅ |
+| re_city_migration_overlays | 324 | 324 | ✅ |
+
+**Code audit — `re-cohort-resolver.repository.ts`:**
+
+The resolver is fully implemented and table-driven:
+- `resolveCityDestinationGroup(stateId, currentCity)` — 4-step priority lookup (home T1 → home T2 → cross-state metro → PAN_INDIA_PG_HOSTEL). ✅
+- `resolveCityTierCode(destinationGroupCode)` — maps 9 destination groups to T1/T2. ✅
+- `buildOverlayPersonaIds(destinationGroup, healthOverlayCode, cookDependency)` — migration + health + cook overlays, deduplicated. ✅
+- `runCohortAssignment(userId)` — full orchestrator: loads profile → resolves state_id via re_states → destination group → cohort_id (stateId_T1/T2_personaId) → verifies in re_cohorts → builds overlays → upserts to re_user_household_profiles. ✅
+
+**`re_user_household_profiles` schema check:**
+- `cohort_id` ✅, `overlay_persona_ids` (ARRAY) ✅, `city_destination_group` ✅, `main_cohort_id` ✅, `sub_cohort_id` ✅, `persona_id` ✅, `health_overlay_code` ✅, `cook_dependency` ✅
+
+**DEFECT FOUND — `confidence` score absent (DOC-03 §6 violation):**
+
+DOC-03 §6 specifies a mandatory confidence model:
+> "Every persona assignment should carry a confidence score. High confidence: explicit sub-cohort + supporting answers. Medium: main cohort + household members. Low: skipped onboarding (→ DOC-20 cold-start)."
+
+Expected output contract (DOC-03 §8):
+```json
+{
+  "base_persona_id": "P41",
+  "overlay_persona_ids": ["P15"],
+  "confidence": 0.86,
+  "routing_trace": ["main_cohort", "sub_cohort", "health_overlay"]
+}
+```
+
+**Root cause:** `re_user_household_profiles` has no `confidence` column; `runCohortAssignment()` computes no confidence score; `routing_trace` is also not persisted (only logged via Logger.info). Two missing contract fields.
+
+**Safety check:** Additive-only fix — add 2 nullable columns. No existing data at risk.
+
+**V3-science trace — P41 composite:**
+A household with MC4 (Joint/elders/care) → SC4F (child_plus_diabetic_elder_overlap) → P41 in UP (S26), living in Delhi (DELHI_NCR):
+- `stateId` = S26
+- `destinationGroupCode` = DELHI_NCR (not home state → cross-state)
+- `cityTierCode` = T1
+- `cohortId` = S26_T1_P41
+- `overlayPersonaIds` = [P28 (migration), P15 (diabetic_management)]
+- Expected confidence = LOW-MEDIUM (cross-state migration + health overlay = multiple explicit signals but missed fasting/swipe steps)
+- Expected routing_trace = ["main_cohort", "sub_cohort", "health_overlay", "migration_overlay"]
+
+**Correction prepared:**
+- Migration `20260614_010_re_cohort_assignment_confidence.sql`: ADD COLUMN `confidence NUMERIC(4,3)` + `routing_trace TEXT[]` to `re_user_household_profiles`.
+- Update `runCohortAssignment()` in `re-cohort-resolver.repository.ts` to compute and persist confidence score.
+
+**STATUS: DEFECT — fix staged for apply.**
+
+**Exit criteria:**
+- [x] assignment is table-driven from routing rules (re_routing_rules 8/8, re_cohorts 2952/2952)
+- [x] overlays persisted in DB (overlay_persona_ids ARRAY on re_user_household_profiles)
+- [ ] confidence score persisted (column missing — DEFECT, fix staged)
+- [x] state≠city blend verified in code (resolveCityDestinationGroup correctly separates home_state vs current_city)
+- [x] resolver code exists and is table-driven
+- [ ] routing_trace persisted (not stored — DEFECT, fix staged)
+
+**PACK 3: validation complete; 1 defect found (missing confidence + routing_trace); fix to apply.**

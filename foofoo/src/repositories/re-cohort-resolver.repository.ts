@@ -188,7 +188,28 @@ export async function runCohortAssignment(userId: string): Promise<void> {
     reProfile.cook_dependency ?? null,
   );
 
-  // 7. Persist assignment to re_user_household_profiles
+  // 7. Compute confidence score (DOC-03 §6) and routing_trace (DOC-03 §8)
+  // High (0.85-1.0): sub_cohort explicitly selected + health/cook answers given
+  // Medium (0.60-0.84): main cohort + household members, some skipped
+  // Low (0.30-0.59): minimal onboarding, cold-start fallback
+  const routingTrace: string[] = ['main_cohort', 'sub_cohort'];
+  let confidence = 0.70; // base: sub-cohort selected
+  if (!cohortExists) confidence -= 0.10; // cohort_id not in matrix → lower
+  if (overlayPersonaIds.includes(MIGRATION_OVERLAY_PERSONA_ID)) {
+    confidence += 0.05;
+    routingTrace.push('migration_overlay');
+  }
+  if (reProfile.health_overlay_code) {
+    confidence += 0.08;
+    routingTrace.push('health_overlay');
+  }
+  if (reProfile.cook_dependency && reProfile.cook_dependency !== 'self_cook') {
+    confidence += 0.04;
+    routingTrace.push('cook_overlay');
+  }
+  const finalConfidence = Math.min(Math.max(parseFloat(confidence.toFixed(3)), 0), 1);
+
+  // 8. Persist assignment to re_user_household_profiles
   const { error: updateErr } = await supabaseRE
     .from('re_user_household_profiles')
     .upsert(
@@ -197,6 +218,8 @@ export async function runCohortAssignment(userId: string): Promise<void> {
         cohort_id: cohortExists ? cohortId : null,
         city_destination_group: destinationGroupCode,
         overlay_persona_ids: overlayPersonaIds,
+        confidence: finalConfidence,
+        routing_trace: routingTrace,
       },
       { onConflict: 'profile_id' },
     );
@@ -209,5 +232,7 @@ export async function runCohortAssignment(userId: string): Promise<void> {
     destinationGroupCode,
     cityTierCode,
     overlayPersonaIds,
+    confidence: finalConfidence,
+    routingTrace,
   });
 }
