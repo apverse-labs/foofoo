@@ -8,6 +8,8 @@ coverage/
 # Generated report output — keep folder structure, ignore content
 reports/html/*.html
 reports/md/*.md
+# Generated per-persona RE reports (re-report-generator.ts output)
+reports/md/personas/
 !reports/html/.gitkeep
 !reports/md/.gitkeep
 # Audit reports are committed (not generated — human-reviewed)
