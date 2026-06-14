@@ -23,7 +23,7 @@ import { getCloudinaryUrl } from '../../src/utils/cloudinary';
 
 const SIMILAR_PLACEHOLDER = require('../../assets/images/dish-placeholder.png') as number;
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useClientInsets } from '../../src/hooks/useClientInsets';
 import { supabase } from '../../src/services/supabase';
 import { getDishById, getSimilarDishes } from '../../src/repositories/dishes.repository';
 import {
@@ -53,7 +53,7 @@ function cap(s: string): string {
 
 export default function DishDetailScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useClientInsets();
   const params = useLocalSearchParams<{ id: string }>();
   const dishId = Number(params.id);
 

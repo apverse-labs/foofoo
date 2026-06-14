@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { View, Text, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useClientInsets } from '../../src/hooks/useClientInsets';
 import { supabase } from '../../src/services/supabase';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { Logger } from '../../src/utils/systemLogger';
@@ -19,7 +19,7 @@ import { isValidEmail } from '../../src/utils/validators';
  */
 export default function ForgotPassword() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useClientInsets();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [sent, setSent] = useState(false);

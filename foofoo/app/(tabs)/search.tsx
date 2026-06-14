@@ -20,7 +20,7 @@ import {
   useWindowDimensions, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useClientInsets } from '../../src/hooks/useClientInsets';
 import { COLORS, SPACING, BORDER_RADIUS, TIMING } from '../../src/config/constants';
 import { supabase } from '../../src/services/supabase';
 import {
@@ -67,7 +67,7 @@ function activeFilterNames(filters: SearchFilters): string[] {
 
 export default function SearchTab() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useClientInsets();
   const { width } = useWindowDimensions();
 
   const [userId, setUserId] = useState<string>('');

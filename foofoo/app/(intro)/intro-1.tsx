@@ -10,7 +10,7 @@ import {
   NativeScrollEvent,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useClientInsets } from '../../src/hooks/useClientInsets';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SPACING, BORDER_RADIUS, STORAGE_KEYS } from '../../src/config/constants';
 
@@ -48,7 +48,7 @@ const SLIDES = [
  */
 export default function IntroScreen() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useClientInsets();
   const { width: SW, height: SH } = useWindowDimensions();
   const scrollRef = useRef<ScrollView>(null);
   const [currentIndex, setCurrentIndex] = useState(0);

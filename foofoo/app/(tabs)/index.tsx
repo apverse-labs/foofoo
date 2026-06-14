@@ -14,7 +14,7 @@ import React, { useEffect, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, RefreshControl, Pressable,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useClientInsets } from '../../src/hooks/useClientInsets';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import MealCard from '../../src/components/dish/MealCard';
@@ -32,7 +32,7 @@ import { PostHogService } from '../../src/services/posthog.service';
 type ViewMode = 'day' | 'week';
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
+  const insets = useClientInsets();
   const { contentWidth } = useResponsive();
   const [viewMode, setViewMode] = useState<ViewMode>('day');
   const [isREUser, setIsREUser] = useState(false);
