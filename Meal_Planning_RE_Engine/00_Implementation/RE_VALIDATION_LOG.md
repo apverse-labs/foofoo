@@ -271,3 +271,48 @@ Query across all 12 primary/secondary/tertiary class columns of `re_weekly_class
 - [~] per-member (vs per-persona) add-on generation — backlog (PACK 2 capture gap)
 
 **PACK 5: PASS. No schema or code fix required. 1 backlog item (shared with PACK 2).**
+
+---
+
+## PACK 6 — BUILD-06: Dish Expansion + Food DNA Ranking ✅ PASS (faithful-to-v3; algorithm backlog)
+
+**Binary docs read:** DOC-19 (RE_Scoring_Rules), plus workbook DOC-07 (Dish_Catalog_Class_to_Dish_Mapping, separate xlsx) and DOC-08 (Food_DNA_Tagging_Specification, separate xlsx).
+
+**Workbook findings:**
+- DOC-07 `Class_Dish_Options_v3` = 1050 dishes. Columns: dish_option_id, meal_class_code, dish_name, diet_type, region_relevance, slot_group, usage_note, source_logic, class_use_scope, join_rule. **No per-dish Food DNA tags** (no spice/texture/heaviness/richness/cooking_method columns).
+- DOC-08 `Food_DNA_Dimensions` (21 rows across Tier 1/2/3) is a **tagging SPECIFICATION** for future dish enrichment — the v3 workbook does NOT carry per-dish DNA values. So DOC-19's `food_dna_match` scoring component has no source data in v3. Omitting it is faithful to v3, not a defect.
+
+**DB-vs-workbook:**
+
+| Table | Expected | Actual | |
+|---|---|---|---|
+| re_class_dish_options | 1050 | 1050 | ✅ |
+| classes with dishes | 131 | 131 | ✅ |
+| dishes shared across >1 class | 0 | 0 | ✅ |
+
+**CLAUDE.md Rule 3 invariant VERIFIED:** 0 dish_option_ids belong to more than one meal_class_code → "never mix dishes across meal classes" holds in data.
+
+**Code audit — `re-dish-expander.repository.ts`:**
+- `expandClassToDishes()` loads dishes via `.eq('meal_class_code', classCode)` — dishes only ever come from the selected class. ✅ (DOC-19 §9 anti-pattern avoided)
+- Dish expansion happens strictly AFTER class selection (reads class codes from re_user_weekly_plans first). ✅ (DOC-19 §11 acceptance)
+- **Hard filters before scoring:** diet compatibility (`isDietCompatible`) ✅, Never list (`aff.isNever`) ✅, Not-Today cooldown (`isOnCooldown`) ✅.
+- **Scoring formula (`computeDishScore`)** implements DOC-19 components available in v3: base(1.0) + regionAffinity(0–0.20) + daySlotFit(0–0.05) + historyModifier(−0.30..+0.40) + varietyPenalty(−0.30..0) + random(0–0.10). ✅
+- Feedback integration: history modifier + variety penalty sourced from re_user_dish_affinity (BUILD-07 tables). ✅
+
+**Gaps (backlog — algorithm builds or v3 data not present; NOT cheap fixes):**
+1. **`food_dna_match` component** — no per-dish DNA in v3 seed (DOC-08 is a spec). Requires a dish-tagging data build before it can score. Faithful to v3 to omit.
+2. **`class_affinity` component** (swipe-based, DOC-19 +0.10..+0.35) — depends on `class_affinity_vector` capture, which is the PACK 2 swipe-step gap (schema added SCHEMA-RE-008, capture UI pending).
+3. **`city_overlay` lifestyle boost** (0–0.15) — `re_city_migration_overlays` weights are seeded but not consumed in scoring (shared with PACK 4 backlog).
+4. **`cook_fit` component** (−0.20..+0.10) — requires dish complexity/cook-time metadata not present in v3 seed.
+5. **Allergy hard filter** — DOC-19 §6 lists allergy compatibility, but `re_class_dish_options` has no ingredient-ID linkage (dishes are `dish_name` text only), so allergen filtering on RE dishes is not possible without an ingredient-mapping data build. Backlog.
+6. **Explanation tags** (DOC-19 §8) — score components are computed but no `explanation_tag` is emitted to the UI. Minor build.
+
+**Exit criteria:**
+- [x] dishes expanded only after class selection ✅
+- [x] dishes never mixed across classes (0 shared, .eq meal_class_code) ✅
+- [x] hard filters (diet/never/cooldown) applied before scoring ✅
+- [x] scoring formula matches DOC-19 for v3-available components ✅
+- [~] food_dna_match / class_affinity / city_overlay / cook_fit (backlog — data or algorithm builds)
+- [~] explanation tags (minor build)
+
+**PACK 6: PASS (faithful to v3 data). 6 backlog items — all are forward builds, none are cheap data fixes, so deferred under validate-all-first mode.**
