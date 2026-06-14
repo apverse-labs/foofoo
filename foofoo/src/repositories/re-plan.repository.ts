@@ -56,6 +56,66 @@ function pickClass(primary: string | null, secondary: string | null): string | n
   return primary ?? secondary ?? null;
 }
 
+// ── City-overlay blending (DOC-09 / DOC-13) ────────────────────────────────────
+
+export interface OverlayBuckets { BF: string[]; LD: string[]; SN: string[]; DN: string[]; }
+
+/**
+ * @summary Bucket a pipe-delimited overlay_meal_classes string by slot prefix.
+ *
+ * @description DOC-09 city migration overlay classes are prefixed BF_/LD_/SN_/DN_.
+ *   Returns class codes grouped by slot so the blend can inject slot-matching classes.
+ *
+ * @param {string|null} overlayMealClasses - e.g. "BF_X|LD_Y|LD_Z|DN_W".
+ * @returns {OverlayBuckets}
+ */
+export function bucketOverlayClasses(overlayMealClasses: string | null): OverlayBuckets {
+  const b: OverlayBuckets = { BF: [], LD: [], SN: [], DN: [] };
+  if (!overlayMealClasses) return b;
+  for (const raw of overlayMealClasses.split('|')) {
+    const code = raw.trim();
+    if (!code) continue;
+    const pfx = code.slice(0, 3);
+    if (pfx === 'BF_') b.BF.push(code);
+    else if (pfx === 'LD_') b.LD.push(code);
+    else if (pfx === 'SN_') b.SN.push(code);
+    else if (pfx === 'DN_') b.DN.push(code);
+  }
+  return b;
+}
+
+/**
+ * @summary Choose which weekday slots receive a city-overlay class.
+ *
+ * @description DOC-09 worked example: a migrated household keeps home-state meals
+ *   most of the week and takes current-city lifestyle meals ~`cityWeight` of the time.
+ *   We apply this to WEEKDAY lunch/dinner only (breakfast, snack, and weekend-special
+ *   stay home-state dominant). Deterministic, evenly-spaced selection — no randomness,
+ *   so plans are reproducible (DOC-13 acceptance: deterministic with fixed inputs).
+ *
+ * @param {number} weekdayCount - number of weekday rows in the plan (typically 5).
+ * @param {number} cityWeight   - current_city_lifestyle_weight (0..1).
+ * @returns {number[]} sorted, de-duplicated indices (into the weekday list) to overlay.
+ */
+export function pickOverlaySlots(weekdayCount: number, cityWeight: number): number[] {
+  if (weekdayCount <= 0 || cityWeight <= 0) return [];
+  const n = Math.min(weekdayCount, Math.round(weekdayCount * cityWeight));
+  if (n <= 0) return [];
+  const step = weekdayCount / n;
+  const picks = new Set<number>();
+  for (let i = 0; i < n; i++) picks.add(Math.min(weekdayCount - 1, Math.round(i * step)));
+  return [...picks].sort((a, b) => a - b);
+}
+
+/**
+ * @summary Deterministically pick the i-th overlay class for a slot bucket (with dinner→lunch fallback).
+ */
+function overlayClassFor(slot: 'LD' | 'DN', buckets: OverlayBuckets, i: number): string | null {
+  const pool = slot === 'DN' && buckets.DN.length === 0 ? buckets.LD : buckets[slot];
+  if (!pool.length) return null;
+  return pool[i % pool.length];
+}
+
 // ── Internal DB types ─────────────────────────────────────────────────────────
 
 interface WeeklyClassPlanRow {
@@ -144,8 +204,48 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
       return;
     }
 
+    // DOC-09 city-overlay blend: for migrated users, inject current-city lifestyle
+    // classes into weekday lunch/dinner at the overlay's lifestyle weight, keeping
+    // home-state classes dominant (breakfast/snack/weekend untouched). Deterministic.
+    const overlayByDay = new Map<string, { ln?: string; dn?: string }>();
+    if (cityOverlayApplied) {
+      const stateId = cohortId.split('_')[0];
+      const { data: stateRow } = await supabaseRE
+        .from('re_states').select('state_ut').eq('state_id', stateId).maybeSingle();
+      const stateUt = (stateRow as { state_ut: string } | null)?.state_ut ?? null;
+      if (stateUt) {
+        const { data: ovRow } = await supabaseRE
+          .from('re_city_migration_overlays')
+          .select('overlay_meal_classes, current_city_lifestyle_weight')
+          .eq('origin_state_ut', stateUt)
+          .eq('destination_group_code', cityGroup as string)
+          .maybeSingle();
+        const ov = ovRow as { overlay_meal_classes: string | null; current_city_lifestyle_weight: number | string | null } | null;
+        if (ov?.overlay_meal_classes) {
+          const buckets = bucketOverlayClasses(ov.overlay_meal_classes);
+          const cityWeight = Number(ov.current_city_lifestyle_weight ?? 0);
+          const WEEKDAY_ORDER = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'];
+          const weekdayRows = rows
+            .filter((r) => r.weekday_weekend === 'Weekday')
+            .sort((a, b) => WEEKDAY_ORDER.indexOf(a.day_of_week) - WEEKDAY_ORDER.indexOf(b.day_of_week));
+          pickOverlaySlots(weekdayRows.length, cityWeight).forEach((idx, i) => {
+            const day = weekdayRows[idx]?.day_of_week;
+            if (!day) return;
+            overlayByDay.set(day, {
+              ln: overlayClassFor('LD', buckets, i) ?? undefined,
+              dn: overlayClassFor('DN', buckets, i) ?? undefined,
+            });
+          });
+        }
+      }
+    }
+
     // Collect all referenced class codes to resolve display names in one query.
     const codes = new Set<string>();
+    for (const o of overlayByDay.values()) {
+      if (o.ln) codes.add(o.ln);
+      if (o.dn) codes.add(o.dn);
+    }
     for (const r of rows) {
       [
         pickClass(r.breakfast_primary_class, r.breakfast_secondary_class),
@@ -165,9 +265,10 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
     const weekStart = getWeekStartMondayIST();
     const upsertRows = rows.map((r) => {
       const bf = pickClass(r.breakfast_primary_class, r.breakfast_secondary_class);
-      const ln = pickClass(r.lunch_primary_class, r.lunch_secondary_class);
+      const ov = overlayByDay.get(r.day_of_week);
+      const ln = ov?.ln ?? pickClass(r.lunch_primary_class, r.lunch_secondary_class);
       const sn = pickClass(r.snack_primary_class, r.snack_secondary_class);
-      const dn = pickClass(r.dinner_primary_class, r.dinner_secondary_class);
+      const dn = ov?.dn ?? pickClass(r.dinner_primary_class, r.dinner_secondary_class);
       return {
         profile_id: userId,
         cohort_id: cohortId,
