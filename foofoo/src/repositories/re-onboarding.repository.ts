@@ -269,6 +269,102 @@ export async function saveREHealthOverlay(
 }
 
 /**
+ * @summary Derive the canonical nonveg_mode label from food pref + weekly cadence.
+ *
+ * @description Pure helper (DOC-15/DOC-18). Maps the captured diet pref and non-veg
+ *   frequency into the canonical nonveg_mode used by the engine. Keeps egg/veg/jain/vegan
+ *   as hard modes; for non-veg, distinguishes occasional vs regular by weekly cadence.
+ *
+ * @returns one of: 'veg' | 'vegan' | 'jain' | 'egg_only' | 'occasional_nonveg' | 'regular_nonveg'
+ */
+export function deriveNonvegMode(foodPref: FoodPref, nonvegMealsPerWeek: number | null): string {
+  const p = String(foodPref).toLowerCase().replace(/-/g, '_');
+  if (p === 'veg' || p === 'vegetarian') return 'veg';
+  if (p === 'vegan') return 'vegan';
+  if (p === 'jain') return 'jain';
+  if (p === 'egg' || p === 'egg_only' || p === 'eggitarian') return 'egg_only';
+  const n = nonvegMealsPerWeek ?? 0;
+  return n >= 4 ? 'regular_nonveg' : 'occasional_nonveg';
+}
+
+/**
+ * @summary Validate a class_affinity_vector: keys are meal-class codes, values in [-1, 1].
+ * @description Pure guard so the swipe step never persists malformed affinity data.
+ */
+export function isValidClassAffinityVector(v: unknown): v is Record<string, number> {
+  if (!v || typeof v !== 'object' || Array.isArray(v)) return false;
+  return Object.entries(v as Record<string, unknown>).every(
+    ([k, val]) => /^(BF|LD|SN|DN)_/.test(k) && typeof val === 'number' && val >= -1 && val <= 1,
+  );
+}
+
+/**
+ * @summary Persist the remaining DOC-10 contract fields (SCHEMA-RE-008 columns).
+ * @description egg_allowed, nonveg_mode, fasting_pattern, weekday_time_pressure.
+ */
+export async function saveREContractExtras(
+  profileId: string,
+  extras: {
+    eggAllowed?: boolean | null;
+    nonvegMode?: string | null;
+    fastingPattern?: string | null;
+    weekdayTimePressure?: string | null;
+  },
+): Promise<void> {
+  try {
+    const patch: Record<string, unknown> = { profile_id: profileId };
+    if (extras.eggAllowed !== undefined) patch.egg_allowed = extras.eggAllowed;
+    if (extras.nonvegMode !== undefined) patch.nonveg_mode = extras.nonvegMode;
+    if (extras.fastingPattern !== undefined) patch.fasting_pattern = extras.fastingPattern;
+    if (extras.weekdayTimePressure !== undefined) patch.weekday_time_pressure = extras.weekdayTimePressure;
+    const { error } = await supabaseRE
+      .from('re_user_household_profiles')
+      .upsert(patch, { onConflict: 'profile_id' });
+    if (error) throw error;
+  } catch (err: any) {
+    Logger.error('RE_ONBOARDING', 'saveREContractExtras failed', { error: err?.message, profileId });
+    throw err;
+  }
+}
+
+/**
+ * @summary Persist the class-level swipe result (DOC-10 step 8) as class_affinity_vector.
+ */
+export async function saveREClassAffinity(
+  profileId: string,
+  vector: Record<string, number>,
+): Promise<void> {
+  try {
+    if (!isValidClassAffinityVector(vector)) {
+      throw new Error('invalid class_affinity_vector (keys must be meal-class codes, values in [-1,1])');
+    }
+    const { error } = await supabaseRE
+      .from('re_user_household_profiles')
+      .upsert({ profile_id: profileId, class_affinity_vector: vector }, { onConflict: 'profile_id' });
+    if (error) throw error;
+  } catch (err: any) {
+    Logger.error('RE_ONBOARDING', 'saveREClassAffinity failed', { error: err?.message, profileId });
+    throw err;
+  }
+}
+
+/**
+ * @summary Persist RE onboarding progress so a killed session resumes at the right step.
+ */
+export async function saveREOnboardingStep(userId: string, step: number): Promise<void> {
+  try {
+    const { error } = await supabaseRE
+      .from('profiles')
+      .update({ onboarding_step: step })
+      .eq('id', userId);
+    if (error) throw error;
+  } catch (err: any) {
+    Logger.error('RE_ONBOARDING', 'saveREOnboardingStep failed', { error: err?.message, userId });
+    throw err;
+  }
+}
+
+/**
  * @summary Mark RE onboarding complete: set re_engine_version on production profiles
  *   and insert audit row in re_user_engine_assignments.
  */
