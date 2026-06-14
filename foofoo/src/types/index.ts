@@ -193,6 +193,88 @@ export interface RESummaryAlternative {
   why_not_first: string;
 }
 
+// ─── RE Module Types ──────────────────────────────────────────────────────────
+
+export type REEngineVersion =
+  | 'classfirst_v1'
+  | 'legacy_dish_scoring_v1'
+  | 'legacy_dish_scoring_v2';
+
+export type CookDependency =
+  | 'self_cook'
+  | 'skilled_cook'
+  | 'cook_needs_instruction'
+  | 'maid_simple'
+  | 'tiffin_pg_no_kitchen'
+  | 'delivery_heavy';
+
+export type HealthOverlayCode =
+  | 'weight_loss'
+  | 'high_protein_fitness'
+  | 'veg_protein_seeker'
+  | 'diabetic_management'
+  | 'hypertension_heart'
+  | 'fasting_ritual'
+  | 'pregnancy_support'
+  | 'postpartum_lactation';
+
+export type HealthScope = 'all' | 'member_only';
+
+export type MemberSegment =
+  | 'baby_6_18m'
+  | 'toddler'
+  | 'school_child'
+  | 'teen_high_appetite'
+  | 'picky_child'
+  | 'pregnant_member'
+  | 'lactating_or_postpartum_mother'
+  | 'elderly_member'
+  | 'diabetic_member'
+  | 'hypertension_heart_member'
+  | 'recovery_member';
+
+export interface REState {
+  state_id: string;
+  state_ut: string;
+}
+
+export interface REMainCohort {
+  main_cohort_id: string;
+  main_cohort_label: string;
+  user_understands_as: string;
+  subcohort_screen_copy: string;
+}
+
+export interface RESubcohort {
+  sub_cohort_id: string;
+  main_cohort_id: string;
+  show_as_chip_text: string;
+  maps_to_persona_id: string;
+}
+
+export interface REHouseholdProfile {
+  id?: string;
+  profile_id: string;
+  main_cohort_id: string | null;
+  sub_cohort_id: string | null;
+  persona_id: string | null;
+  cohort_id: string | null;
+  overlay_persona_ids: string[];
+  nonveg_meals_per_week: number | null;
+  preferred_protein_types: string[];
+  cook_dependency: CookDependency | null;
+  health_overlay_code: HealthOverlayCode | null;
+  health_scope: HealthScope | null;
+  city_destination_group: string | null;
+}
+
+export interface REHouseholdMember {
+  id?: string;
+  profile_id: string;
+  member_segment: MemberSegment;
+  age_band: string | null;
+}
+
 export interface RESummarySlot {
   winner: { name: string; score: number; cuisine: string };
   alternatives: RESummaryAlternative[];

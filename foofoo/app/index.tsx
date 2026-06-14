@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../src/services/supabase';
 import { resetOnboardingProgress } from '../src/repositories/profiles.repository';
-import { COLORS, APP_NAME, STORAGE_KEYS, ONBOARDING } from '../src/config/constants';
+import { COLORS, APP_NAME, STORAGE_KEYS, ONBOARDING, RE_FEATURE_FLAGS } from '../src/config/constants';
 import { Logger } from '../src/utils/systemLogger';
 import { OneSignalService } from '../src/services/onesignal.service';
 import { PostHogService } from '../src/services/posthog.service';
@@ -68,6 +68,12 @@ export default function Index() {
 
       if (profile?.onboarding_completed) {
         router.replace('/(tabs)' as never);
+        return;
+      }
+
+      // New signup with RE onboarding enabled: onboarding_step === 0 (never started).
+      if (RE_FEATURE_FLAGS.ONBOARDING_ENABLED && (profile?.onboarding_step ?? 0) === 0) {
+        router.replace('/(re-onboarding)/re-step-1' as never);
         return;
       }
 
