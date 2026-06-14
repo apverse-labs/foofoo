@@ -24,7 +24,7 @@
 - **Code Base / Checkpoint:** CKPT-001 + RE BUILD-01 (apverse-labs-RE)
 - **Git Release Branch:** `develop` ← PROTECTED (NEVER DELETE)
 - **Target Audience:** Internal QA / Beta Cohort — RE module validation
-- **Status:** Active — RE BUILD-01 through BUILD-08 complete (2026-06-14). SCHEMA-RE-001/002/003/004 live on staging.
+- **Status:** Active — RE BUILD-01 through BUILD-10 complete (2026-06-14). SCHEMA-RE-001/002/003/004/005 live on staging.
 
 ### DEP-PRODUCTION (Project B — Supabase Production)
 - **Project Ref:** `ufgfznpqixplcbhmsqqw` (foofoo-mvp, ap-south-1)
@@ -59,6 +59,7 @@
 | SCHEMA-RE-002    | 20260614_003_re_user_weekly_plans.sql       | ✅ staging  | ✅              | BUILD-04: `re_user_weekly_plans` (per-user 7-day class plan, RLS own-rows). Applied 2026-06-14 via Supabase MCP to foofoo-staging. 17 cols, 1 RLS policy (re_uwp_all_own), index idx_re_uwp_profile_week. NOT yet on production. |
 | SCHEMA-RE-003    | 20260614_004_re_user_addon_plans.sql        | ✅ staging  | ✅              | BUILD-05: `re_user_addon_plans` (per-user member-specific add-on plan, RLS own-rows). Applied 2026-06-14 via Supabase MCP to foofoo-staging. 11 cols, 1 RLS policy (re_uap_all_own), 2 indexes (profile_week, profile_week_day). NOT yet on production. |
 | SCHEMA-RE-004    | 20260614_005_re_user_feedback.sql           | ✅ staging  | ✅              | BUILD-07: 3 tables — `re_user_feedback` (raw event log, 8 cols, RLS re_uf_own), `re_user_dish_affinity` (materialized dish scores + is_never + not_today_until, 11 cols, UNIQUE profile+dish, RLS re_uda_own), `re_user_class_affinity` (class-level scores, 6 cols, UNIQUE profile+class, RLS re_uca_own). Applied 2026-06-14 via Supabase MCP to foofoo-staging. NOT yet on production. |
+| SCHEMA-RE-005    | 20260614_006_re_taxonomy_releases.sql       | ✅ staging  | ✅              | BUILD-09: `re_taxonomy_releases` — taxonomy release audit log (taxonomy_version UNIQUE, version_from/to, changed_entities JSONB, risk_level CHECK, qa_status CHECK, qa_report JSONB, approved_by, release_notes, rollback_plan, released_at). SELECT-only RLS for authenticated users; writes require service role. Index: idx_re_tr_created. Applied 2026-06-14 via Supabase MCP to foofoo-staging. NOT yet on production. |
 
 ---
 
