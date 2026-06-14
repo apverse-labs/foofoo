@@ -9,7 +9,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '../../src/services/supabase';
-import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
+import { supabaseRE } from '../../src/services/supabase-re';
+import { COLORS, SPACING, BORDER_RADIUS, RE_FEATURE_FLAGS } from '../../src/config/constants';
 import { Logger } from '../../src/utils/systemLogger';
 import { isValidEmail } from '../../src/utils/validators';
 import { PostHogService } from '../../src/services/posthog.service';
@@ -50,8 +51,10 @@ function evaluatePassword(password: string): { strength: PasswordStrength; missi
  * @returns {Promise<void>}
  */
 async function recordConsent(userId: string): Promise<void> {
+  // Write consent to whichever project this user was created in.
+  const client = RE_FEATURE_FLAGS.ONBOARDING_ENABLED ? supabaseRE : supabase;
   try {
-    await supabase.from('user_consent').upsert(
+    await client.from('user_consent').upsert(
       { user_id: userId, data_consent_at: new Date().toISOString() },
       { onConflict: 'user_id', ignoreDuplicates: true }
     );
@@ -113,9 +116,13 @@ export default function SignUp() {
     fullName.trim().length > 0 && isValidEmail(email) && strength === 'strong';
 
   /**
-   * @summary Creates a Supabase account and routes to email verification.
+   * @summary Creates an account in the correct Supabase project and routes to onboarding.
    *
-   * @throws {AuthError} When Supabase signUp rejects the credentials
+   * @description When RE_FEATURE_FLAGS.ONBOARDING_ENABLED is true, new accounts are
+   * created in foofoo-staging (supabaseRE). Legacy path uses production (supabase).
+   * Both paths record DPDP consent in their respective project.
+   *
+   * @throws {AuthError} When signUp is rejected by the auth project
    *
    * @calledBy Create Account button onPress
    */
@@ -124,20 +131,22 @@ export default function SignUp() {
     setLoading(true);
     setErrorMsg('');
     try {
-      const { data, error } = await supabase.auth.signUp({
+      const isRE = RE_FEATURE_FLAGS.ONBOARDING_ENABLED;
+      const client = isRE ? supabaseRE : supabase;
+
+      const { data, error } = await client.auth.signUp({
         email: email.trim(),
         password,
         options: { data: { full_name: fullName.trim() } },
       });
       if (error) throw error;
       if (data.user) {
-        PostHogService.capture('sign_up', { method: 'email' });
+        PostHogService.capture('sign_up', { method: 'email', flow: isRE ? 're' : 'legacy' });
         await recordConsent(data.user.id);
-        // If session exists, email confirm is disabled → go straight to onboarding
         if (data.session) {
-          router.replace('/(onboarding)/step-1' as never);
+          // Email confirm disabled — route immediately to the correct onboarding flow.
+          router.replace(isRE ? '/(re-onboarding)/re-step-1' : '/(onboarding)/step-1' as never);
         } else {
-          // Email confirmation required → show verification screen
           router.replace('/(auth)/email-verification' as never);
         }
       }

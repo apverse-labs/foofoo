@@ -6,8 +6,9 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import * as Sentry from '@sentry/react-native';
-import { COLORS, APP_VERSION, TIMING } from '../src/config/constants';
+import { COLORS, APP_VERSION, TIMING, RE_FEATURE_FLAGS } from '../src/config/constants';
 import { supabase } from '../src/services/supabase';
+import { supabaseRE } from '../src/services/supabase-re';
 import { OneSignalService } from '../src/services/onesignal.service';
 import { PostHogService } from '../src/services/posthog.service';
 
@@ -54,11 +55,22 @@ export default function RootLayout() {
     }
 
     // Reactively route to auth-gate whenever the user signs out from any screen.
+    // Listen to both the production client (legacy users) and the RE staging
+    // client (RE users) so SIGNED_OUT from either project triggers the gate.
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
       if (event === 'SIGNED_OUT') {
         router.replace('/(auth)/auth-gate' as never);
       }
     });
+    let reSubscription: { unsubscribe: () => void } | null = null;
+    if (RE_FEATURE_FLAGS.ONBOARDING_ENABLED) {
+      const { data: { subscription: reSub } } = supabaseRE.auth.onAuthStateChange((event) => {
+        if (event === 'SIGNED_OUT') {
+          router.replace('/(auth)/auth-gate' as never);
+        }
+      });
+      reSubscription = reSub;
+    }
 
     // Deep-link handler: foofoo://home from the morning push notification jumps to the planner tab.
     const handleDeepLink = (url: string) => {
@@ -69,6 +81,7 @@ export default function RootLayout() {
 
     return () => {
       subscription.unsubscribe();
+      reSubscription?.unsubscribe();
       linkingSub.remove();
     };
   }, []);
@@ -94,6 +107,7 @@ export default function RootLayout() {
           <Stack.Screen name="(intro)" />
           <Stack.Screen name="(auth)" />
           <Stack.Screen name="(onboarding)" />
+          <Stack.Screen name="(re-onboarding)" />
           <Stack.Screen name="(tabs)" />
         </Stack>
       </QueryClientProvider>
