@@ -4,7 +4,7 @@ import { useRouter } from 'expo-router';
 import { supabaseRE } from '../../src/services/supabase-re';
 import { completeREOnboarding } from '../../src/repositories/re-onboarding.repository';
 import { runCohortAssignment } from '../../src/repositories/re-cohort-resolver.repository';
-import { generateUserWeeklyPlan } from '../../src/repositories/re-plan.repository';
+import { generateWeeklyPlan } from '../../src/services/re-engine.service';
 import { COLORS, SPACING } from '../../src/config/constants';
 import { Logger } from '../../src/utils/systemLogger';
 import { PostHogService } from '../../src/services/posthog.service';
@@ -15,7 +15,7 @@ import { PostHogService } from '../../src/services/posthog.service';
  * @description Runs automatically on mount:
  *   1. runCohortAssignment — resolves state_id + city → cohort_id + overlay personas.
  *   2. completeREOnboarding — sets re_engine_version + audit row.
- *   3. generateUserWeeklyPlan — builds the first weekly plan.
+ *   3. generateWeeklyPlan (RE service) — resolves engine version, builds the first weekly plan.
  *   On success, briefly shows "Done ✓" then routes to /(tabs). On failure, retries.
  */
 export default function REStep9() {
@@ -47,7 +47,7 @@ export default function REStep9() {
         await completeREOnboarding(user.id);
         Logger.info('RE_STEP9', 're_engine_version set', { userId: user.id });
 
-        await generateUserWeeklyPlan(user.id);
+        await generateWeeklyPlan(user.id, true);
         Logger.info('RE_STEP9', 'weekly plan generated', { userId: user.id });
 
         setDone(true);

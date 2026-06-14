@@ -360,3 +360,48 @@ Query across all 12 primary/secondary/tertiary class columns of `re_weekly_class
 - [~] DNA / repeat-tolerance / drift vectors (V2+ backlog)
 
 **PACK 7: PASS (after code-only fix closing the class-affinity loop). 3 backlog items (V2+).**
+
+---
+
+## PACK 8 — BUILD-08: API & App Integration ⚠️ 2 BOUNDARY LEAKS + 2 TS BUGS → FIXED (code-only)
+
+**Binary doc read:** DOC-23 (API_Contract_Specification). Core endpoints, generate-week request/response shapes, validation error codes extracted.
+
+**Architecture audit — resolver/versions/interface present under `foofoo/src/re-engine/`:**
+- `interface/MealPlanningREEngine.ts` — stable contract (generateWeeklyPlan, getTodayView, recordFeedback). ✅
+- `resolver/engineResolver.ts` — `resolveEngineVersion()` + `createEngine()`; unknown versions default to classfirst_v1. ✅
+- `versions/RE_V1/index.ts` — `REV1Engine` implements the interface, delegates to repositories. ✅
+- `services/re-engine.service.ts` — app-facing entry; reads `profiles.re_engine_version`, resolves engine, delegates. ✅
+
+This realizes the CLAUDE.md resolution contract (app → service → resolver → version → result). DOC-23 specifies REST endpoints; this RN app is client-direct-to-Supabase (no API server, per BUILD-00B audit), so the "API contract" is realized as the TypeScript service interface — a faithful architectural adaptation.
+
+**GUARDRAIL VERIFIED:** No screen/component imports a specific version (`RE_V1`) directly — `grep` across foofoo/app + foofoo/src/components is clean. Version dispatch stays internal. ✅
+
+**DEFECT 1 — 2 boundary leaks (components bypassed the service → resolver skipped):**
+- `REDishPick.tsx` called `recordFeedback` repository directly instead of `submitFeedback` (service). Feedback would not route through the user's assigned engine.
+- `re-step-9.tsx` called `generateUserWeeklyPlan` repository directly instead of `generateWeeklyPlan` (service).
+Both bypass the resolver, defeating the BUILD-08 integration boundary (re-engine.service.ts header: "UI components call ONLY these functions — never individual repositories").
+
+**Fix (code-only):**
+- `REDishPick.tsx`: `recordFeedback` (repo) → `submitFeedback` (service).
+- `re-step-9.tsx`: `generateUserWeeklyPlan` (repo) → `generateWeeklyPlan(userId, true)` (service, forceRegenerate=true to preserve first-plan generation at onboarding).
+- Verified REV1Engine wraps the identical repo calls, so behavior is unchanged for V1 while the resolver is now respected for future versions. `runCohortAssignment`/`completeREOnboarding` legitimately stay as direct calls — they are pre-plan onboarding orchestration, not version-dispatched engine ops.
+
+**DEFECT 2 — 2 pre-existing TypeScript errors in re-feedback.repository.ts (blocked clean build):**
+- `ClassAffinityRow` interface missing `signal_count` (read at line 223) → added optional `signal_count?: number`.
+- Unsafe `as DishAffinityRow[]` cast on supabase result → `as unknown as DishAffinityRow[]`.
+After fix: **`tsc --noEmit` exits 0** (whole foofoo app type-clean).
+
+**Validation:** engine-resolver 8/8 pass; full RE unit suite **361/361 pass (16 suites)**; TypeScript 0 errors.
+
+**Backlog:** DOC-23 explicit validation error codes (MISSING_DIET_MODE 422, NO_DISH_CANDIDATES fallback flag, etc.) are not surfaced as structured error objects — the service throws/logs instead. Minor; relevant if a REST gateway is later added.
+
+**Exit criteria:**
+- [x] stable single entry point (re-engine.service) used by UI (after fix) ✅
+- [x] no direct version imports by app (guardrail) ✅
+- [x] resolver dispatches by re_engine_version ✅
+- [x] class-first plan generation + dish ranking + feedback all reachable via service ✅
+- [x] TypeScript clean, 361/361 tests pass ✅
+- [~] DOC-23 structured validation error codes (backlog — no REST layer yet)
+
+**PACK 8: PASS (after code-only fixes: 2 boundary reroutes + 2 TS bug fixes).**

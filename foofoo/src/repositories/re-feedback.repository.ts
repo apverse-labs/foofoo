@@ -112,6 +112,7 @@ interface DishAffinityRow {
 interface ClassAffinityRow {
   meal_class_code: string;
   affinity_score: number;
+  signal_count?: number;
 }
 
 // ── Operations ────────────────────────────────────────────────────────────────
@@ -272,7 +273,7 @@ export async function fetchDishAffinities(
     if (error) throw error;
 
     const map: REDishAffinityMap = {};
-    for (const row of (data ?? []) as DishAffinityRow[]) {
+    for (const row of (data ?? []) as unknown as DishAffinityRow[]) {
       map[row.dish_option_id] = {
         affinityScore: row.affinity_score,
         lockCount: row.lock_count,

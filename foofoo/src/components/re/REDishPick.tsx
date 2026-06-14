@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Modal, Pressable } from 'react-native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
-import { recordFeedback } from '../../repositories/re-feedback.repository';
+import { submitFeedback } from '../../services/re-engine.service';
 import { Logger } from '../../utils/systemLogger';
 import type { REDishCandidate, REFeedbackSignal } from '../../types';
 
@@ -33,7 +33,7 @@ export default function REDishPick({
 
   async function send(signal: REFeedbackSignal) {
     try {
-      await recordFeedback(userId, dish.dishOptionId, mealClassCode, signal);
+      await submitFeedback(userId, dish.dishOptionId, mealClassCode, signal);
       setSent(signal);
       onFeedback?.(dish.dishOptionId, signal);
     } catch (err: unknown) {
