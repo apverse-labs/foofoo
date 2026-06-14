@@ -1,0 +1,441 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/07_Technical_Build/DOC-25_QA_Test_Cases_Validation_Spec_v1.0.xlsx",
+ "named_ranges": {},
+ "sheets": [
+  {
+   "name": "README",
+   "state": "visible",
+   "max_row": 12,
+   "max_col": 2,
+   "headers": [
+    "field",
+    "value"
+   ],
+   "rows": [
+    [
+     "field",
+     "value"
+    ],
+    [
+     "document_id",
+     "DOC-25"
+    ],
+    [
+     "title",
+     "Validation, QA, and Test Case Specification"
+    ],
+    [
+     "version",
+     "1.0"
+    ],
+    [
+     "purpose",
+     "Defines synthetic profiles, expected outputs, validation checks, data integrity tests, and build acceptance criteria."
+    ],
+    [
+     "applicable_build_ids",
+     "BUILD-08, BUILD-10"
+    ],
+    [
+     "canonical_source",
+     "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+    ],
+    [
+     "source_sheets_used",
+     "QA_Checks_v3, Cohort_Matrix_v3, Weekly_Class_Plan_v3"
+    ],
+    [
+     "rule_1",
+     "Generate weekly meal classes before dish recommendations."
+    ],
+    [
+     "rule_2",
+     "Keep primary family meals separate from member-specific add-ons."
+    ],
+    [
+     "rule_3",
+     "Join dish pools by meal_class_code only."
+    ],
+    [
+     "rule_4",
+     "Do not invent IDs in application code; use governance docs for changes."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "QA_Checks_v3",
+   "state": "visible",
+   "max_row": 8,
+   "max_col": 4,
+   "headers": [
+    "check_id",
+    "check_name",
+    "status",
+    "details"
+   ],
+   "rows": [
+    [
+     "check_id",
+     "check_name",
+     "status",
+     "details"
+    ],
+    [
+     "QA01",
+     "Cohort IDs unique",
+     "PASS",
+     "2952 unique / 2952 rows"
+    ],
+    [
+     "QA02",
+     "Plan day IDs unique",
+     "PASS",
+     "20664 unique / 20664 rows"
+    ],
+    [
+     "QA03",
+     "Weekly primary/secondary/tertiary classes are MAIN_PRIMARY only",
+     "PASS",
+     "Invalid references: []"
+    ],
+    [
+     "QA04",
+     "Dependent/lifecycle legacy classes moved out of main plan",
+     "PASS",
+     "13 legacy add-on/template classes marked not primary"
+    ],
+    [
+     "QA05",
+     "Add-on component plan populated only for relevant personas",
+     "PASS",
+     "7992 add-on rows across dependent/health/cook overlay personas"
+    ],
+    [
+     "QA06",
+     "Class-dish examples join from primary class only",
+     "PASS",
+     "weekly examples generated with examples_for(primary_class_code); exhaustive list in Class_Dish_Options_v3"
+    ],
+    [
+     "QA07",
+     "State/city migration overlay retained",
+     "PASS",
+     "324 origin/destination overlay rows"
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Synthetic_Test_Cases",
+   "state": "visible",
+   "max_row": 16,
+   "max_col": 4,
+   "headers": [
+    "test_id",
+    "profile",
+    "expected_behavior",
+    "docs"
+   ],
+   "rows": [
+    [
+     "test_id",
+     "profile",
+     "expected_behavior",
+     "docs"
+    ],
+    [
+     "QA_001",
+     "MP-origin vegetarian family in Mumbai with infant and diabetic elder",
+     "MP home-style base, Mumbai lifestyle overlay, infant add-on, diabetic add-on, no non-veg.",
+     "DOC-03,DOC-09,DOC-13"
+    ],
+    [
+     "QA_002",
+     "Gujarat Jain family with school child",
+     "Jain constraints, child/tiffin add-ons only Jain-compatible, no onion/garlic/root veg.",
+     "DOC-18"
+    ],
+    [
+     "QA_003",
+     "Bengali non-veg family in Kolkata",
+     "Fish classes appear at realistic cadence if non-veg allowed.",
+     "DOC-15"
+    ],
+    [
+     "QA_004",
+     "Kerala coastal omnivore family in Bengaluru",
+     "Kerala rice/fish/dosa/appam home base plus Bengaluru lifestyle overlay.",
+     "DOC-09,DOC-15"
+    ],
+    [
+     "QA_005",
+     "Punjab young couple high appetite",
+     "Heavier classes allowed; coherence not over-forced.",
+     "DOC-14"
+    ],
+    [
+     "QA_006",
+     "Elderly couple with soft food need",
+     "Soft/digestive classes may be primary because majority household is elderly.",
+     "DOC-04,DOC-06"
+    ],
+    [
+     "QA_007",
+     "Working couple no cook",
+     "Quick/assembly/low-cook weekday classes; weekend optional special.",
+     "DOC-16"
+    ],
+    [
+     "QA_008",
+     "Solo fitness vegetarian user",
+     "High-protein vegetarian add-ons/snacks; no non-veg.",
+     "DOC-17,DOC-19"
+    ],
+    [
+     "QA_009",
+     "Family with toddler plus spicy regional food",
+     "Family primary meal remains; toddler mild add-on generated when needed.",
+     "DOC-04,DOC-06"
+    ],
+    [
+     "QA_010",
+     "User marks paneer dishes Never",
+     "Paneer dishes excluded; class can still offer non-paneer alternatives if class remains valid.",
+     "DOC-21"
+    ],
+    [
+     "QA_011",
+     "Minimal onboarding: only state and veg",
+     "Cold-start state veg baseline generated; confidence low.",
+     "DOC-20"
+    ],
+    [
+     "QA_012",
+     "Class code in plan not in taxonomy",
+     "Validation fails before response.",
+     "DOC-22"
+    ],
+    [
+     "QA_013",
+     "Vegetarian household with non-veg state intensity high",
+     "No non-veg appears; state non-veg intensity ignored by hard diet.",
+     "DOC-15,DOC-18"
+    ],
+    [
+     "QA_014",
+     "Family with postpartum mother",
+     "Family primary meals remain; postpartum add-on generated for target member.",
+     "DOC-04,DOC-17"
+    ],
+    [
+     "QA_015",
+     "Migrated Tamil family in Delhi",
+     "Tamil home classes remain with Delhi urban overlay.",
+     "DOC-09"
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Automated_Validation_Checks",
+   "state": "visible",
+   "max_row": 11,
+   "max_col": 3,
+   "headers": [
+    "check_id",
+    "description",
+    "pass_condition"
+   ],
+   "rows": [
+    [
+     "check_id",
+     "description",
+     "pass_condition"
+    ],
+    [
+     "VAL_001",
+     "All plan class codes exist in Meal_Class_Master_v3.",
+     "No missing codes."
+    ],
+    [
+     "VAL_002",
+     "Class-to-dish expansion returns only dishes from same class.",
+     "All dish.meal_class_code == plan.class_code."
+    ],
+    [
+     "VAL_003",
+     "Add-on dishes return only from addon class pool.",
+     "All addon dish addon_class_code matches."
+    ],
+    [
+     "VAL_004",
+     "Hard constraints applied before scoring.",
+     "No excluded diet/allergy/Jain/non-veg violation."
+    ],
+    [
+     "VAL_005",
+     "Each generated week has 7 days and expected meal slots.",
+     "7 day objects."
+    ],
+    [
+     "VAL_006",
+     "No add-on-only class appears as primary.",
+     "Zero violations."
+    ],
+    [
+     "VAL_007",
+     "Current city overlay does not erase home-state base.",
+     "Plan contains home-state class signal."
+    ],
+    [
+     "VAL_008",
+     "Fixed random seed gives repeatable output.",
+     "Identical output across runs."
+    ],
+    [
+     "VAL_009",
+     "Every addon target member exists in household profile.",
+     "No orphan add-ons."
+    ],
+    [
+     "VAL_010",
+     "Diet mode missing blocks dish expansion but not class preview.",
+     "Safe error/fallback."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Build_Acceptance",
+   "state": "visible",
+   "max_row": 11,
+   "max_col": 2,
+   "headers": [
+    "build_id",
+    "minimum acceptance before next build"
+   ],
+   "rows": [
+    [
+     "build_id",
+     "minimum acceptance before next build"
+    ],
+    [
+     "BUILD-01",
+     "All seed data imports; row counts match source; FK checks pass."
+    ],
+    [
+     "BUILD-02",
+     "Onboarding produces normalized household profile for all main paths."
+    ],
+    [
+     "BUILD-03",
+     "Persona assignment covers base and overlap personas with confidence."
+    ],
+    [
+     "BUILD-04",
+     "Weekly class plan generated for synthetic profiles."
+    ],
+    [
+     "BUILD-05",
+     "Required add-ons generated separately."
+    ],
+    [
+     "BUILD-06",
+     "Dish candidates are eligible and ranked."
+    ],
+    [
+     "BUILD-07",
+     "Feedback changes future scoring without hard constraint violations."
+    ],
+    [
+     "BUILD-08",
+     "APIs return schema-valid responses and errors."
+    ],
+    [
+     "BUILD-09",
+     "Admin changes require QA and versioning."
+    ],
+    [
+     "BUILD-10",
+     "Analytics capture and dashboards validate quality."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Edge_Cases",
+   "state": "visible",
+   "max_row": 6,
+   "max_col": 2,
+   "headers": [
+    "edge_case",
+    "expected_handling"
+   ],
+   "rows": [
+    [
+     "edge_case",
+     "expected_handling"
+    ],
+    [
+     "No eligible dish candidates after hard filters",
+     "Return class-level plan with safe fallback flag and admin data gap alert."
+    ],
+    [
+     "User has many Never items",
+     "Prompt to review Never list; do not violate Never list."
+    ],
+    [
+     "Unknown current city",
+     "Use home state and tier/default city proxy."
+    ],
+    [
+     "Multiple overlapping member needs",
+     "Generate multiple add-ons and deduplicate where appropriate."
+    ],
+    [
+     "Weekend fasting day",
+     "Fasting mode overrides weekend indulgence for fasting member/household."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  }
+ ],
+ "limitations": []
+}

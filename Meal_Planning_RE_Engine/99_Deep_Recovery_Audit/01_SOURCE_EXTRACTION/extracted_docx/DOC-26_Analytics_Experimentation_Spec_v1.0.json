@@ -1,0 +1,222 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/08_Operations/DOC-26_Analytics_Experimentation_Spec_v1.0.docx",
+ "paragraphs": [
+  "Analytics + Experimentation Specification",
+  "DOC-26 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines metrics, event taxonomy, dashboards, cohort-quality checks, onboarding funnel tracking, meal-class acceptance, add-on relevance, experimentation, and data-quality monitoring.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Analytics Goals",
+  "Measure whether the system creates first-day WOW, improves with revealed behavior, avoids wrong constraints, and keeps data taxonomy healthy.",
+  "5. Core Metrics",
+  "6. Experiment Ideas",
+  "7. Dashboards",
+  "Onboarding funnel dashboard",
+  "Plan quality dashboard",
+  "Class acceptance dashboard",
+  "Add-on relevance dashboard",
+  "Constraint violation dashboard",
+  "Data taxonomy QA dashboard",
+  "Experiment results dashboard",
+  "8. Event Schema",
+  "event = {  \"event_type\": \"MEAL_LOCKED\",  \"user_id\": \"u_123\",  \"plan_id\": \"wp_123\",  \"meal_slot\": \"dinner\",  \"meal_class_code\": \"DIN_SIMPLE_SABZI_DAL\",  \"dish_id\": \"d_456\",  \"persona_id\": \"P_FAMILY_SCHOOL_CHILD\",  \"timestamp\": \"2026-06-13T18:30:00+05:30\"}",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-10.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "Product can measure first-week quality.",
+  "Analytics can detect taxonomy/data problems.",
+  "Experiments do not violate hard constraints.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-26"
+   ],
+   [
+    "Canonical file name",
+    "DOC-26_Analytics_Experimentation_Spec_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-10"
+   ],
+   [
+    "Purpose",
+    "Defines metrics, event taxonomy, dashboards, cohort-quality checks, onboarding funnel tracking, meal-class acceptance, add-on relevance, experimentation, and data-quality monitoring."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "QA_Checks_v3"
+   ],
+   [
+    "Dependencies",
+    "DOC-19, DOC-21, DOC-25"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-10",
+    "Analytics, Experimentation, QA, Governance",
+    "Track funnel, plan quality, acceptance, add-on relevance, class accuracy, taxonomy changes, and A/B tests."
+   ]
+  ],
+  [
+   [
+    "Metric",
+    "Definition",
+    "Target direction"
+   ],
+   [
+    "First-plan acceptance",
+    "Percent of first suggested plan/cards kept or locked.",
+    "Increase"
+   ],
+   [
+    "Carousel depth",
+    "Average position user accepts.",
+    "Decrease"
+   ],
+   [
+    "Class acceptance",
+    "Acceptance by meal_class_code.",
+    "Increase for relevant cohorts"
+   ],
+   [
+    "Dish acceptance",
+    "Acceptance by dish_id within class.",
+    "Increase"
+   ],
+   [
+    "Add-on relevance",
+    "Add-on accepted/used by target member segment.",
+    "Increase"
+   ],
+   [
+    "Never rate",
+    "Suggestions marked Never.",
+    "Decrease"
+   ],
+   [
+    "Not Today rate",
+    "Temporal rejections.",
+    "Monitor"
+   ],
+   [
+    "Onboarding completion",
+    "Percent reaching profile creation.",
+    "Increase"
+   ],
+   [
+    "Constraint violation count",
+    "Hard constraint breach.",
+    "Zero"
+   ],
+   [
+    "Class/dish mismatch count",
+    "Dish not under selected class.",
+    "Zero"
+   ]
+  ],
+  [
+   [
+    "Experiment",
+    "Variants",
+    "Success metric"
+   ],
+   [
+    "Onboarding cohort screen",
+    "5 main cards vs conversational questions",
+    "Completion and first-plan acceptance"
+   ],
+   [
+    "Class swipes",
+    "Dish images vs class examples",
+    "Class acceptance and correction rate"
+   ],
+   [
+    "City overlay strength",
+    "Home-heavy vs balanced vs city-heavy",
+    "Plan acceptance by migrated households"
+   ],
+   [
+    "Add-on visibility",
+    "Always show vs collapsed add-ons",
+    "Add-on acceptance and confusion rate"
+   ],
+   [
+    "Randomization range",
+    "0-0.05 vs 0-0.10 vs 0-0.15",
+    "Carousel depth and repeat satisfaction"
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-26 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

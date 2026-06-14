@@ -1,0 +1,234 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/03_Meal_Taxonomy/DOC-06_Primary_vs_Addon_Meal_Architecture_v1.0.docx",
+ "paragraphs": [
+  "Primary vs Add-on Meal Architecture Specification",
+  "DOC-06 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines the architectural separation between primary meal classes, secondary/tertiary class options, add-on-only classes, and combo templates. This prevents lifecycle and health classes from being incorrectly used as normal weekly primary meals.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Class Roles",
+  "5. Why Add-ons Are Separate",
+  "Families usually do not cook an entirely separate main meal for every member. They cook one household meal and add or adapt components for baby, toddler, elderly, diabetic, pregnant/postpartum, recovery, or fitness needs. The engine must mirror this reality.",
+  "6. Add-on-only Examples",
+  "7. Overlap Resolution Rules",
+  "If a class describes a person type rather than a meal behavior, it is likely add-on-only.",
+  "If a class describes a full family eating pattern, it can be primary if allowed by meal slot.",
+  "If a class is a template like family comfort, do not treat it as a dish pool; map to concrete meal classes.",
+  "Overlap resolution must be stored in data and enforced by validation, not only by developer memory.",
+  "8. Implementation Join Shape",
+  "weekly_slot = {  \"primary_class_code\": \"DIN_SIMPLE_SABZI_DAL\",  \"secondary_class_code\": \"DIN_LIGHT_KHICHDI_CURD\",  \"addon_components\": [    {\"target_member_segment\": \"INFANT\", \"addon_class_code\": \"ADDON_INFANT_SOFT_FOOD\"},    {\"target_member_segment\": \"DIABETIC_ELDER\", \"addon_class_code\": \"ADDON_DIABETIC_LOW_GI\"}  ]}",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-04, BUILD-05.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "Add-on-only classes cannot appear in primary weekly class columns.",
+  "Dish expansion uses primary class codes for family dishes and addon_class_codes for add-ons.",
+  "Validation catches any class marked not primary appearing as a primary plan class.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-06"
+   ],
+   [
+    "Canonical file name",
+    "DOC-06_Primary_vs_Addon_Meal_Architecture_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-04, BUILD-05"
+   ],
+   [
+    "Purpose",
+    "Defines the architectural separation between primary meal classes, secondary/tertiary class options, add-on-only classes, and combo templates. This prevents lifecycle and health classes from being incorrectly used as normal weekly primary meals."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "Meal_Class_Master_v3, Meal_Class_Overlap_Resolution, Addon_Component_Class_Master, Household_Addon_Component_Plan"
+   ],
+   [
+    "Dependencies",
+    "DOC-04, DOC-05, DOC-13"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-04",
+    "Weekly Class-First Plan Engine",
+    "Generate 7-day meal-class plan from cohort matrix, regional rules, city overlay, weekday/weekend rhythm, variety rules."
+   ],
+   [
+    "BUILD-05",
+    "Member-Specific Add-on Component Engine",
+    "Attach infant/toddler/child/elderly/pregnancy/postpartum/diabetic/fitness add-ons without replacing family primary meal."
+   ]
+  ],
+  [
+   [
+    "Role",
+    "Definition",
+    "Allowed use"
+   ],
+   [
+    "Primary class",
+    "Main class eaten by majority of household in a meal slot.",
+    "Weekly class plan primary columns."
+   ],
+   [
+    "Secondary class",
+    "Alternative compatible class for dish variety or fallback.",
+    "Can be used if primary blocked or for carousel variety."
+   ],
+   [
+    "Tertiary class",
+    "Lower-priority compatible option.",
+    "Used for variety or replacement."
+   ],
+   [
+    "Add-on class",
+    "Member-specific additional component.",
+    "Separate add-on plan only."
+   ],
+   [
+    "Combo template",
+    "A pattern that combines multiple actual classes.",
+    "Guide for assembly; not a dish pool by itself."
+   ]
+  ],
+  [
+   [
+    "Add-on segment",
+    "Example class",
+    "Dish/component examples"
+   ],
+   [
+    "baby_6_18m",
+    "ADD_INFANT_6M_SOFT_PORRIDGE",
+    "Ragi porridge; Suji kheer; Rice kanji; Mashed banana; Apple puree; Mashed sweet potato"
+   ],
+   [
+    "baby_6_18m",
+    "ADD_INFANT_6M_DAL_KHICHDI",
+    "Mashed dal rice; Soft moong khichdi; Dal water rice mash; Lauki dal mash; Curd rice mash"
+   ],
+   [
+    "toddler",
+    "ADD_TODDLER_MILD_MINI_PLATE",
+    "Dal rice ghee; Mini phulka curd; Soft vegetable khichdi; Paneer bhurji small; Mild pulao"
+   ],
+   [
+    "school_child",
+    "ADD_CHILD_TIFFIN_SIDE",
+    "Mini idli; Paneer roll; Veg sandwich; Poha cutlet; Fruit curd; Dosa roll"
+   ],
+   [
+    "child_or_picky_child",
+    "ADD_CHILD_PROTEIN_SIDE",
+    "Paneer bhurji; Curd bowl; Boiled egg if eaten; Dal chilla mini; Cheese dosa; Peanut chutney if safe"
+   ],
+   [
+    "picky_child",
+    "ADD_PICKY_CHILD_BRIDGE_FOOD",
+    "Curd rice; Mild pasta with vegetables; Paneer roll; Mini paratha curd; Sweet corn chaat; Soft dosa"
+   ],
+   [
+    "teen_high_appetite",
+    "ADD_TEEN_EXTRA_CARB_PROTEIN",
+    "Extra dal; Egg bhurji if eaten; Curd rice cup; Peanut chikki; Paneer sandwich; Chicken piece if eaten"
+   ],
+   [
+    "pregnant_member",
+    "ADD_PREGNANCY_IRON_FOLATE_SIDE",
+    "Palak dal; Chana salad; Sprouts chaat; Beet-carrot kosambari; Egg curry if eaten; Fish curry if eaten"
+   ],
+   [
+    "pregnant_member",
+    "ADD_PREGNANCY_CALCIUM_PROTEIN_SIDE",
+    "Curd bowl; Paneer bhurji; Ragi malt; Milk/dry fruit small; Moong dal chilla; Sesame laddoo small"
+   ],
+   [
+    "lactating_or_postpartum_mother",
+    "ADD_LACTATION_GALACTAGOGUE_SNACK",
+    "Ajwain paratha piece; Methi laddoo small; Panjiri portion; Ragi malt; Gond laddoo milk; Moong chilla"
+   ],
+   [
+    "postpartum_mother",
+    "ADD_POSTPARTUM_DIGESTIVE_LIGHT",
+    "Moong dal khichdi; Lauki dal; Ajwain paratha curd; Chicken soup if eaten; Dalia with ghee; Methi dal roti"
+   ],
+   [
+    "elderly_member",
+    "ADD_ELDERLY_SOFT_PROTEIN_SIDE",
+    "Moong dal soup; Soft paneer bhurji; Palak dal; Curd bowl; Egg drop soup if eaten; Fish stew if eaten"
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-06 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

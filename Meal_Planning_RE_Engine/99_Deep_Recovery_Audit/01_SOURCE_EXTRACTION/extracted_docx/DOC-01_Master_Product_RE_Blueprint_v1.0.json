@@ -1,0 +1,259 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/01_Product_Foundation/DOC-01_Master_Product_RE_Blueprint_v1.0.docx",
+ "paragraphs": [
+  "Master Product + Recommendation System Blueprint",
+  "DOC-01 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines the full product and recommendation-engine blueprint: how onboarding, household profile, cohort assignment, weekly class-first planning, add-ons, dish expansion, Food DNA scoring, feedback, APIs, analytics, and admin operations fit together.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Product Problem and Design Principle",
+  "Users often self-report aspirational dishes, while real behavior lives at meal-class level. Therefore the engine must understand classes such as simple green vegetable sabzi, dal-rice comfort, stuffed flatbread breakfast, light grain breakfast, fish curry rice, and weekend festive breakfast. The product should feel magical because a few onboarding answers produce a realistic household week.",
+  "5. End-to-End Architecture",
+  "Capture minimal onboarding answers through dynamic cohort routing.",
+  "Normalize answers into household profile fields.",
+  "Assign main cohort, sub-cohort, backend persona, overlays, diet mode, cook mode, and confidence.",
+  "Generate class-first weekly plan using cohort matrix and state/city overlays.",
+  "Attach member-specific add-ons for infant, toddler, child, elderly, pregnancy, postpartum, diabetic, recovery, and fitness needs.",
+  "Expand classes into dish candidates from class-specific pools.",
+  "Rank dish candidates using Food DNA, constraints, day context, city/state signals, and feedback history.",
+  "Learn from revealed behavior and update preference vectors.",
+  "6. Core Objects",
+  "7. Recommendation Engine Versions",
+  "8. System Boundaries",
+  "This blueprint covers planning and recommendation. It does not require nutrition-grade medical advice, automatic grocery fulfillment, or fully generative recipes in MVP. Health/lifecycle overlays are planning aids and constraints, not medical diagnosis.",
+  "Class-first planning is mandatory for MVP.",
+  "Dish-level scoring can be simple initially but must use the same data model.",
+  "The source workbook v3 is enough for seed data; later admin operations can update it through governed releases.",
+  "9. Worked Examples",
+  "MP family in Mumbai",
+  "A user says they are planning for a family, originally from Madhya Pradesh, living in Mumbai, vegetarian, with an infant and diabetic elder. The system should not ask them to choose from 41 personas. It infers family + infant + diabetic overlay, uses MP home-style meals, adds Mumbai Tier 1 lifestyle influence, creates primary family classes, then attaches infant and diabetic add-ons.",
+  "10. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-00, BUILD-01, BUILD-02, BUILD-03, BUILD-04, BUILD-05, BUILD-06, BUILD-07, BUILD-08, BUILD-09, BUILD-10.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "11. Acceptance Criteria",
+  "A developer can explain the complete chain from onboarding answer to ranked dish card.",
+  "The implementation can be split into build modules without ambiguity.",
+  "All future docs can reference this blueprint as the product source of truth.",
+  "12. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-01"
+   ],
+   [
+    "Canonical file name",
+    "DOC-01_Master_Product_RE_Blueprint_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-00, BUILD-01, BUILD-02, BUILD-03, BUILD-04, BUILD-05, BUILD-06, BUILD-07, BUILD-08, BUILD-09, BUILD-10"
+   ],
+   [
+    "Purpose",
+    "Defines the full product and recommendation-engine blueprint: how onboarding, household profile, cohort assignment, weekly class-first planning, add-ons, dish expansion, Food DNA scoring, feedback, APIs, analytics, and admin operations fit together."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "README, Data_Dictionary_v3, QA_Checks_v3"
+   ],
+   [
+    "Dependencies",
+    "DOC-00, DOC-02"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-00",
+    "Documentation and Source Data Contract",
+    "Create canonical docs, read order, source workbook contract, and non-negotiable architecture rules."
+   ],
+   [
+    "BUILD-01",
+    "Data Model and Seed Import",
+    "Create DB schema, load source tables, enforce IDs, constraints, and versioned seed data."
+   ],
+   [
+    "BUILD-02",
+    "Onboarding and Household Profile Builder",
+    "Build dynamic onboarding, household/member capture, diet and city inputs, and profile object."
+   ],
+   [
+    "BUILD-03",
+    "Cohort Persona Assignment",
+    "Map profile answers to main cohort, sub-cohort, backend persona, state/city overlay, non-veg mode, and confidence."
+   ],
+   [
+    "BUILD-04",
+    "Weekly Class-First Plan Engine",
+    "Generate 7-day meal-class plan from cohort matrix, regional rules, city overlay, weekday/weekend rhythm, variety rules."
+   ],
+   [
+    "BUILD-05",
+    "Member-Specific Add-on Component Engine",
+    "Attach infant/toddler/child/elderly/pregnancy/postpartum/diabetic/fitness add-ons without replacing family primary meal."
+   ],
+   [
+    "BUILD-06",
+    "Dish Expansion and Food DNA Ranking",
+    "Expand selected meal classes into dish candidate pools and rank dishes using Food DNA + constraints + context."
+   ],
+   [
+    "BUILD-07",
+    "Feedback Personalization Loop",
+    "Use swipes, locks, Not Today, Never, search, and accepted repeats to adjust preferences and class weights."
+   ],
+   [
+    "BUILD-08",
+    "API and App Integration",
+    "Expose onboarding/profile/plan/generation/feedback endpoints with stable JSON contracts."
+   ],
+   [
+    "BUILD-09",
+    "Admin CMS and Data Operations",
+    "Build admin workflows to maintain classes, dishes, add-ons, Food DNA tags, data QA, and releases."
+   ],
+   [
+    "BUILD-10",
+    "Analytics, Experimentation, QA, Governance",
+    "Track funnel, plan quality, acceptance, add-on relevance, class accuracy, taxonomy changes, and A/B tests."
+   ]
+  ],
+  [
+   [
+    "Object",
+    "Meaning",
+    "Primary docs"
+   ],
+   [
+    "Household Profile",
+    "Normalized object produced from onboarding answers, device/current city, home state, diet, cook dependency, household members.",
+    "DOC-04, DOC-10, DOC-11"
+   ],
+   [
+    "Backend Persona",
+    "Detailed machine-facing persona selected from v3 persona master. Not shown as a long list to users.",
+    "DOC-03"
+   ],
+   [
+    "Meal Class",
+    "Behavioral eating category, such as simple sabzi, dal-rice, stuffed flatbread, fish curry rice.",
+    "DOC-05"
+   ],
+   [
+    "Weekly Class Plan",
+    "7 days x meal slots x primary/secondary/tertiary meal classes.",
+    "DOC-12, DOC-13"
+   ],
+   [
+    "Add-on Component",
+    "Extra member-specific dish/component that does not replace main family meal.",
+    "DOC-06"
+   ],
+   [
+    "Dish Candidate",
+    "A dish option inside the selected meal class pool.",
+    "DOC-07"
+   ],
+   [
+    "Food DNA Vector",
+    "Dish-level attributes for scoring and personalization.",
+    "DOC-08, DOC-19"
+   ]
+  ],
+  [
+   [
+    "Version",
+    "When active",
+    "Core capability"
+   ],
+   [
+    "RE-v1 Cold Start",
+    "New users, low user base",
+    "Rule-based class-first planning from onboarding, cohort matrix, region/city, diet, weekday/weekend, cook mode, add-ons."
+   ],
+   [
+    "RE-v2 Personal History",
+    "After enough user events",
+    "Adds acceptance, rejection, repeat tolerance, Never/Not Today, class affinity drift, Food DNA preference learning."
+   ],
+   [
+    "RE-v3 Cluster Seeded",
+    "After sufficient active user base",
+    "Seeds new users from similar Food DNA clusters; still respects all RE-v1/RE-v2 constraints."
+   ],
+   [
+    "RE-v4 Full Personalization",
+    "Mature scale",
+    "Personal history plus cluster trends, richer context, pantry, health targets, and advanced collaborative filtering."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-01 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

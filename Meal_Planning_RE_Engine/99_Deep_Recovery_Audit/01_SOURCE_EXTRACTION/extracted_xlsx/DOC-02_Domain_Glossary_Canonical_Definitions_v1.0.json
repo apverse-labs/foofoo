@@ -1,0 +1,569 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/01_Product_Foundation/DOC-02_Domain_Glossary_Canonical_Definitions_v1.0.xlsx",
+ "named_ranges": {},
+ "sheets": [
+  {
+   "name": "README",
+   "state": "visible",
+   "max_row": 12,
+   "max_col": 2,
+   "headers": [
+    "field",
+    "value"
+   ],
+   "rows": [
+    [
+     "field",
+     "value"
+    ],
+    [
+     "document_id",
+     "DOC-02"
+    ],
+    [
+     "title",
+     "Domain Glossary + Canonical Definitions"
+    ],
+    [
+     "version",
+     "1.0"
+    ],
+    [
+     "purpose",
+     "Controlled vocabulary for product, data, API, and AI coding agent. Prevents ambiguity in terms like cohort, persona, class, add-on, overlay, and Food DNA."
+    ],
+    [
+     "applicable_build_ids",
+     "BUILD-00, BUILD-01"
+    ],
+    [
+     "canonical_source",
+     "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+    ],
+    [
+     "source_sheets_used",
+     "All v3 sheets"
+    ],
+    [
+     "implementation_rule_1",
+     "Generate weekly meal classes before dish recommendations."
+    ],
+    [
+     "implementation_rule_2",
+     "Keep primary family meals separate from member-specific add-ons."
+    ],
+    [
+     "implementation_rule_3",
+     "Do not invent new IDs in application code; manage changes through DOC-27/DOC-28."
+    ],
+    [
+     "implementation_rule_4",
+     "Apply hard constraints before scoring and personalization."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Glossary",
+   "state": "visible",
+   "max_row": 21,
+   "max_col": 4,
+   "headers": [
+    "Term",
+    "Canonical definition",
+    "Implementation note",
+    "Related doc"
+   ],
+   "rows": [
+    [
+     "Term",
+     "Canonical definition",
+     "Implementation note",
+     "Related doc"
+    ],
+    [
+     "Meal Class",
+     "Behavioral class/category of meal eaten regularly; dish is an instance.",
+     "Plan classes before dishes.",
+     "DOC-05, DOC-12"
+    ],
+    [
+     "Primary Meal Class",
+     "Main class eaten by majority household for a slot.",
+     "Used in weekly class plan primary columns.",
+     "DOC-06, DOC-13"
+    ],
+    [
+     "Secondary/Tertiary Class",
+     "Compatible fallback/variety class for a slot.",
+     "Used when primary blocked or for carousel variety.",
+     "DOC-12, DOC-14"
+    ],
+    [
+     "Add-on Component",
+     "Extra member-specific component for infant/toddler/elderly/diabetic/etc.",
+     "Never replaces family primary meal unless household is only that segment.",
+     "DOC-04, DOC-06"
+    ],
+    [
+     "Main Cohort",
+     "Small user-facing top-level cohort.",
+     "Keep to 4-5 choices in onboarding.",
+     "DOC-03, DOC-10"
+    ],
+    [
+     "Sub-cohort",
+     "Second-level user-facing segment after main cohort.",
+     "Maps to backend persona.",
+     "DOC-03"
+    ],
+    [
+     "Backend Persona",
+     "Detailed machine-facing persona used by engine.",
+     "Do not show all personas to user.",
+     "DOC-03"
+    ],
+    [
+     "Overlay Persona",
+     "Additional condition/member/lifestyle modifier.",
+     "Allows family with toddler + diabetic elder.",
+     "DOC-03, DOC-17"
+    ],
+    [
+     "Home State",
+     "State/UT representing food identity.",
+     "Separate from current city.",
+     "DOC-09"
+    ],
+    [
+     "Current City",
+     "Where household lives now.",
+     "Controls lifestyle/time pressure/city overlay.",
+     "DOC-09"
+    ],
+    [
+     "Migration Overlay",
+     "Blend of home-state and current-city meal influence.",
+     "MP in Mumbai differs from MP in Indore.",
+     "DOC-09"
+    ],
+    [
+     "Food DNA",
+     "20-dimension dish feature vector.",
+     "Used for scoring and personalization.",
+     "DOC-08, DOC-19"
+    ],
+    [
+     "Hard Constraint",
+     "Rule that excludes item.",
+     "Diet, allergy, Jain, Never.",
+     "DOC-18"
+    ],
+    [
+     "Soft Constraint",
+     "Score modifier.",
+     "Class affinity, region, cook fit, weather.",
+     "DOC-19"
+    ],
+    [
+     "Cold Start",
+     "New user/minimal data state.",
+     "Use safe assumptions.",
+     "DOC-20"
+    ],
+    [
+     "Revealed Preference",
+     "Behavior inferred from actions.",
+     "Overrides aspirational onboarding over time.",
+     "DOC-21"
+    ],
+    [
+     "Class Affinity Vector",
+     "User/cohort preference distribution over meal classes.",
+     "Updated by onboarding and behavior.",
+     "DOC-11, DOC-21"
+    ],
+    [
+     "Dish Candidate",
+     "Dish option retrieved under selected meal class.",
+     "Ranked by scoring engine.",
+     "DOC-07, DOC-19"
+    ],
+    [
+     "Never List",
+     "Permanent user rejection list.",
+     "Hard excludes until removed.",
+     "DOC-21"
+    ],
+    [
+     "Not Today",
+     "Temporary rejection.",
+     "Cooldown only.",
+     "DOC-21"
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Enums",
+   "state": "visible",
+   "max_row": 10,
+   "max_col": 3,
+   "headers": [
+    "Enum group",
+    "Allowed values / source",
+    "Notes"
+   ],
+   "rows": [
+    [
+     "Enum group",
+     "Allowed values / source",
+     "Notes"
+    ],
+    [
+     "meal_slot",
+     "breakfast, lunch, snack, dinner",
+     "Use consistent slots across weekly plan and add-ons."
+    ],
+    [
+     "weekday_weekend",
+     "weekday, weekend",
+     "Saturday/Sunday default weekend unless configured."
+    ],
+    [
+     "diet_mode",
+     "vegetarian, eggetarian, non_veg, vegan, jain",
+     "See DOC-18."
+    ],
+    [
+     "city_tier",
+     "tier1, tier2, metro_proxy, other",
+     "Use source workbook city_tier_code/city_tier."
+    ],
+    [
+     "class_role",
+     "primary_allowed, secondary_allowed, addon_only, combo_template",
+     "See DOC-06."
+    ],
+    [
+     "cook_capability",
+     "skilled, basic, needs_assistance, no_cook, self_quick, elderly_cook",
+     "See DOC-16."
+    ],
+    [
+     "heaviness",
+     "light, moderate, heavy or numeric 1-3",
+     "See meal class and Food DNA."
+    ],
+    [
+     "confidence_level",
+     "low, medium, high",
+     "Used in persona and cold-start logic."
+    ],
+    [
+     "feedback_event",
+     "view, swipe_past, return, lock, tap_recipe, grocery_add, not_today, never, search_add",
+     "See DOC-21."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "ID_Conventions",
+   "state": "visible",
+   "max_row": 9,
+   "max_col": 4,
+   "headers": [
+    "ID type",
+    "Example",
+    "Source",
+    "Rule"
+   ],
+   "rows": [
+    [
+     "ID type",
+     "Example",
+     "Source",
+     "Rule"
+    ],
+    [
+     "main_cohort_id",
+     "MC_FAMILY",
+     "Main_Cohort_Hierarchy",
+     "Stable user-facing cohort ID."
+    ],
+    [
+     "sub_cohort_id",
+     "SC_COUPLE_WITH_INFANT",
+     "Subcohort_Routing",
+     "Stable sub-cohort ID."
+    ],
+    [
+     "persona_id",
+     "P_COUPLE_WITH_INFANT",
+     "Persona_Master_v3",
+     "Backend persona ID."
+    ],
+    [
+     "cohort_id",
+     "generated in Cohort_Matrix_v3",
+     "Cohort_Matrix_v3",
+     "State/tier/persona cohort row key."
+    ],
+    [
+     "meal_class_code",
+     "BF_LIGHT_GRAIN",
+     "Meal_Class_Master_v3",
+     "Primary class join key."
+    ],
+    [
+     "dish_option_id",
+     "dish option row ID",
+     "Class_Dish_Options_v3",
+     "Dish candidate key."
+    ],
+    [
+     "addon_class_code",
+     "ADDON_INFANT_SOFT_FOOD",
+     "Addon_Component_Class_Master",
+     "Add-on class join key."
+    ],
+    [
+     "addon_dish_option_id",
+     "addon dish row ID",
+     "Addon_Dish_Options",
+     "Add-on dish candidate key."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Source_Data_Dictionary",
+   "state": "visible",
+   "max_row": 21,
+   "max_col": 3,
+   "headers": [
+    "sheet_name",
+    "row_count_or_scope",
+    "description"
+   ],
+   "rows": [
+    [
+     "sheet_name",
+     "row_count_or_scope",
+     "description"
+    ],
+    [
+     "README",
+     "guide",
+     "How to use v3 workbook"
+    ],
+    [
+     "Main_Cohort_Hierarchy",
+     5,
+     "5 user-facing main cohorts"
+    ],
+    [
+     "Subcohort_Routing",
+     41,
+     "Sub-cohort chips mapping to detailed personas"
+    ],
+    [
+     "Persona_Master_v3",
+     41,
+     "41 detailed personas with hierarchy/overlay fields"
+    ],
+    [
+     "Routing_Rules_v3",
+     8,
+     "Dynamic onboarding questions and mapping"
+    ],
+    [
+     "State_Profile_v3",
+     36,
+     "36 state/UT food signatures"
+    ],
+    [
+     "City_Migration_Overlay_v3",
+     324,
+     "Origin-current city lifestyle blending"
+    ],
+    [
+     "Meal_Class_Master_v3",
+     131,
+     "Meal classes with MAIN vs ADDON roles"
+    ],
+    [
+     "Meal_Class_Overlap_Resolution",
+     13,
+     "Classes moved out of main weekly plan and why"
+    ],
+    [
+     "Class_Dish_Options_v3",
+     1050,
+     "Exhaustive dish list by meal_class_code"
+    ],
+    [
+     "Addon_Component_Class_Master",
+     24,
+     "Member-specific add-on component classes"
+    ],
+    [
+     "Addon_Dish_Options",
+     142,
+     "Dish/component options under each add-on class"
+    ],
+    [
+     "Cohort_Matrix_v3",
+     2952,
+     "State x tier x persona cohort assumptions with unique IDs"
+    ],
+    [
+     "Weekly_Class_Plan_v3",
+     20664,
+     "7-day class plan by cohort; main classes + add-on columns"
+    ],
+    [
+     "Household_Addon_Component_Plan",
+     7992,
+     "Normalized add-on plan rows for dependents/health/cook overlays"
+    ],
+    [
+     "NonVeg_Logic_v3",
+     36,
+     "Nonveg/egg frequency logic by state"
+    ],
+    [
+     "DB_Implementation_v3",
+     10,
+     "Suggested DB tables"
+    ],
+    [
+     "Sources_v3",
+     7,
+     "Source URLs and usage notes"
+    ],
+    [
+     "QA_Checks_v3",
+     7,
+     "Data quality checks"
+    ],
+    [
+     "Data_Dictionary_v3",
+     0,
+     "This sheet"
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Sources",
+   "state": "visible",
+   "max_row": 8,
+   "max_col": 5,
+   "headers": [
+    "source_id",
+    "source_name",
+    "url",
+    "used_for",
+    "confidence_note"
+   ],
+   "rows": [
+    [
+     "source_id",
+     "source_name",
+     "url",
+     "used_for",
+     "confidence_note"
+    ],
+    [
+     "SRC01",
+     "NFHS-5 India Report, IIPS and ICF, 2019-21",
+     "https://rchiips.org/nfhs/NFHS-5Reports/NFHS-5_INDIA_REPORT.pdf",
+     "Diet frequency priors for eggs, fish/chicken/meat, milk/curd, pulses, state differences",
+     "Use official state factsheets/report tables for production calibration."
+    ],
+    [
+     "SRC02",
+     "MoSPI Household Consumption Expenditure Survey / Nutritional Intake 2022-24",
+     "https://www.mospi.gov.in/",
+     "Staple/cereal, protein, fat, processed-food spend priors; urban vs rural direction",
+     "Use latest MoSPI PDFs/tables when productionizing state-level numeric weights."
+    ],
+    [
+     "SRC03",
+     "ICMR-NIN Dietary Guidelines for Indians 2024",
+     "https://www.nin.res.in/dietaryguidelines/index.html",
+     "Pregnancy/lactation, infant complementary feeding, elderly nutrient density, balanced diet, protein/fiber guidance",
+     "Supports add-on logic rather than replacing family meals for dependents."
+    ],
+    [
+     "SRC04",
+     "Godrej Food Trends Report / urban food trend references",
+     "https://www.godrejindustries.com/",
+     "Urban experimentation, home cooking, snacking, regional pride, premium/foodie cohorts",
+     "Directional market-trend source; not a hard nutrition input."
+    ],
+    [
+     "SRC05",
+     "Kantar FMCG/snacking trend references",
+     "https://www.kantar.com/in",
+     "Packaged snack, convenience, category adoption direction",
+     "Directional convenience/snack priors."
+    ],
+    [
+     "SRC06",
+     "Swiggy/Zomato food-ordering trend reports and public summaries",
+     "https://blog.swiggy.com/",
+     "Urban delivery, biryani/fast food, breakfast/snack ordering, late-night behavior",
+     "Use for Tier 1 current-city lifestyle overlay only, not home-cooking defaults."
+    ],
+    [
+     "SRC07",
+     "Founder/user onboarding insight",
+     "Internal",
+     "Stated preferences over-index aspirational dishes; revealed preference lives at meal-class level",
+     "Core reason v3 is class-first and add-on-aware."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  }
+ ],
+ "limitations": []
+}

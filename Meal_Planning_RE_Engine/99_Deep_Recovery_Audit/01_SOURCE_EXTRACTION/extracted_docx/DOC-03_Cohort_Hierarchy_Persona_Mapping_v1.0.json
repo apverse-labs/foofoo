@@ -1,0 +1,253 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/02_Cohorts_Personas/DOC-03_Cohort_Hierarchy_Persona_Mapping_v1.0.docx",
+ "paragraphs": [
+  "Cohort Hierarchy + Persona Mapping Specification",
+  "DOC-03 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines how user-facing main cohorts and sub-cohorts map to detailed backend personas and overlays. The purpose is to keep onboarding simple while retaining a rich machine-facing persona system.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. User-facing Cohort Design",
+  "Onboarding should show only a small set of main cohorts, not the full backend persona list. The v3 workbook defines 5 main cohorts and 41 backend personas/subcohorts. The user should feel the app asks natural questions, not a taxonomy quiz.",
+  "5. Backend Persona Mapping Rules",
+  "Map main cohort selection to a limited sub-cohort screen.",
+  "Map sub-cohort to a base backend persona.",
+  "Then ask targeted follow-ups for overlays: baby/toddler, school child, elderly, diabetes, pregnancy, postpartum, fitness, cook dependency, non-veg cadence.",
+  "Allow multiple overlays where real households overlap, for example family with toddler plus diabetic elder.",
+  "Store both base persona and overlay personas in the user profile.",
+  "6. Persona Confidence Model",
+  "Every persona assignment should carry a confidence score. High confidence comes from explicit sub-cohort selection plus supporting answers. Medium confidence comes from main cohort plus household members. Low confidence comes from skipped onboarding and should use DOC-20 cold-start assumptions.",
+  "7. Overlap Handling",
+  "8. Implementation Output",
+  "persona_assignment = {  \"main_cohort_id\": \"MC_FAMILY\",  \"sub_cohort_id\": \"SC_COUPLE_WITH_INFANT\",  \"base_persona_id\": \"P_COUPLE_WITH_INFANT\",  \"overlay_persona_ids\": [\"O_DIABETIC_ELDER\"],  \"confidence\": 0.86,  \"routing_trace\": [\"main_cohort\", \"sub_cohort\", \"health_overlay\"]}",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-02, BUILD-03.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "User is never shown a long backend persona list.",
+  "Every detailed persona used by the engine can be traced to onboarding answers.",
+  "Overlapping personas are supported through overlays rather than duplicate persona explosion.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-03"
+   ],
+   [
+    "Canonical file name",
+    "DOC-03_Cohort_Hierarchy_Persona_Mapping_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-02, BUILD-03"
+   ],
+   [
+    "Purpose",
+    "Defines how user-facing main cohorts and sub-cohorts map to detailed backend personas and overlays. The purpose is to keep onboarding simple while retaining a rich machine-facing persona system."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "Main_Cohort_Hierarchy, Subcohort_Routing, Persona_Master_v3, Routing_Rules_v3"
+   ],
+   [
+    "Dependencies",
+    "DOC-01, DOC-02, DOC-10, DOC-11"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-02",
+    "Onboarding and Household Profile Builder",
+    "Build dynamic onboarding, household/member capture, diet and city inputs, and profile object."
+   ],
+   [
+    "BUILD-03",
+    "Cohort Persona Assignment",
+    "Map profile answers to main cohort, sub-cohort, backend persona, state/city overlay, non-veg mode, and confidence."
+   ]
+  ],
+  [
+   [
+    "Main cohort ID",
+    "Label",
+    "Routing idea"
+   ],
+   [
+    "MC1",
+    "Just me / shared adult household",
+    "Then ask cooking system, diet/nonveg, health/fitness, origin-current city."
+   ],
+   [
+    "MC2",
+    "Couple household",
+    "Then ask baby age if selected, food restrictions, nonveg frequency, cook availability, origin-current city."
+   ],
+   [
+    "MC3",
+    "Family with children",
+    "Children-specific food becomes add-on component; main plan remains family meal."
+   ],
+   [
+    "MC4",
+    "Joint / elders / care household",
+    "Elder/recovery food becomes add-on component unless the whole household follows it."
+   ],
+   [
+    "MC5",
+    "Special goal or kitchen operating mode",
+    "This can be selected first or captured as overlay after MC1-MC4. Do not force user to browse all detailed personas."
+   ]
+  ],
+  [
+   [
+    "Sub-cohort",
+    "Backend persona",
+    "Ask next"
+   ],
+   [
+    "student_hostel_budget",
+    "Solo student/hostel budget",
+    "Ask baby age / dependent / health / cook / nonveg / origin-city overlays as applicable."
+   ],
+   [
+    "solo_young_professional",
+    "Solo young professional",
+    "Ask baby age / dependent / health / cook / nonveg / origin-city overlays as applicable."
+   ],
+   [
+    "working_woman_alone",
+    "Working woman living alone",
+    "Ask baby age / dependent / health / cook / nonveg / origin-city overlays as applicable."
+   ],
+   [
+    "flatmates_shared_kitchen",
+    "Flatmates shared kitchen",
+    "Ask baby age / dependent / health / cook / nonveg / origin-city overlays as applicable."
+   ],
+   [
+    "migrant_adult_home_state",
+    "Migrant in metro preserving home-state food",
+    "Ask baby age / dependent / health / cook / nonveg / origin-city overlays as applicable."
+   ],
+   [
+    "desk_job_sedentary",
+    "Desk-job sedentary household",
+    "Ask baby age / dependent / health / cook / nonveg / origin-city overlays as applicable."
+   ],
+   [
+    "dink_couple",
+    "DINK couple no children",
+    "Ask baby age / dependent / health / cook / nonveg / origin-city overlays as applicable."
+   ],
+   [
+    "newly_married_mixed_state",
+    "Newly married mixed-state couple",
+    "Ask baby age / dependent / health / cook / nonveg / origin-city overlays as applicable."
+   ],
+   [
+    "planning_pregnancy",
+    "Couple planning pregnancy",
+    "Ask baby age / dependent / health / cook / nonveg / origin-city overlays as applicable."
+   ],
+   [
+    "pregnant_household",
+    "Pregnant woman household",
+    "Ask baby age / dependent / health / cook / nonveg / origin-city overlays as applicable."
+   ]
+  ],
+  [
+   [
+    "Overlap situation",
+    "Base persona",
+    "Overlay handling"
+   ],
+   [
+    "Couple with infant + diabetic elder",
+    "Couple/family with infant",
+    "Attach infant add-on and diabetic elder add-on; primary family meal remains family class."
+   ],
+   [
+    "Working couple + no cook + fitness goal",
+    "Working couple",
+    "Use no-cook/quick cook capability plus high-protein/light overlay."
+   ],
+   [
+    "Family with school child + Jain restriction",
+    "Family with child",
+    "Use child add-on preferences only within Jain constraints."
+   ],
+   [
+    "Elderly couple + soft food need",
+    "Elderly household",
+    "If the whole household is elderly, soft classes may be primary; otherwise soft food is add-on."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-03 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

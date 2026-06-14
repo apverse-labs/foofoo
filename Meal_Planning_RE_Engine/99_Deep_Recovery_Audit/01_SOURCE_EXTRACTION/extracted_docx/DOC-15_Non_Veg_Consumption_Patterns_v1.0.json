@@ -1,0 +1,265 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/04_Regional_Intelligence/DOC-15_Non_Veg_Consumption_Patterns_v1.0.docx",
+ "paragraphs": [
+  "Non-Veg Consumption Pattern Specification",
+  "DOC-15 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines state, region, persona, and household-level logic for egg, chicken, fish/seafood, mutton/red meat, and non-veg frequency across weekdays and weekends.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Core Rule",
+  "Non-veg recommendations must never appear unless diet_mode and household constraints allow them. Once allowed, non-veg cadence should come from state intensity, persona, household preference, and weekday/weekend behavior.",
+  "5. State Pattern Examples",
+  "6. Protein Hierarchy",
+  "7. Weekday vs Weekend Cadence",
+  "Coastal/eastern regular non-veg households may eat fish on weekdays as normal home food.",
+  "North/west urban households may keep chicken/mutton mostly for weekend dinners or special lunches.",
+  "Eggs can appear as weekday breakfast/protein add-on if allowed.",
+  "Mutton/red meat should usually be weekend/special unless household explicitly selects high non-veg frequency.",
+  "Vegetarian, Jain, vegan, and no-nonveg households get zero non-veg classes.",
+  "8. Implementation Rules",
+  "if profile.diet_mode in [\"veg\", \"jain\", \"vegan\"]:    nonveg_allowed = Falseelif profile.diet_mode == \"egg_only\":    allowed_proteins = [\"egg\"]else:    allowed_proteins = resolve_from_user_and_state(profile, NonVeg_Logic_v3)nonveg_slots = allocate_nonveg_slots(allowed_proteins, state_intensity, persona, weekday_weekend)",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-03, BUILD-04, BUILD-06.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "Non-veg is never inferred for vegetarian/Jain/vegan users.",
+  "Coastal/eastern fish patterns are represented when allowed.",
+  "Weekend indulgence patterns are represented for appropriate cohorts.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-15"
+   ],
+   [
+    "Canonical file name",
+    "DOC-15_Non_Veg_Consumption_Patterns_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-03, BUILD-04, BUILD-06"
+   ],
+   [
+    "Purpose",
+    "Defines state, region, persona, and household-level logic for egg, chicken, fish/seafood, mutton/red meat, and non-veg frequency across weekdays and weekends."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "NonVeg_Logic_v3, State_Profile_v3, Meal_Class_Master_v3"
+   ],
+   [
+    "Dependencies",
+    "DOC-09, DOC-18, DOC-19"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-03",
+    "Cohort Persona Assignment",
+    "Map profile answers to main cohort, sub-cohort, backend persona, state/city overlay, non-veg mode, and confidence."
+   ],
+   [
+    "BUILD-04",
+    "Weekly Class-First Plan Engine",
+    "Generate 7-day meal-class plan from cohort matrix, regional rules, city overlay, weekday/weekend rhythm, variety rules."
+   ],
+   [
+    "BUILD-06",
+    "Dish Expansion and Food DNA Ranking",
+    "Expand selected meal classes into dish candidate pools and rank dishes using Food DNA + constraints + context."
+   ]
+  ],
+  [
+   [
+    "State",
+    "Intensity",
+    "Default meals/week",
+    "Preferred classes"
+   ],
+   [
+    "Andhra Pradesh",
+    "High",
+    "3.0",
+    "LD_CHICKEN_HOME_CURRY|LD_FISH_CURRY_RICE|LD_CHICKEN_BIRYANI_PULAO|LD_EGG_CURRY_BHURJI|LD_MUTTON_SUNDAY_CURRY"
+   ],
+   [
+    "Arunachal Pradesh",
+    "Very high",
+    "4.0",
+    "LD_NORTHEAST_SMOKED_PORK_MEAT|LD_CHICKEN_HOME_CURRY|LD_FISH_CURRY_RICE|LD_COMMUNITY_RED_MEAT|LD_EGG_CURRY_BHURJI"
+   ],
+   [
+    "Assam",
+    "Very high",
+    "4.0",
+    "LD_NORTHEAST_SMOKED_PORK_MEAT|LD_CHICKEN_HOME_CURRY|LD_FISH_CURRY_RICE|LD_COMMUNITY_RED_MEAT|LD_EGG_CURRY_BHURJI"
+   ],
+   [
+    "Bihar",
+    "Moderate",
+    "2.0",
+    "LD_FISH_CURRY_RICE|LD_BENGALI_FISH_MEAL|LD_EGG_CURRY_BHURJI|LD_CHICKEN_HOME_CURRY|LD_FISH_FRY_MEAL"
+   ],
+   [
+    "Chhattisgarh",
+    "Moderate",
+    "2.0",
+    "LD_CHICKEN_HOME_CURRY|LD_EGG_CURRY_BHURJI|LD_MUTTON_SUNDAY_CURRY"
+   ],
+   [
+    "Goa",
+    "Very high",
+    "4.0",
+    "LD_FISH_CURRY_RICE|LD_PRAWN_CRAB_COASTAL|LD_FISH_FRY_MEAL|LD_CHICKEN_HOME_CURRY|LD_EGG_CURRY_BHURJI"
+   ],
+   [
+    "Gujarat",
+    "Very low",
+    "0.5",
+    "LD_EGG_CURRY_BHURJI|LD_SUNDAY_OUTSIDE_NONVEG"
+   ],
+   [
+    "Haryana",
+    "Low",
+    "1.0",
+    "LD_CHICKEN_HOME_CURRY|LD_EGG_CURRY_BHURJI|LD_MUTTON_SUNDAY_CURRY|LD_TANDOORI_GRILL_NONVEG"
+   ],
+   [
+    "Himachal Pradesh",
+    "Moderate",
+    "2.0",
+    "LD_MUTTON_SUNDAY_CURRY|LD_CHICKEN_HOME_CURRY|LD_EGG_CURRY_BHURJI|LD_NONVEG_LIGHT_SOUP_STEW"
+   ],
+   [
+    "Jharkhand",
+    "Moderate",
+    "2.0",
+    "LD_FISH_CURRY_RICE|LD_BENGALI_FISH_MEAL|LD_EGG_CURRY_BHURJI|LD_CHICKEN_HOME_CURRY|LD_FISH_FRY_MEAL"
+   ],
+   [
+    "Karnataka",
+    "High",
+    "3.0",
+    "LD_CHICKEN_HOME_CURRY|LD_FISH_CURRY_RICE|LD_CHICKEN_BIRYANI_PULAO|LD_EGG_CURRY_BHURJI|LD_MUTTON_SUNDAY_CURRY"
+   ],
+   [
+    "Kerala",
+    "Very high",
+    "4.0",
+    "LD_CHICKEN_HOME_CURRY|LD_FISH_CURRY_RICE|LD_CHICKEN_BIRYANI_PULAO|LD_EGG_CURRY_BHURJI|LD_MUTTON_SUNDAY_CURRY"
+   ],
+   [
+    "Madhya Pradesh",
+    "Moderate",
+    "2.0",
+    "LD_CHICKEN_HOME_CURRY|LD_EGG_CURRY_BHURJI|LD_MUTTON_SUNDAY_CURRY"
+   ],
+   [
+    "Maharashtra",
+    "Moderate",
+    "2.0",
+    "LD_FISH_CURRY_RICE|LD_FISH_FRY_MEAL|LD_CHICKEN_HOME_CURRY|LD_MUTTON_SUNDAY_CURRY|LD_PRAWN_CRAB_COASTAL"
+   ]
+  ],
+  [
+   [
+    "Protein",
+    "Typical planning role",
+    "Notes"
+   ],
+   [
+    "Egg",
+    "Breakfast, snack, quick protein, some curries.",
+    "Good for occasional non-veg/eggetarian households."
+   ],
+   [
+    "Chicken",
+    "Most common urban weekend/non-veg dinner protein in many regions.",
+    "Use state/persona frequency."
+   ],
+   [
+    "Fish/seafood",
+    "Everyday or frequent in coastal/eastern states; occasional elsewhere.",
+    "Strongly regional."
+   ],
+   [
+    "Mutton/red meat",
+    "Less frequent, richer, often weekend/special.",
+    "Use sparingly unless persona/state says regular."
+   ],
+   [
+    "Pork/beef/other meats",
+    "Only where culturally and explicitly appropriate.",
+    "Do not default broadly."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-15 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

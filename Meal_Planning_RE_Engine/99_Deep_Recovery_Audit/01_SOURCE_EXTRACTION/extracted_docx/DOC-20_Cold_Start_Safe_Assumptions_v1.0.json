@@ -1,0 +1,198 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/05_Onboarding/DOC-20_Cold_Start_Safe_Assumptions_v1.0.docx",
+ "paragraphs": [
+  "Cold Start Safe Assumptions Specification",
+  "DOC-20 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines fallback logic when users provide minimal onboarding information, skip questions, or have sparse history. The goal is to still generate a safe, familiar, high-acceptance first-week class plan.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Cold Start Philosophy",
+  "A skipped onboarding answer should reduce confidence, not block planning. Use state, main cohort, diet, city tier, and default household assumptions to produce a familiar class-first plan. Keep first recommendations conservative and behaviorally common.",
+  "5. Fallback Priority",
+  "6. Safe Default Classes",
+  "BF_LIGHT_GRAIN or equivalent light breakfast class",
+  "Lunch dal-sabzi-roti/rice class",
+  "Simple green vegetable sabzi class",
+  "Light khichdi/curd/dal-rice dinner class",
+  "Weekend regional special only when state/cohort supports it",
+  "7. Confidence Score Use",
+  "Every generated plan should include an internal confidence score. Low-confidence users should receive more familiar defaults and more opportunities to swipe/adjust. High-confidence users can receive more specific regional and persona-tailored plans.",
+  "8. Examples",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-02, BUILD-03, BUILD-04.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "Minimal onboarding still yields a valid weekly class plan.",
+  "Low-confidence assumptions are conservative and easy to correct through swipes.",
+  "Diet hard constraints are not guessed.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-20"
+   ],
+   [
+    "Canonical file name",
+    "DOC-20_Cold_Start_Safe_Assumptions_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-02, BUILD-03, BUILD-04"
+   ],
+   [
+    "Purpose",
+    "Defines fallback logic when users provide minimal onboarding information, skip questions, or have sparse history. The goal is to still generate a safe, familiar, high-acceptance first-week class plan."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "State_Profile_v3, Cohort_Matrix_v3, Weekly_Class_Plan_v3"
+   ],
+   [
+    "Dependencies",
+    "DOC-03, DOC-09, DOC-12, DOC-13"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-02",
+    "Onboarding and Household Profile Builder",
+    "Build dynamic onboarding, household/member capture, diet and city inputs, and profile object."
+   ],
+   [
+    "BUILD-03",
+    "Cohort Persona Assignment",
+    "Map profile answers to main cohort, sub-cohort, backend persona, state/city overlay, non-veg mode, and confidence."
+   ],
+   [
+    "BUILD-04",
+    "Weekly Class-First Plan Engine",
+    "Generate 7-day meal-class plan from cohort matrix, regional rules, city overlay, weekday/weekend rhythm, variety rules."
+   ]
+  ],
+  [
+   [
+    "Available data",
+    "Fallback action"
+   ],
+   [
+    "State + diet + main cohort",
+    "Use state/main-cohort default matrix."
+   ],
+   [
+    "State only",
+    "Use general state staple and default family/solo based on app context."
+   ],
+   [
+    "Current city only",
+    "Use city tier national modern baseline with safe light/common classes."
+   ],
+   [
+    "No location",
+    "Use national urban safe default: light breakfast, dal/sabzi/rice/roti, simple dinner."
+   ],
+   [
+    "Diet missing",
+    "Ask diet as mandatory before dish expansion."
+   ],
+   [
+    "Allergy missing",
+    "Allow skip but provide profile reminder; do not infer allergies."
+   ]
+  ],
+  [
+   [
+    "Known inputs",
+    "Assumption",
+    "Plan style"
+   ],
+   [
+    "Gujarat + veg + family",
+    "Gujarati veg family baseline.",
+    "Dal-sabzi-roti, khichdi-kadhi, farsan/snack, weekend regional special."
+   ],
+   [
+    "Kerala + non-veg allowed",
+    "Coastal non-veg possible.",
+    "Rice, fish curry if allowed, dosa/idli/appam, light dinner."
+   ],
+   [
+    "MP + Mumbai + family",
+    "MP home-style plus Mumbai quick/healthy overlay.",
+    "Poha/upma/paratha rotation, dal-sabzi, light dinner, weekend special."
+   ],
+   [
+    "Unknown state + vegetarian",
+    "National urban safe baseline.",
+    "Common vegetarian class mix."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-20 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}
