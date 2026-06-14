@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { supabaseRE } from '../../src/services/supabase-re';
 import { completeREOnboarding } from '../../src/repositories/re-onboarding.repository';
 import { runCohortAssignment } from '../../src/repositories/re-cohort-resolver.repository';
+import { generateUserWeeklyPlan } from '../../src/repositories/re-plan.repository';
 import { COLORS, SPACING } from '../../src/config/constants';
 import { Logger } from '../../src/utils/systemLogger';
 import { PostHogService } from '../../src/services/posthog.service';
@@ -33,6 +34,9 @@ export default function REStep8() {
 
         await completeREOnboarding(user.id);
         Logger.info('RE_STEP8', 're_engine_version set', { userId: user.id });
+
+        await generateUserWeeklyPlan(user.id);
+        Logger.info('RE_STEP8', 'weekly plan generated', { userId: user.id });
 
         router.replace('/(tabs)' as never);
       } catch (err: any) {

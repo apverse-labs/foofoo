@@ -22,9 +22,11 @@ import GestureTutorial from '../../src/components/shared/GestureTutorial';
 import NeverModal from '../../src/components/dish/NeverModal';
 import NotTodayModal from '../../src/components/dish/NotTodayModal';
 import WeekView from '../../src/components/planner/WeekView';
+import REPlanToday from '../../src/components/re/REPlanToday';
 import { LoadingScreen, ErrorState, EmptyState } from '../../src/modules/home/HomeScreen.helpers';
 import { useHomeScreen } from '../../src/modules/home/useHomeScreen';
 import { useResponsive } from '../../src/utils/responsive';
+import { fetchProfile } from '../../src/repositories/profiles.repository';
 import { PostHogService } from '../../src/services/posthog.service';
 
 type ViewMode = 'day' | 'week';
@@ -33,6 +35,7 @@ export default function HomeScreen() {
   const insets = useSafeAreaInsets();
   const { contentWidth } = useResponsive();
   const [viewMode, setViewMode] = useState<ViewMode>('day');
+  const [isREUser, setIsREUser] = useState(false);
 
   useEffect(() => {
     PostHogService.screen('home', { viewMode });
@@ -50,6 +53,21 @@ export default function HomeScreen() {
     handleNeverConfirmed, handleNotTodayConfirmed,
     GESTURE_TUTORIAL_KEY,
   } = useHomeScreen();
+
+  // Detect RE (class-first) users so we can surface their weekly class plan.
+  useEffect(() => {
+    if (!userId) return;
+    let active = true;
+    (async () => {
+      const profile = await fetchProfile(userId);
+      if (active) {
+        setIsREUser(
+          (profile as { re_engine_version?: string | null } | null)?.re_engine_version === 'classfirst_v1',
+        );
+      }
+    })();
+    return () => { active = false; };
+  }, [userId]);
 
   if (loading && !refreshing && viewMode === 'day') {
     return <LoadingScreen insetTop={insets.top} />;
@@ -128,6 +146,7 @@ export default function HomeScreen() {
               />
             }
           >
+            {isREUser && userId ? <REPlanToday userId={userId} /> : null}
             {error ? (
               <ErrorState message={error} onRetry={() => loadPlan(false)} />
             ) : plan ? (

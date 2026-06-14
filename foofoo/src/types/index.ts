@@ -354,3 +354,26 @@ export interface OfflinePlan {
 }
 
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+
+// ── RE BUILD-04: Weekly Class-First Plan ──────────────────────────────────────
+export interface REMealClassRef {
+  classCode: string;
+  display: string;
+}
+
+export interface REDayPlan {
+  dayOfWeek: string;
+  weekdayWeekend: 'Weekday' | 'Weekend';
+  breakfast: REMealClassRef | null;
+  lunch: REMealClassRef | null;
+  snack: REMealClassRef | null;
+  dinner: REMealClassRef | null;
+}
+
+export interface REWeeklyPlan {
+  profileId: string;
+  cohortId: string | null;
+  planWeekStart: string;
+  days: REDayPlan[];
+  engineVersion: string;
+}
