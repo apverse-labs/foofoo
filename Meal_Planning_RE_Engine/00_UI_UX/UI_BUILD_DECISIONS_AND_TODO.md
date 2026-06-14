@@ -39,5 +39,20 @@
 - UI built on UI-BUILD-01 foundation primitives; bottom sheet = plain RN Modal (no third-party sheet lib / trade dress).
 - All RE reads/writes go through the resolver service (`re-engine.service`) — never a specific engine version.
 
+## 📋 Pending UI work (post component-layer, all app-run gated)
+| # | Item | Build |
+|---|---|---|
+| W1 | Mount onboarding components into `(re-onboarding)/re-step-*.tsx` + wire capture fns + `saveREOnboardingStep` | UI-BUILD-02 finish |
+| W2 | Mount `REMealCard` timeline into `app/(tabs)/index.tsx` for RE users + image pipeline | UI-BUILD-05 finish |
+| W3 | Mount weekly grid + `RESwapSheet` into `WeekView`/tabs; per-tier candidate fetch (`.eq(meal_class_code, tier.classCode)`) | UI-BUILD-06/07 finish |
+| W4 | Wire `RETracePanel` under `(dev)` with live persona/overlays/class/score | dev |
+| W5 | Visual QA + device SR pass + golden-household visual run | UI-BUILD-11 |
+| W6 | Add `@testing-library/react-native` for component render tests (I1) | infra |
+
+## Build status snapshot (this session)
+UI-BUILD-01 ✅ · 02 ✅(component+logic; screens W1) · 04/05 ✅(component+hooks; screens W2) ·
+06/07 ✅(component+logic; screens W3) · Final QA → **UI_RE_PARTIAL_WITH_BLOCKERS** (BLK-1 visual/mount).
+416 tests/22 suites green; app tsc 0.
+
 ---
-*Status updated per build. Final review item: confirm D1–D3, schedule B1–B3, and the P1–P4 governed pipeline.*
+*Status updated per build. Final review item: confirm D1–D3, schedule B1–B3, govern P1–P4, finish W1–W6.*
