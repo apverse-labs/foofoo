@@ -57,6 +57,7 @@
 | SCHEMA-BASE-001  | (pre-existing / remote baseline)            | ✅          | ❌ (pre-ledger) | 42 MVP tables, ap-south-1                                                |
 | SCHEMA-RE-001    | 20260614_001_re_seed_tables.sql             | ✅ staging  | ✅              | 19 RE tables + household_members + profiles.re_engine_version; foofoo-staging only; NOT yet on production |
 | SCHEMA-RE-002    | 20260614_003_re_user_weekly_plans.sql       | ✅ staging  | ✅              | BUILD-04: `re_user_weekly_plans` (per-user 7-day class plan, RLS own-rows). Applied 2026-06-14 via Supabase MCP to foofoo-staging. 17 cols, 1 RLS policy (re_uwp_all_own), index idx_re_uwp_profile_week. NOT yet on production. |
+| SCHEMA-RE-003    | 20260614_004_re_user_addon_plans.sql        | ✅ staging  | ✅              | BUILD-05: `re_user_addon_plans` (per-user member-specific add-on plan, RLS own-rows). Applied 2026-06-14 via Supabase MCP to foofoo-staging. 11 cols, 1 RLS policy (re_uap_all_own), 2 indexes (profile_week, profile_week_day). NOT yet on production. |
 
 ---
 

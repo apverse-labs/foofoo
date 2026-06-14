@@ -1,5 +1,6 @@
 import { supabaseRE } from '../services/supabase-re';
 import { Logger } from '../utils/systemLogger';
+import { generateUserAddonPlan } from './re-addon.repository';
 import type { REDayPlan, REMealClassRef, REWeeklyPlan } from '../types';
 
 const ENGINE_VERSION = 'classfirst_v1';
@@ -190,6 +191,9 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
     if (upsertErr) throw upsertErr;
 
     Logger.info('RE_PLAN', 'Weekly plan generated', { userId, cohortId, days: upsertRows.length, weekStart });
+
+    // BUILD-05: generate member-specific add-on plan immediately after primary plan
+    await generateUserAddonPlan(userId);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     Logger.error('RE_PLAN', 'generateUserWeeklyPlan failed', { error: message, userId });

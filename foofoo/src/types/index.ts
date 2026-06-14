@@ -377,3 +377,31 @@ export interface REWeeklyPlan {
   days: REDayPlan[];
   engineVersion: string;
 }
+
+// ── RE BUILD-05: Member-Specific Add-on Plans ─────────────────────────────────
+
+export interface REAddonComponent {
+  addonClassCode: string;
+  addonClassName: string;
+  targetMemberSegment: string;
+  attachedToPrimaryClass: string | null;
+}
+
+export interface RESlotAddons {
+  breakfast: REAddonComponent[];
+  lunch: REAddonComponent[];
+  snack: REAddonComponent[];
+  dinner: REAddonComponent[];
+}
+
+export interface REDayAddonPlan {
+  dayOfWeek: string;
+  addons: RESlotAddons;
+}
+
+export interface REWeeklyAddonPlan {
+  profileId: string;
+  planWeekStart: string;
+  days: REDayAddonPlan[];
+  engineVersion: string;
+}
