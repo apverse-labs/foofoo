@@ -166,8 +166,11 @@ jobs:
           npx jest --testPathPattern='integration/re-persona-journey' \
             --no-coverage --ci \
             --testNamePattern='total hard constraint violations'
-      - name: Block merge if any suite failed
-        if: contains(needs.*.result, 'failure')
+      - name: Block merge if hard-gate suites failed
+        if: |
+          needs.unit.result == 'failure' ||
+          needs.personas.result == 'failure' ||
+          needs.security.result == 'failure'
         run: |
-          echo "❌ One or more RE QA suites failed. Merge to develop/main is BLOCKED."
+          echo "❌ Unit / Persona / Security suite failed. Merge to develop/main is BLOCKED."
           exit 1

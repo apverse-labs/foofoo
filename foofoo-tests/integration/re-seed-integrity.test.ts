@@ -97,11 +97,19 @@ describeIfService('RE Seed Integrity: referential integrity', () => {
   });
 
   it('every re_weekly_class_plans row references a valid cohort_id', async () => {
-    const { data: cohorts, error: cErr } = await (supabaseREAdmin as any)
-      .from('re_cohorts')
-      .select('cohort_id');
-    expect(cErr).toBeNull();
-    const validCohorts = new Set((cohorts ?? []).map((r: any) => r.cohort_id));
+    // re_cohorts has 2952 rows — must paginate; default Supabase limit is 1000.
+    const validCohorts = new Set<string>();
+    const cohortPageSize = 1000;
+    for (let from = 0; ; from += cohortPageSize) {
+      const { data: cohorts, error: cErr } = await (supabaseREAdmin as any)
+        .from('re_cohorts')
+        .select('cohort_id')
+        .range(from, from + cohortPageSize - 1);
+      expect(cErr).toBeNull();
+      const rows = cohorts ?? [];
+      for (const r of rows) validCohorts.add(r.cohort_id);
+      if (rows.length < cohortPageSize) break;
+    }
 
     const orphans = new Set<string>();
     const pageSize = 1000;
