@@ -57,9 +57,9 @@ add-on/combo expansion, exactly as DOC-04/DOC-06 intend.
 - `seeds/import_workbook.py` — fixed: no longer excludes the 13 classes; now also seeds
   `re_meal_class_overlap_rules`. Future re-runs are faithful to the workbook.
 
-**STATUS: migration NOT YET APPLIED to staging.** The DB write was paused for founder approval
-(shared-DB in-place modification). Once approved & applied, expected post-state:
-`re_class_dish_options = 1050`, `re_meal_class_overlap_rules = 13`.
+**STATUS: APPLIED to staging (founder approved "apply as I go").** Post-apply verification:
+`re_class_dish_options = 1050` (131/131 classes have dishes, 0 missing),
+`re_meal_class_overlap_rules = 13`. Registered as SCHEMA-RE-007.
 
-**Exit criteria:** [ ] reference counts == workbook (blocked on apply) · [x] zero invented IDs
-(all values are verbatim workbook rows) · [x] import script faithful & idempotent.
+**Exit criteria:** [x] reference counts == workbook (all 13 sheets) · [x] zero invented IDs
+(all values verbatim from workbook) · [x] import script faithful & idempotent. **PACK 1 PASS.**
