@@ -5,6 +5,7 @@ import { fetchUserWeeklyPlan } from '../../repositories/re-plan.repository';
 import { fetchTodayAddons } from '../../repositories/re-addon.repository';
 import { fetchTodayDishCandidates } from '../../repositories/re-dish-expander.repository';
 import { Logger } from '../../utils/systemLogger';
+import REDishPick from './REDishPick';
 import type {
   REAddonComponent,
   REDayDishCandidates,
@@ -161,10 +162,17 @@ export default function REPlanToday({ userId }: { userId: string }) {
               <Text style={styles.slotClass} numberOfLines={2}>
                 {ref ? ref.display : '—'}
               </Text>
-              {slotDishes.length > 0 && (
-                <Text style={styles.dishPicks} numberOfLines={2}>
-                  {slotDishes.slice(0, 3).map((d) => d.dishName).join(' · ')}
-                </Text>
+              {slotDishes.length > 0 && ref?.classCode && (
+                <View style={styles.dishList}>
+                  {slotDishes.slice(0, 3).map((dish) => (
+                    <REDishPick
+                      key={dish.dishOptionId}
+                      dish={dish}
+                      userId={userId}
+                      mealClassCode={ref.classCode}
+                    />
+                  ))}
+                </View>
               )}
               {slotAddons.length > 0 && (
                 <View style={styles.badgeRow}>
@@ -207,7 +215,7 @@ const styles = StyleSheet.create({
   slotEmoji: { fontSize: 20 },
   slotLabel: { fontSize: 11, fontWeight: '600', color: COLORS.textSecondary, textTransform: 'uppercase' },
   slotClass: { fontSize: 13, fontWeight: '600', color: COLORS.textPrimary },
-  dishPicks: { fontSize: 11, color: COLORS.textSecondary, fontStyle: 'italic', marginTop: 2 },
+  dishList: { marginTop: 2, gap: 2 },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 4, marginTop: 4 },
   badge: {
     backgroundColor: '#EEF7F1',

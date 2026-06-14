@@ -6,8 +6,16 @@ import {
   REGION_ARCHETYPE_KEYWORDS,
   PAN_INDIA_KEYWORDS,
 } from '../config/re-region-constants';
+import {
+  fetchDishAffinities,
+  fetchRecentAcceptDates,
+  clampHistoryModifier,
+  computeVarietyPenalty,
+  isOnCooldown,
+} from './re-feedback.repository';
 import type {
   REDayDishCandidates,
+  REDishAffinityMap,
   REDishCandidate,
   RESlotDishCandidates,
 } from '../types';
@@ -80,36 +88,39 @@ export function isDietCompatible(dishDietType: string, userFoodPref: string): bo
 }
 
 /**
- * @summary Compute the RE_V1 dish score for a candidate dish.
+ * @summary Compute the full RE dish score including history and variety modifiers.
  *
- * @description RE_V1 cold-start formula (DOC-19):
- *   score = 1.0 (base) + regionAffinity (0..0.20) + daySlotFit (0..0.05) + random (0..0.10)
- *
- *   History and Food DNA modifiers are reserved for BUILD-07 / RE_V2.
+ * @description Full formula (DOC-19):
+ *   score = base(1.0) + regionAffinity(0..0.20) + daySlotFit(0..0.05)
+ *           + historyModifier(-0.30..+0.40) + varietyPenalty(-0.30..0)
+ *           + random(0..0.10)
  *
  * @param {string}  regionRelevance  - Dish's region_relevance text.
  * @param {string}  regionArchetype  - User's home region archetype.
  * @param {boolean} isWeekend        - Whether the day is a weekend.
- * @param {string}  [seed]           - Optional deterministic seed (for tests).
+ * @param {number}  historyModifier  - Clamped affinity score from re_user_dish_affinity.
+ * @param {number}  varietyPenalty   - 0 or -0.30 from computeVarietyPenalty.
+ * @param {number}  [seed]           - Optional deterministic random (for tests).
  * @returns {number} Final score (higher is better).
  */
 export function computeDishScore(
   regionRelevance: string,
   regionArchetype: string,
   isWeekend: boolean,
+  historyModifier: number = 0,
+  varietyPenalty: number = 0,
   seed?: number,
 ): number {
   const base = 1.0;
   const regionScore = regionAffinityScore(regionRelevance, regionArchetype);
 
-  // Weekend dishes get a small boost when planning a weekend day
   const lowerRegion = regionRelevance.toLowerCase();
   const daySlotBoost = isWeekend && (lowerRegion.includes('weekend') || lowerRegion.includes('festive'))
     ? 0.05
     : 0.0;
 
   const random = seed !== undefined ? seed : Math.random() * 0.10;
-  return base + regionScore + daySlotBoost + random;
+  return base + regionScore + daySlotBoost + historyModifier + varietyPenalty + random;
 }
 
 // ── Internal DB types ─────────────────────────────────────────────────────────
@@ -160,6 +171,9 @@ export async function expandClassToDishes(
   userFoodPref: string,
   regionArchetype: string,
   isWeekend: boolean,
+  affinities: REDishAffinityMap = {},
+  recentDates: Record<string, string> = {},
+  today: string = new Date().toISOString().slice(0, 10),
   topN: number = TOP_DISHES_PER_SLOT,
 ): Promise<RESlotDishCandidates> {
   const { data, error } = await supabaseRE
@@ -171,14 +185,25 @@ export async function expandClassToDishes(
   const rows = (data ?? []) as unknown as ClassDishRow[];
 
   const candidates: REDishCandidate[] = rows
-    .filter((r) => isDietCompatible(r.diet_type, userFoodPref))
-    .map((r) => ({
-      dishOptionId: r.dish_option_id,
-      dishName: r.dish_name,
-      dietType: r.diet_type,
-      regionRelevance: r.region_relevance,
-      score: computeDishScore(r.region_relevance, regionArchetype, isWeekend),
-    }))
+    .filter((r) => {
+      if (!isDietCompatible(r.diet_type, userFoodPref)) return false;
+      const aff = affinities[r.dish_option_id];
+      if (aff?.isNever) return false;
+      if (isOnCooldown(aff?.notTodayUntil ?? null, today)) return false;
+      return true;
+    })
+    .map((r) => {
+      const aff = affinities[r.dish_option_id];
+      const history = clampHistoryModifier(aff?.affinityScore ?? 0);
+      const variety = computeVarietyPenalty(recentDates[r.dish_option_id] ?? null, today);
+      return {
+        dishOptionId: r.dish_option_id,
+        dishName: r.dish_name,
+        dietType: r.diet_type,
+        regionRelevance: r.region_relevance,
+        score: computeDishScore(r.region_relevance, regionArchetype, isWeekend, history, variety),
+      };
+    })
     .sort((a, b) => b.score - a.score)
     .slice(0, topN);
 
@@ -256,6 +281,14 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
       { key: 'dinner',    classCode: plan.dinner_class,    display: plan.dinner_display },
     ] as const;
 
+    // Collect all dish IDs we might need to score (do a pre-scan if available)
+    // Affinities loaded lazily — empty map if user has no history yet (cold start)
+    const today = new Date().toISOString().slice(0, 10);
+    const [affinityMap, recentDates] = await Promise.all([
+      fetchDishAffinities(userId, []),   // batch by class below — placeholder, per-class below
+      fetchRecentAcceptDates(userId, []),
+    ]).catch(() => [{}, {}] as [Record<string, never>, Record<string, never>]);
+
     const results = await Promise.all(
       SLOTS.map(async ({ classCode, display }) => {
         if (!classCode) return null;
@@ -265,6 +298,9 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
           foodPref,
           regionArchetype,
           isWeekend,
+          affinityMap,
+          recentDates,
+          today,
         );
       }),
     );

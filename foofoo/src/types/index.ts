@@ -406,6 +406,34 @@ export interface REWeeklyAddonPlan {
   engineVersion: string;
 }
 
+// ── RE BUILD-07: Feedback Learning Loop ──────────────────────────────────────
+
+export type REFeedbackSignal =
+  | 'VIEW'
+  | 'ACCEPT'
+  | 'LOCK'
+  | 'TAP_RECIPE'
+  | 'ADD_TO_GROCERY'
+  | 'SWIPE_PAST'
+  | 'NOT_TODAY'
+  | 'NEVER'
+  | 'NEVER_REMOVE';
+
+export interface REDishAffinityState {
+  affinityScore: number;
+  lockCount: number;
+  acceptCount: number;
+  rejectCount: number;
+  isNever: boolean;
+  notTodayUntil: string | null;
+}
+
+/** dish_option_id → affinity state */
+export type REDishAffinityMap = Record<string, REDishAffinityState>;
+
+/** meal_class_code → affinity score */
+export type REClassAffinityMap = Record<string, number>;
+
 // ── RE BUILD-06: Dish Expansion & Food DNA Ranking ────────────────────────────
 
 export interface REDishCandidate {
