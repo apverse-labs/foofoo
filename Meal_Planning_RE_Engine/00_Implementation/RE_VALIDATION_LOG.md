@@ -63,3 +63,37 @@ add-on/combo expansion, exactly as DOC-04/DOC-06 intend.
 
 **Exit criteria:** [x] reference counts == workbook (all 13 sheets) · [x] zero invented IDs
 (all values verbatim from workbook) · [x] import script faithful & idempotent. **PACK 1 PASS.**
+
+---
+
+## PACK 2 — BUILD-02: Onboarding & Household Profile Builder ⚠️ VALIDATED — schema fixed, UI-capture build remaining
+
+**Two-flow resolution:** Both flows exist. Routing (`app/index.tsx:69-81`): RE flow
+(`(re-onboarding)/re-step-1`) fires only when `EXPO_PUBLIC_RE_ONBOARDING_ENABLED=true` AND
+`onboarding_step=0`; otherwise new users get the LEGACY `(onboarding)/step-N`. **Default = legacy.**
+RE flow = 9 steps (state→main cohort→sub-cohort→members→cook→health→diet→reveal→process).
+
+**DOC-10 18-field coverage:** 8 captured, 4 partial, 5 missing (full table in commit).
+- Captured: main_cohort_id, sub_cohort_id, base_persona_id, overlay_persona_ids, home_state,
+  current_city, diet_mode(as food_pref), cook_capability(as cook_dependency).
+- Partial: city_tier (derived, unpersisted), migration_overlay (implied), nonveg_mode
+  (only freq+protein), member_segments (only ONE member captured).
+- Missing: egg_allowed, excluded_ingredients (hardcoded [] — NO allergy screen in RE flow),
+  fasting_pattern, weekday_time_pressure, class_affinity_vector (NO swipe step exists).
+
+**Corrections applied:**
+- Migration 20260614_009 (SCHEMA-RE-008): added 7 DOC-10 contract columns to
+  re_user_household_profiles (city_tier, migration_overlay, nonveg_mode, egg_allowed,
+  fasting_pattern, weekday_time_pressure, class_affinity_vector). Applied to staging. Additive.
+
+**Remaining BUILD-02 work (RN UI build — specced, NOT yet done):**
+1. Add allergy-capture step to RE flow (excluded_ingredients integer IDs) — DOC-18 hard constraint.
+2. Add class-level swipe step (DOC-10 step 8) → write class_affinity_vector keyed by re_meal_classes codes.
+3. Multi-member capture loop (member_segments[] — required for the infant+diabetic-elder worked example / BUILD-05).
+4. Capture weekday_time_pressure (DOC-16) + fasting_pattern (DOC-18) + nonveg_mode label + egg_allowed.
+5. Persist onboarding_step in RE flow (resume bug) and decide canonical flow (retire/flag legacy).
+
+**Exit criteria:** [~] one canonical flow (routing exists, default=legacy — decision pending) ·
+[~] all contract fields persisted (schema ready; capture UI pending) · [ ] swipe=class-level (pending) ·
+[x] dynamic branching live (member-step + nonveg gates present) · [ ] cold-start defaults on skip (pending).
+**PACK 2: validation complete; schema corrected; UI build outstanding.**
