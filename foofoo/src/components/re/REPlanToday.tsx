@@ -1,9 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../config/constants';
-import { fetchUserWeeklyPlan } from '../../repositories/re-plan.repository';
-import { fetchTodayAddons } from '../../repositories/re-addon.repository';
-import { fetchTodayDishCandidates } from '../../repositories/re-dish-expander.repository';
+import { getTodayView } from '../../services/re-engine.service';
 import { Logger } from '../../utils/systemLogger';
 import REDishPick from './REDishPick';
 import type {
@@ -13,10 +11,6 @@ import type {
   REMealClassRef,
   RESlotAddons,
 } from '../../types';
-
-const DAY_NAMES = [
-  'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday',
-] as const;
 
 const SLOT_META: Array<{
   key: keyof Pick<REDayPlan, 'breakfast' | 'lunch' | 'snack' | 'dinner'>;
@@ -66,10 +60,6 @@ function emojiForClass(ref: REMealClassRef | null, fallback: string): string {
   return fallback;
 }
 
-function todayName(): string {
-  return DAY_NAMES[new Date().getDay()];
-}
-
 function formatWeekOf(iso: string): string {
   const d = new Date(`${iso}T00:00:00Z`);
   return d.toLocaleDateString('en-IN', { day: 'numeric', month: 'short' });
@@ -109,19 +99,12 @@ export default function REPlanToday({ userId }: { userId: string }) {
     let active = true;
     (async () => {
       try {
-        const [plan, addonData, dishData] = await Promise.all([
-          fetchUserWeeklyPlan(userId),
-          fetchTodayAddons(userId),
-          fetchTodayDishCandidates(userId),
-        ]);
+        const view = await getTodayView(userId);
         if (!active) return;
-        if (plan) {
-          setWeekStart(plan.planWeekStart);
-          const name = todayName();
-          setToday(plan.days.find((d) => d.dayOfWeek === name) ?? plan.days[0] ?? null);
-        }
-        setAddons(addonData);
-        setDishes(dishData);
+        setToday(view.dayPlan);
+        setWeekStart(view.weekStart);
+        setAddons(view.addons);
+        setDishes(view.dishes);
       } catch (err: unknown) {
         Logger.error('RE_PLAN_TODAY', 'load failed', {
           error: err instanceof Error ? err.message : String(err), userId,
