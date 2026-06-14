@@ -12,15 +12,18 @@ on:
         required: false
         default: 'chromium'
       suite:
-        description: 'Test suite filter (TC001/TC002/TC003/TC004 or blank for all)'
+        description: 'Test suite filter (TC001/TC002/TC003/TC004/TC005/TC006 or blank for all)'
         required: false
         default: ''
   push:
-    branches: [main]
+    branches: [main, apverse-labs-RE]
     paths:
       - 'foofoo-tests/e2e/**'
       - 'foofoo/app/**'
       - 'foofoo/src/**'
+      - 'foofoo/src/re-engine/**'
+      - 'foofoo/src/repositories/re-*.ts'
+      - 'foofoo/src/services/re-*.ts'
 
 jobs:
   e2e-browser-tests:
