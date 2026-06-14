@@ -281,9 +281,8 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
       { key: 'dinner',    classCode: plan.dinner_class,    display: plan.dinner_display },
     ] as const;
 
-    // Collect all dish IDs we might need to score (do a pre-scan if available)
     // Affinities loaded lazily — empty map if user has no history yet (cold start)
-    const today = new Date().toISOString().slice(0, 10);
+    const todayISO = new Date().toISOString().slice(0, 10);
     const [affinityMap, recentDates] = await Promise.all([
       fetchDishAffinities(userId, []),   // batch by class below — placeholder, per-class below
       fetchRecentAcceptDates(userId, []),
@@ -300,7 +299,7 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
           isWeekend,
           affinityMap,
           recentDates,
-          today,
+          todayISO,
         );
       }),
     );
