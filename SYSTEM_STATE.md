@@ -1,5 +1,5 @@
 # SYSTEM STATE LEDGER (v2.0)
-> Last updated: 2026-06-14
+> Last updated: 2026-06-14 (QA Layer 6 — performance benchmarks added)
 > Maintained by: Lead Systems & Release Architect (Claude)
 > Rules: See CLAUDE.md § Architect Rules
 
@@ -24,7 +24,7 @@
 - **Code Base / Checkpoint:** CKPT-001 + RE BUILD-01 (apverse-labs-RE)
 - **Git Release Branch:** `develop` ← PROTECTED (NEVER DELETE)
 - **Target Audience:** Internal QA / Beta Cohort — RE module validation
-- **Status:** Active — RE BUILD-01 through BUILD-10 complete (2026-06-14). SCHEMA-RE-001/002/003/004/005 live on staging.
+- **Status:** Active — RE BUILD-01 through BUILD-10 complete (2026-06-14). SCHEMA-RE-001/002/003/004/005 live on staging. QA Layer 6 (performance benchmarks) added 2026-06-14 on `apverse-labs-RE`.
 
 ### DEP-PRODUCTION (Project B — Supabase Production)
 - **Project Ref:** `ufgfznpqixplcbhmsqqw` (foofoo-mvp, ap-south-1)
