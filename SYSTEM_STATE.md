@@ -1,5 +1,5 @@
 # SYSTEM STATE LEDGER (v2.0)
-> Last updated: 2026-06-15 (SCHEMA-RE-015 applied: fix re_user_addon_plans 500 error)
+> Last updated: 2026-06-15 (SCHEMA-RE-015 applied + home screen RE user fix)
 > Maintained by: Lead Systems & Release Architect (Claude)
 > Rules: See CLAUDE.md § Architect Rules
 
