@@ -10,7 +10,7 @@ import type {
 
 const ENGINE_VERSION = 'classfirst_v1';
 
-// ── Constants ─────────────────────────────────────────────────────────────────
+// ── Constants ────────────────────────────────────────────────────────────────
 
 const SHORT_TO_FULL_DAY: Record<string, string> = {
   Mon: 'Monday',
@@ -89,8 +89,8 @@ export function normaliseMealSlot(
  *   4. Upserts one row per (profile_id, plan_week_start, day_of_week, meal_slot,
  *      target_member_segment) into re_user_addon_plans.
  *
- *   Called immediately after generateUserWeeklyPlan so both tables are always
- *   written in the same planning pass.
+ *   This is a best-effort operation — failures are logged but do NOT propagate,
+ *   so a DB issue here never blocks onboarding completion or weekly plan display.
  *
  * @param {string} userId - Supabase auth UID (== profiles.id).
  * @returns {Promise<void>}
@@ -162,9 +162,10 @@ export async function generateUserAddonPlan(userId: string): Promise<void> {
       userId, personaId, addons: upsertRows.length, weekStart,
     });
   } catch (err: unknown) {
+    // Addon plan is secondary — log the failure but never block onboarding or
+    // weekly plan display. The root cause can be investigated via system logs.
     const message = err instanceof Error ? err.message : String(err);
-    Logger.error('RE_ADDON', 'generateUserAddonPlan failed', { error: message, userId });
-    throw err;
+    Logger.error('RE_ADDON', 'generateUserAddonPlan failed (non-fatal)', { error: message, userId });
   }
 }
 
