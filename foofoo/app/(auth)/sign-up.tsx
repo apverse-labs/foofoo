@@ -127,7 +127,7 @@ export default function SignUp() {
    * @calledBy Create Account button onPress
    */
   const handleSignUp = async () => {
-    if (!canSubmit) return;
+    if (!canSubmit || loading) return;   // loading guard prevents double-fire from Enter+tap
     setLoading(true);
     setErrorMsg('');
     try {
@@ -178,6 +178,8 @@ export default function SignUp() {
           autoCapitalize="words"
           autoComplete="name"
           returnKeyType="next"
+          accessible={true}
+          accessibilityLabel="Full Name"
         />
         <TextInput
           style={styles.input}
@@ -189,6 +191,8 @@ export default function SignUp() {
           autoCapitalize="none"
           autoComplete="email"
           returnKeyType="next"
+          accessible={true}
+          accessibilityLabel="Email"
         />
         <TextInput
           style={styles.input}
@@ -201,6 +205,8 @@ export default function SignUp() {
           autoComplete="new-password"
           returnKeyType="done"
           onSubmitEditing={handleSignUp}
+          accessible={true}
+          accessibilityLabel="Password"
         />
 
         {password.length > 0 && (
