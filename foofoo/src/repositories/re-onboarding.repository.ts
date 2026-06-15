@@ -380,7 +380,7 @@ export async function completeREOnboarding(userId: string): Promise<void> {
       .from('re_user_engine_assignments')
       .insert({
         profile_id: userId,
-        engine_version: 'classfirst_v1',
+        version_code: 'classfirst_v1',
         assigned_by: 'onboarding',
         assigned_at: new Date().toISOString(),
       });
