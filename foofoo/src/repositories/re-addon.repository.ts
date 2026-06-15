@@ -154,7 +154,7 @@ export async function generateUserAddonPlan(userId: string): Promise<void> {
     const { error: upsertErr } = await supabaseRE
       .from('re_user_addon_plans')
       .upsert(upsertRows, {
-        onConflict: 'profile_id,plan_week_start,day_of_week,meal_slot,target_member_segment',
+        onConflict: 'profile_id,plan_week_start,day_of_week,meal_slot,target_member_segment,addon_class_code',
       });
     if (upsertErr) throw upsertErr;
 

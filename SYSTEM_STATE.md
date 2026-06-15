@@ -1,5 +1,5 @@
 # SYSTEM STATE LEDGER (v2.0)
-> Last updated: 2026-06-15 (audit merge: SDK 56 fixes, SCHEMA-RE-013/014 committed)
+> Last updated: 2026-06-15 (SCHEMA-RE-015 applied: fix re_user_addon_plans 500 error)
 > Maintained by: Lead Systems & Release Architect (Claude)
 > Rules: See CLAUDE.md § Architect Rules
 
@@ -69,6 +69,7 @@
 | SCHEMA-RE-012    | 20260615_002_re_plan_lock.sql               | ⚠️ PENDING  | ✅              | B2: adds `locked BOOLEAN NOT NULL DEFAULT false` to re_user_weekly_plans and re_user_addon_plans. SQL files committed. Apply manually: `supabase db push` or via MCP with explicit permission. NOT yet applied to staging. |
 | SCHEMA-RE-013    | 20260615_003_re_dish_safety_columns.sql     | ⚠️ PENDING  | ✅              | P0: adds `is_jain BOOLEAN NOT NULL DEFAULT false` + `allergen_ids INTEGER[] NOT NULL DEFAULT '{}'` to re_class_dish_options. Enables allergen + Jain hard-filters in dish expander. SQL committed 2026-06-15. NOT yet applied to staging. Data enrichment (populating rows) is a separate manual seed task. |
 | SCHEMA-RE-014    | 20260615_004_re_rename_household_members.sql | ⚠️ PENDING  | ✅              | W5: renames `household_members` → `re_household_members` to align with re_ prefix convention. Updates index + RLS policy name. SQL committed 2026-06-15. NOT yet applied to staging. |
+| SCHEMA-RE-015    | 20260615_005_re_addon_plans_unique_constraint.sql | ✅ staging  | ✅              | Bug-fix: widened `re_user_addon_plans` UNIQUE constraint from (profile_id, plan_week_start, day_of_week, meal_slot, target_member_segment) to also include addon_class_code. Fixes "ON CONFLICT DO UPDATE command cannot affect row a second time" 500 error when a persona has multiple addon classes per slot. Applied 2026-06-15 to foofoo-staging. NOT yet on production. |
 
 ---
 
