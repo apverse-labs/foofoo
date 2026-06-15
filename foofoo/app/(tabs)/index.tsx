@@ -148,9 +148,9 @@ export default function HomeScreen() {
             }
           >
             {isREUser && userId ? <REHomeView userId={userId} /> : null}
-            {error ? (
+            {!isREUser && error ? (
               <ErrorState message={error} onRetry={() => loadPlan(false)} />
-            ) : plan ? (
+            ) : !isREUser && plan ? (
               <>
                 {(['breakfast', 'lunch', 'dinner'] as const).map((slot) => {
                   const slotData = plan[slot];
@@ -176,9 +176,9 @@ export default function HomeScreen() {
                   );
                 })}
               </>
-            ) : (
+            ) : !isREUser ? (
               <EmptyState />
-            )}
+            ) : null}
           </ScrollView>
         </>
       ) : (
