@@ -129,10 +129,14 @@ export async function generateUserAddonPlan(userId: string): Promise<void> {
 
     const weekStart = getWeekStartMondayIST();
 
+    const seen = new Set<string>();
     const upsertRows = rows.flatMap((r) => {
       const fullDay = expandDayCode(r.day_of_week);
       const slot = normaliseMealSlot(r.meal_slot);
       if (!slot) return [];
+      const key = `${fullDay}|${slot}|${r.target_member_segment}|${r.addon_class_code}`;
+      if (seen.has(key)) return [];
+      seen.add(key);
       return [{
         profile_id: userId,
         plan_week_start: weekStart,

@@ -1,5 +1,5 @@
 # SYSTEM STATE LEDGER (v2.0)
-> Last updated: 2026-06-15 (SCHEMA-RE-015 applied + home screen RE user fix)
+> Last updated: 2026-06-15 (SCHEMA-RE-016 applied: dedup re_household_addon_plans seed data + unique constraint)
 > Maintained by: Lead Systems & Release Architect (Claude)
 > Rules: See CLAUDE.md § Architect Rules
 
@@ -70,6 +70,7 @@
 | SCHEMA-RE-013    | 20260615_003_re_dish_safety_columns.sql     | ⚠️ PENDING  | ✅              | P0: adds `is_jain BOOLEAN NOT NULL DEFAULT false` + `allergen_ids INTEGER[] NOT NULL DEFAULT '{}'` to re_class_dish_options. Enables allergen + Jain hard-filters in dish expander. SQL committed 2026-06-15. NOT yet applied to staging. Data enrichment (populating rows) is a separate manual seed task. |
 | SCHEMA-RE-014    | 20260615_004_re_rename_household_members.sql | ⚠️ PENDING  | ✅              | W5: renames `household_members` → `re_household_members` to align with re_ prefix convention. Updates index + RLS policy name. SQL committed 2026-06-15. NOT yet applied to staging. |
 | SCHEMA-RE-015    | 20260615_005_re_addon_plans_unique_constraint.sql | ✅ staging  | ✅              | Bug-fix: widened `re_user_addon_plans` UNIQUE constraint from (profile_id, plan_week_start, day_of_week, meal_slot, target_member_segment) to also include addon_class_code. Fixes "ON CONFLICT DO UPDATE command cannot affect row a second time" 500 error when a persona has multiple addon classes per slot. Applied 2026-06-15 to foofoo-staging. NOT yet on production. |
+| SCHEMA-RE-016    | 20260615_006_re_household_addon_plans_unique.sql  | ✅ staging  | ✅              | Bug-fix: import_workbook.py was run 72× creating 72 duplicate rows per addon combo in re_household_addon_plans. Deduplicated table (8,000+ → 111 rows) via SQL DELETE, then added UNIQUE (persona_id, day_of_week, meal_slot, target_member_segment, addon_class_code) to prevent recurrence. Also added client-side dedup Set in generateUserAddonPlan as defensive guard. Applied 2026-06-15 to foofoo-staging. NOT yet on production. |
 
 ---
 
