@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabaseRE } from '../../src/services/supabase-re';
-import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
+import REOnboardingLayout from '../../src/components/re/REOnboardingLayout';
 import { fetchREHouseholdProfile } from '../../src/repositories/re-onboarding.repository';
 import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
@@ -103,7 +103,7 @@ export default function REStep8Reveal() {
 
   if (loading) {
     return (
-      <OnboardingLayout
+      <REOnboardingLayout
         step={8}
         title="Here's your food identity."
         subtitle="This is what I know about you. Your plan will be built around this."
@@ -111,12 +111,12 @@ export default function REStep8Reveal() {
         nextDisabled
       >
         <ActivityIndicator color={COLORS.primary} style={{ marginTop: SPACING.xl }} />
-      </OnboardingLayout>
+      </REOnboardingLayout>
     );
   }
 
   return (
-    <OnboardingLayout
+    <REOnboardingLayout
       step={8}
       title="Here's your food identity."
       subtitle="This is what I know about you. Your plan will be built around this."
@@ -136,7 +136,7 @@ export default function REStep8Reveal() {
         <Text style={styles.blendTitle}>Your meal blend</Text>
         <Text style={styles.blendText}>🏠 Home food 70% · 🌆 City food 20% · 🌍 Modern 10%</Text>
       </View>
-    </OnboardingLayout>
+    </REOnboardingLayout>
   );
 }
 

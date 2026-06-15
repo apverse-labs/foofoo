@@ -98,11 +98,12 @@ describe('regionAffinityScore', () => {
 // ── computeDishScore ──────────────────────────────────────────────────────────
 
 describe('computeDishScore', () => {
-  it('returns base 1.0 + region boost + deterministic seed', () => {
-    // signature: (regionRelevance, regionArchetype, isWeekend, historyModifier=0, varietyPenalty=0, classAffinity=0, seed?)
-    const score = computeDishScore('South, Urban India', 'SOUTH_RICE', false, 0, 0, 0, 0.05);
+  it('returns breakdown with total = base 1.0 + region boost + deterministic seed', () => {
+    const bd = computeDishScore('South, Urban India', 'SOUTH_RICE', false, 0, 0, 0, 0.05);
     // 1.0 + 0.20 (region match) + 0.05 (seed) = 1.25
-    expect(score).toBeCloseTo(1.25, 5);
+    expect(bd.total).toBeCloseTo(1.25, 5);
+    expect(bd.base).toBe(1.0);
+    expect(bd.region).toBe(0.20);
   });
 
   it('applies weekend boost for weekend dishes when isWeekend = true', () => {
@@ -110,48 +111,54 @@ describe('computeDishScore', () => {
     const weekend = computeDishScore('Pan India weekend', 'NORTH_WHEAT', true, 0, 0, 0, 0);
     // weekend: 1.0 + 0.05 (pan-india) + 0.05 (weekend boost) = 1.10
     // weekday: 1.0 + 0.05 (pan-india) = 1.05
-    expect(weekend).toBeGreaterThan(weekday);
-    expect(weekday).toBeCloseTo(1.05, 5);
-    expect(weekend).toBeCloseTo(1.10, 5);
+    expect(weekend.total).toBeGreaterThan(weekday.total);
+    expect(weekday.total).toBeCloseTo(1.05, 5);
+    expect(weekend.total).toBeCloseTo(1.10, 5);
   });
 
   it('does not apply weekend boost on weekday', () => {
-    // "Weekend" alone is not a region keyword for NORTH_WHEAT and not in PAN_INDIA_KEYWORDS
-    const score = computeDishScore('Weekend', 'NORTH_WHEAT', false, 0, 0, 0, 0);
-    expect(score).toBeCloseTo(1.0, 5);
+    const bd = computeDishScore('Weekend', 'NORTH_WHEAT', false, 0, 0, 0, 0);
+    expect(bd.total).toBeCloseTo(1.0, 5);
   });
 
   it('minimum possible score with seed=0 and no region match', () => {
-    const score = computeDishScore('Egg households', 'SOUTH_RICE', false, 0, 0, 0, 0);
-    expect(score).toBe(1.0);
+    const bd = computeDishScore('Egg households', 'SOUTH_RICE', false, 0, 0, 0, 0);
+    expect(bd.total).toBe(1.0);
   });
 
   it('maximum possible score with full region match + weekend + max seed', () => {
-    const score = computeDishScore('South, Weekend', 'SOUTH_RICE', true, 0, 0, 0, 0.10);
+    const bd = computeDishScore('South, Weekend', 'SOUTH_RICE', true, 0, 0, 0, 0.10);
     // 1.0 + 0.20 (region) + 0.05 (weekend boost) + 0.10 (seed) = 1.35
-    expect(score).toBeCloseTo(1.35, 5);
+    expect(bd.total).toBeCloseTo(1.35, 5);
   });
 
   it('applies history modifier to final score', () => {
-    const withHistory = computeDishScore('Egg households', 'SOUTH_RICE', false, 0.25, 0, 0, 0);
-    // 1.0 + 0.25 (history) = 1.25
-    expect(withHistory).toBeCloseTo(1.25, 5);
+    const bd = computeDishScore('Egg households', 'SOUTH_RICE', false, 0.25, 0, 0, 0);
+    expect(bd.total).toBeCloseTo(1.25, 5);
+    expect(bd.history).toBeCloseTo(0.25, 5);
   });
 
   it('applies variety penalty to final score', () => {
-    const withPenalty = computeDishScore('Egg households', 'SOUTH_RICE', false, 0, -0.30, 0, 0);
-    // 1.0 - 0.30 (variety penalty) = 0.70
-    expect(withPenalty).toBeCloseTo(0.70, 5);
+    const bd = computeDishScore('Egg households', 'SOUTH_RICE', false, 0, -0.30, 0, 0);
+    expect(bd.total).toBeCloseTo(0.70, 5);
+    expect(bd.variety).toBeCloseTo(-0.30, 5);
   });
 
   it('applies behavioral class affinity to final score', () => {
-    // 1.0 + 0.20 (class affinity) = 1.20
-    const withClass = computeDishScore('Egg households', 'SOUTH_RICE', false, 0, 0, 0.20, 0);
-    expect(withClass).toBeCloseTo(1.20, 5);
+    const bd = computeDishScore('Egg households', 'SOUTH_RICE', false, 0, 0, 0.20, 0);
+    expect(bd.total).toBeCloseTo(1.20, 5);
+    expect(bd.classAffinity).toBeCloseTo(0.20, 5);
   });
 
   it('clamps class affinity to the +0.35 ceiling', () => {
-    const overMax = computeDishScore('Egg households', 'SOUTH_RICE', false, 0, 0, 0.99, 0);
-    expect(overMax).toBeCloseTo(1.35, 5);
+    const bd = computeDishScore('Egg households', 'SOUTH_RICE', false, 0, 0, 0.99, 0);
+    expect(bd.total).toBeCloseTo(1.35, 5);
+    expect(bd.classAffinity).toBeCloseTo(0.35, 5);
+  });
+
+  it('B3: breakdown components sum to total', () => {
+    const bd = computeDishScore('South, Urban India', 'SOUTH_RICE', false, 0.10, -0.30, 0.15, 0.08);
+    const sum = bd.base + bd.region + bd.daySlot + bd.classAffinity + bd.history + bd.variety + bd.random;
+    expect(sum).toBeCloseTo(bd.total, 10);
   });
 });

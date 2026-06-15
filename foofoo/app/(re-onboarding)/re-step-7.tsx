@@ -2,8 +2,11 @@ import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabaseRE } from '../../src/services/supabase-re';
-import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
-import { saveREDietPrefs } from '../../src/repositories/re-onboarding.repository';
+import REOnboardingLayout from '../../src/components/re/REOnboardingLayout';
+import {
+  saveREDietPrefs, saveREOnboardingStep, saveREContractExtras,
+  deriveNonvegMode,
+} from '../../src/repositories/re-onboarding.repository';
 import { fetchUserDietRules } from '../../src/repositories/onboarding.repository';
 import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
 import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
@@ -96,6 +99,16 @@ export default function REStep7() {
         isNonVeg ? nonvegFreq : null,
         isNonVeg ? proteins : [],
       );
+      // Persist DOC-10 contract extras derived from diet answers
+      const nonvegMode = deriveNonvegMode(foodPref, isNonVeg ? (nonvegFreq ?? 0) : 0);
+      const eggAllowed = foodPref === 'egg' || foodPref === 'non_veg' || proteins.includes('egg');
+      await saveREContractExtras(userId, {
+        eggAllowed,
+        nonvegMode,
+        fastingPattern: null,
+        weekdayTimePressure: null,
+      });
+      await saveREOnboardingStep(userId, 7);
       Logger.info('RE_STEP7', 'diet prefs saved', { userId, foodPref });
       await UserJourneyLogger.logOnboardingStep(userId, 7, 'RE Diet Preference', {
         'Diet': foodPref,
@@ -112,7 +125,7 @@ export default function REStep7() {
   };
 
   return (
-    <OnboardingLayout
+    <REOnboardingLayout
       step={7}
       title="Almost there — just your diet."
       subtitle="What do you eat?"
@@ -172,7 +185,7 @@ export default function REStep7() {
           <PersonaCard tags={tags} />
         </View>
       </ScrollView>
-    </OnboardingLayout>
+    </REOnboardingLayout>
   );
 }
 

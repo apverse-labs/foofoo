@@ -103,7 +103,7 @@ export const RE_FEATURE_FLAGS = {
    * onboarding flow instead of the legacy 7-step flow.
    * Set EXPO_PUBLIC_RE_ONBOARDING_ENABLED=true in .env to enable.
    */
-  ONBOARDING_ENABLED: process.env.EXPO_PUBLIC_RE_ONBOARDING_ENABLED === 'true',
+  ONBOARDING_ENABLED: process.env.EXPO_PUBLIC_RE_ONBOARDING_ENABLED !== 'false',
 } as const;
 
 export const LEGAL = {

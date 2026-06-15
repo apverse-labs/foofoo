@@ -71,14 +71,23 @@ export default function Index() {
         return;
       }
 
-      // New signup with RE onboarding enabled: onboarding_step === 0 (never started).
-      if (RE_FEATURE_FLAGS.ONBOARDING_ENABLED && (profile?.onboarding_step ?? 0) === 0) {
-        router.replace('/(re-onboarding)/re-step-1' as never);
+      // RE onboarding is now the default for all new signups (D1 confirmed).
+      // Any user whose step is 0 (never started) goes to RE onboarding.
+      // If they have an onboarding_step from a prior RE session (1–8) we resume there.
+      // Only users who already started the legacy 7-step flow (and have food_pref set
+      // from that flow) are routed back to the legacy flow to finish it.
+      const step = profile?.onboarding_step ?? 0;
+      const startedLegacy = !RE_FEATURE_FLAGS.ONBOARDING_ENABLED && step > 0 && !!profile?.food_pref;
+
+      if (!startedLegacy) {
+        // RE onboarding: new user (step 0) starts at 1; resume uses the saved step.
+        const reStep = step === 0 ? 1 : Math.min(Math.max(step, 1), 9);
+        router.replace(`/(re-onboarding)/re-step-${reStep === 9 ? '8-reveal' : reStep}` as never);
         return;
       }
 
-      const step = Math.min(Math.max((profile?.onboarding_step ?? 0) + 1, 1), ONBOARDING.STEPS);
-      router.replace(`/(onboarding)/step-${step}` as never);
+      const legacyStep = Math.min(Math.max(step + 1, 1), ONBOARDING.STEPS);
+      router.replace(`/(onboarding)/step-${legacyStep}` as never);
     } catch {
       Logger.error('INDEX', 'Route resolution failed — defaulting to auth-gate');
       router.replace('/(auth)/auth-gate' as never);

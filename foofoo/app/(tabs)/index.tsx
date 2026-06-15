@@ -22,7 +22,8 @@ import GestureTutorial from '../../src/components/shared/GestureTutorial';
 import NeverModal from '../../src/components/dish/NeverModal';
 import NotTodayModal from '../../src/components/dish/NotTodayModal';
 import WeekView from '../../src/components/planner/WeekView';
-import REPlanToday from '../../src/components/re/REPlanToday';
+import REHomeView from '../../src/components/re/REHomeView';
+import REWeekView from '../../src/components/re/weekly/REWeekView';
 import { LoadingScreen, ErrorState, EmptyState } from '../../src/modules/home/HomeScreen.helpers';
 import { useHomeScreen } from '../../src/modules/home/useHomeScreen';
 import { useResponsive } from '../../src/utils/responsive';
@@ -146,7 +147,7 @@ export default function HomeScreen() {
               />
             }
           >
-            {isREUser && userId ? <REPlanToday userId={userId} /> : null}
+            {isREUser && userId ? <REHomeView userId={userId} /> : null}
             {error ? (
               <ErrorState message={error} onRetry={() => loadPlan(false)} />
             ) : plan ? (
@@ -186,14 +187,18 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           showsVerticalScrollIndicator={false}
         >
-          <WeekView
-            userId={userId ?? ''}
-            initialDate={planDate}
-            onDaySelect={(date) => {
-              setPlanDateExternal(date);
-              setViewMode('day');
-            }}
-          />
+          {isREUser && userId ? (
+            <REWeekView userId={userId} />
+          ) : (
+            <WeekView
+              userId={userId ?? ''}
+              initialDate={planDate}
+              onDaySelect={(date) => {
+                setPlanDateExternal(date);
+                setViewMode('day');
+              }}
+            />
+          )}
         </ScrollView>
       )}
 

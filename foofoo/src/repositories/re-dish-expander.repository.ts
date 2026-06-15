@@ -15,6 +15,7 @@ import {
   isOnCooldown,
 } from './re-feedback.repository';
 import type {
+  DishScoreBreakdown,
   REDayDishCandidates,
   REDishAffinityMap,
   REDishCandidate,
@@ -103,7 +104,7 @@ export function isDietCompatible(dishDietType: string, userFoodPref: string): bo
  * @param {number}  varietyPenalty   - 0 or -0.30 from computeVarietyPenalty.
  * @param {number}  [classAffinity]  - Behavioral class-affinity score (DOC-19 class_affinity, clamped -0.30..+0.35).
  * @param {number}  [seed]           - Optional deterministic random (for tests).
- * @returns {number} Final score (higher is better).
+ * @returns {DishScoreBreakdown} Full breakdown (total + each component).
  */
 export function computeDishScore(
   regionRelevance: string,
@@ -113,20 +114,39 @@ export function computeDishScore(
   varietyPenalty: number = 0,
   classAffinity: number = 0,
   seed?: number,
-): number {
+): DishScoreBreakdown {
   const base = 1.0;
-  const regionScore = regionAffinityScore(regionRelevance, regionArchetype);
+  const region = regionAffinityScore(regionRelevance, regionArchetype);
 
   const lowerRegion = regionRelevance.toLowerCase();
-  const daySlotBoost = isWeekend && (lowerRegion.includes('weekend') || lowerRegion.includes('festive'))
+  const daySlot = isWeekend && (lowerRegion.includes('weekend') || lowerRegion.includes('festive'))
     ? 0.05
     : 0.0;
 
-  // DOC-19 class_affinity: behavioral preference for the meal class (from swipes/locks).
   const classScore = Math.max(-0.30, Math.min(+0.35, classAffinity));
-
   const random = seed !== undefined ? seed : Math.random() * 0.10;
-  return base + regionScore + daySlotBoost + classScore + historyModifier + varietyPenalty + random;
+  const total = base + region + daySlot + classScore + historyModifier + varietyPenalty + random;
+
+  return { total, base, region, daySlot, classAffinity: classScore, history: historyModifier, variety: varietyPenalty, random };
+}
+
+/**
+ * @summary Format a DishScoreBreakdown into a single readable line for founder reports.
+ *
+ * @description Example: "Score 1.47 = Base 1.00 + Region +0.20 + Class +0.02 + History +0.25 + Variety 0.00 + Random +0.00"
+ */
+export function formatScoreReport(b: DishScoreBreakdown): string {
+  const fmt = (n: number) => (n >= 0 ? `+${n.toFixed(2)}` : n.toFixed(2));
+  return (
+    `Score ${b.total.toFixed(2)} = `
+    + `Base ${b.base.toFixed(2)} `
+    + `| Region ${fmt(b.region)} `
+    + `| DaySlot ${fmt(b.daySlot)} `
+    + `| Class ${fmt(b.classAffinity)} `
+    + `| History ${fmt(b.history)} `
+    + `| Variety ${fmt(b.variety)} `
+    + `| Random ${fmt(b.random)}`
+  );
 }
 
 // ── Internal DB types ─────────────────────────────────────────────────────────
@@ -203,12 +223,14 @@ export async function expandClassToDishes(
       const aff = affinities[r.dish_option_id];
       const history = clampHistoryModifier(aff?.affinityScore ?? 0);
       const variety = computeVarietyPenalty(recentDates[r.dish_option_id] ?? null, today);
+      const scoreBreakdown = computeDishScore(r.region_relevance, regionArchetype, isWeekend, history, variety, classAffinity);
       return {
         dishOptionId: r.dish_option_id,
         dishName: r.dish_name,
         dietType: r.diet_type,
         regionRelevance: r.region_relevance,
-        score: computeDishScore(r.region_relevance, regionArchetype, isWeekend, history, variety, classAffinity),
+        score: scoreBreakdown.total,
+        scoreBreakdown,
       };
     })
     .sort((a, b) => b.score - a.score)

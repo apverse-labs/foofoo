@@ -5,10 +5,10 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabaseRE } from '../../src/services/supabase-re';
-import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
+import REOnboardingLayout from '../../src/components/re/REOnboardingLayout';
 import {
   fetchRESubcohorts, saveRESubcohort, fetchREMainCohorts,
-  fetchREHouseholdProfile, requiresMemberStep,
+  fetchREHouseholdProfile, requiresMemberStep, saveREOnboardingStep,
 } from '../../src/repositories/re-onboarding.repository';
 import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
 import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
@@ -76,6 +76,7 @@ export default function REStep3() {
     setSaving(true);
     try {
       await saveRESubcohort(userId, selected.sub_cohort_id, selected.maps_to_persona_id);
+      await saveREOnboardingStep(userId, 3);
       Logger.info('RE_STEP3', 'subcohort saved', { userId, subcohort: selected.sub_cohort_id });
       await UserJourneyLogger.logOnboardingStep(userId, 3, 'RE Household Detail', {
         'Subcohort': selected.show_as_chip_text,
@@ -97,14 +98,14 @@ export default function REStep3() {
 
   if (loading) {
     return (
-      <OnboardingLayout step={3} title={headerCopy} subtitle="" onNext={() => {}} nextDisabled>
+      <REOnboardingLayout step={3} title={headerCopy} subtitle="" onNext={() => {}} nextDisabled>
         <ActivityIndicator color={COLORS.primary} style={{ marginTop: SPACING.xl }} />
-      </OnboardingLayout>
+      </REOnboardingLayout>
     );
   }
 
   return (
-    <OnboardingLayout
+    <REOnboardingLayout
       step={3}
       title={headerCopy}
       subtitle="Pick the one that fits most closely right now."
@@ -138,7 +139,7 @@ export default function REStep3() {
           <PersonaCard tags={tags} />
         </View>
       </ScrollView>
-    </OnboardingLayout>
+    </REOnboardingLayout>
   );
 }
 

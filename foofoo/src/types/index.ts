@@ -436,12 +436,25 @@ export type REClassAffinityMap = Record<string, number>;
 
 // ── RE BUILD-06: Dish Expansion & Food DNA Ranking ────────────────────────────
 
+/** Component breakdown for a dish score — powers "why this?" and the founder debug report. */
+export interface DishScoreBreakdown {
+  total: number;
+  base: number;        // always 1.0
+  region: number;      // 0 | 0.05 | 0.20
+  daySlot: number;     // 0 | 0.05 (weekend/festive boost)
+  classAffinity: number; // −0.30..+0.35 (class-level behavioral preference)
+  history: number;     // −0.30..+0.40 (dish-level affinity from swipes/locks)
+  variety: number;     // 0 | −0.30 (seen recently)
+  random: number;      // 0..0.10
+}
+
 export interface REDishCandidate {
   dishOptionId: string;
   dishName: string;
   dietType: string;
   regionRelevance: string;
   score: number;
+  scoreBreakdown?: DishScoreBreakdown;
 }
 
 export interface RESlotDishCandidates {

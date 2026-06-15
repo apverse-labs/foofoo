@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabaseRE } from '../../src/services/supabase-re';
-import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
-import { saveREHealthOverlay } from '../../src/repositories/re-onboarding.repository';
+import REOnboardingLayout from '../../src/components/re/REOnboardingLayout';
+import { saveREHealthOverlay, saveREOnboardingStep } from '../../src/repositories/re-onboarding.repository';
 import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
 import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
@@ -64,6 +64,7 @@ export default function REStep6() {
     setSaving(true);
     try {
       await saveREHealthOverlay(userId, overlay, null);
+      await saveREOnboardingStep(userId, 6);
       Logger.info('RE_STEP6', 'health overlay saved', { userId, overlay });
       await UserJourneyLogger.logOnboardingStep(userId, 6, 'RE Health Overlay', {
         'Overlay': overlay ?? 'none',
@@ -79,7 +80,7 @@ export default function REStep6() {
   };
 
   return (
-    <OnboardingLayout
+    <REOnboardingLayout
       step={6}
       title="Last question — promise."
       subtitle="This is optional but helps a lot."
@@ -118,7 +119,7 @@ export default function REStep6() {
           <Text style={styles.skipText}>No goals right now →</Text>
         </Pressable>
       </ScrollView>
-    </OnboardingLayout>
+    </REOnboardingLayout>
   );
 }
 

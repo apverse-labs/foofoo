@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ActivityIndicator, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabaseRE } from '../../src/services/supabase-re';
-import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
+import REOnboardingLayout from '../../src/components/re/REOnboardingLayout';
 import {
-  fetchREMainCohorts, saveREMainCohort, fetchREHouseholdProfile,
+  fetchREMainCohorts, saveREMainCohort, fetchREHouseholdProfile, saveREOnboardingStep,
 } from '../../src/repositories/re-onboarding.repository';
 import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
 import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
@@ -70,6 +70,7 @@ export default function REStep2() {
     setSaving(true);
     try {
       await saveREMainCohort(userId, selected);
+      await saveREOnboardingStep(userId, 2);
       const label = selectedCohort?.main_cohort_label ?? selected;
       Logger.info('RE_STEP2', 'main cohort saved', { userId, cohort: selected });
       await UserJourneyLogger.logOnboardingStep(userId, 2, 'RE Household Type', {
@@ -87,14 +88,14 @@ export default function REStep2() {
 
   if (loading) {
     return (
-      <OnboardingLayout step={2} title="Who are you feeding?" subtitle="" onNext={() => {}} nextDisabled>
+      <REOnboardingLayout step={2} title="Who are you feeding?" subtitle="" onNext={() => {}} nextDisabled>
         <ActivityIndicator color={COLORS.primary} style={{ marginTop: SPACING.xl }} />
-      </OnboardingLayout>
+      </REOnboardingLayout>
     );
   }
 
   return (
-    <OnboardingLayout
+    <REOnboardingLayout
       step={2}
       title="Who are you feeding?"
       subtitle="Tell me about your home."
@@ -133,7 +134,7 @@ export default function REStep2() {
           <PersonaCard tags={tags} />
         </View>
       </ScrollView>
-    </OnboardingLayout>
+    </REOnboardingLayout>
   );
 }
 

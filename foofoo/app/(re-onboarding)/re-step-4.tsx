@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabaseRE } from '../../src/services/supabase-re';
-import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
+import REOnboardingLayout from '../../src/components/re/REOnboardingLayout';
 import {
-  fetchREHouseholdProfile, saveREHouseholdMembers,
+  fetchREHouseholdProfile, saveREHouseholdMembers, saveREOnboardingStep,
 } from '../../src/repositories/re-onboarding.repository';
 import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
 import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
@@ -94,6 +94,7 @@ export default function REStep4() {
         member_segment: memberConfig.segment,
         age_band: selectedAgeBand,
       }]);
+      await saveREOnboardingStep(userId, 4);
       Logger.info('RE_STEP4', 'household member saved', { userId, segment: memberConfig.segment });
       await UserJourneyLogger.logOnboardingStep(userId, 4, 'RE Household Members', {
         'Member type': memberConfig.label,
@@ -112,7 +113,7 @@ export default function REStep4() {
   if (!memberConfig) return null;
 
   return (
-    <OnboardingLayout
+    <REOnboardingLayout
       step={4}
       title="I noticed you mentioned someone special."
       subtitle="This helps me add the right side dishes for them."
@@ -155,7 +156,7 @@ export default function REStep4() {
           <PersonaCard tags={tags} />
         </View>
       </ScrollView>
-    </OnboardingLayout>
+    </REOnboardingLayout>
   );
 }
 

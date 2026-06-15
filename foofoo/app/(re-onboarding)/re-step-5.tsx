@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react';
 import { View, Text, Pressable, StyleSheet, Alert, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabaseRE } from '../../src/services/supabase-re';
-import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
+import REOnboardingLayout from '../../src/components/re/REOnboardingLayout';
 import {
-  saveRECookDependency, fetchREHouseholdProfile,
+  saveRECookDependency, fetchREHouseholdProfile, saveREOnboardingStep,
 } from '../../src/repositories/re-onboarding.repository';
 import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
 import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
@@ -69,6 +69,7 @@ export default function REStep5() {
     setSaving(true);
     try {
       await saveRECookDependency(userId, selected);
+      await saveREOnboardingStep(userId, 5);
       Logger.info('RE_STEP5', 'cook dependency saved', { userId, cookDependency: selected });
       await UserJourneyLogger.logOnboardingStep(userId, 5, 'RE Cooking System', {
         'Cook type': selected,
@@ -84,7 +85,7 @@ export default function REStep5() {
   };
 
   return (
-    <OnboardingLayout
+    <REOnboardingLayout
       step={5}
       title="How does cooking happen at home?"
       subtitle="Tell me about your kitchen setup."
@@ -122,7 +123,7 @@ export default function REStep5() {
           <PersonaCard tags={tags} />
         </View>
       </ScrollView>
-    </OnboardingLayout>
+    </REOnboardingLayout>
   );
 }
 

@@ -5,8 +5,8 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { supabaseRE } from '../../src/services/supabase-re';
-import { OnboardingLayout } from '../../src/components/shared/OnboardingLayout';
-import { fetchREStates, saveRELocation } from '../../src/repositories/re-onboarding.repository';
+import REOnboardingLayout from '../../src/components/re/REOnboardingLayout';
+import { fetchREStates, saveRELocation, saveREOnboardingStep } from '../../src/repositories/re-onboarding.repository';
 import PersonaCard, { PersonaTag } from '../../src/components/re/PersonaCard';
 import AcknowledgementBubble from '../../src/components/re/AcknowledgementBubble';
 import { STATE_TIER_CITIES } from '../../src/config/re-city-constants';
@@ -78,6 +78,7 @@ export default function REStep1() {
     setSaving(true);
     try {
       await saveRELocation(userId, selectedState, trimmedCity);
+      await saveREOnboardingStep(userId, 1);
       Logger.info('RE_STEP1', 'location saved', { userId, state: selectedState });
       await UserJourneyLogger.logOnboardingStep(userId, 1, 'RE Location', {
         State: selectedState,
@@ -94,7 +95,7 @@ export default function REStep1() {
   };
 
   return (
-    <OnboardingLayout
+    <REOnboardingLayout
       step={1}
       title="Let's start with the basics."
       subtitle="Where you're from shapes your food identity."
@@ -164,7 +165,7 @@ export default function REStep1() {
           />
         </View>
       </Modal>
-    </OnboardingLayout>
+    </REOnboardingLayout>
   );
 }
 
