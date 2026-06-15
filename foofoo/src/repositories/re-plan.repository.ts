@@ -9,6 +9,12 @@ const DAYS_OF_WEEK = [
   'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
 ] as const;
 
+// re_weekly_class_plans stores abbreviated day names; re_user_weekly_plans CHECK requires full names.
+const DAY_ABBR_TO_FULL: Record<string, string> = {
+  Mon: 'Monday', Tue: 'Tuesday', Wed: 'Wednesday',
+  Thu: 'Thursday', Fri: 'Friday', Sat: 'Saturday', Sun: 'Sunday',
+};
+
 // ── Pure helpers (unit-tested) ────────────────────────────────────────────────
 
 /**
@@ -269,11 +275,14 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
       const ln = ov?.ln ?? pickClass(r.lunch_primary_class, r.lunch_secondary_class);
       const sn = pickClass(r.snack_primary_class, r.snack_secondary_class);
       const dn = ov?.dn ?? pickClass(r.dinner_primary_class, r.dinner_secondary_class);
+      // re_weekly_class_plans uses abbreviated day names (Mon/Tue/...); map to full
+      // names required by re_user_weekly_plans CHECK constraint.
+      const fullDayName = DAY_ABBR_TO_FULL[r.day_of_week] ?? r.day_of_week;
       return {
         profile_id: userId,
         cohort_id: cohortId,
         plan_week_start: weekStart,
-        day_of_week: r.day_of_week,
+        day_of_week: fullDayName,
         weekday_weekend: r.weekday_weekend,
         breakfast_class: bf,
         lunch_class: ln,
