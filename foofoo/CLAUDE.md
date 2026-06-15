@@ -37,7 +37,7 @@ No local Xcode or Android Studio needed. Builds happen in Expo EAS cloud.
 
 | Layer | Technology | Version / Notes |
 |-------|-----------|-----------------|
-| Framework | React Native + Expo SDK 52+ | TypeScript strictly throughout |
+| Framework | React Native + Expo SDK 56 | TypeScript strictly throughout |
 | Web | React Native Web + Expo Metro | Full feature parity — same screens, same RE |
 | Navigation | Expo Router (file-based) | Screen file name = route |
 | State | Zustand | Lightweight, no boilerplate |

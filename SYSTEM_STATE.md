@@ -1,5 +1,5 @@
 # SYSTEM STATE LEDGER (v2.0)
-> Last updated: 2026-06-14 (QA Layer 6 — performance benchmarks added)
+> Last updated: 2026-06-15 (audit merge: SDK 56 fixes, SCHEMA-RE-013/014 committed)
 > Maintained by: Lead Systems & Release Architect (Claude)
 > Rules: See CLAUDE.md § Architect Rules
 
@@ -67,6 +67,8 @@
 | SCHEMA-RE-006    | 20260614_007_re_reference_table_rls_select.sql | ✅ staging  | ✅              | Bug-fix: 16 RE reference/seed tables had RLS enabled with zero policies (total read blackout for all roles). Added `SELECT FOR authenticated USING (true)` to: re_states, re_meal_classes, re_class_dish_options, re_addon_classes, re_addon_dish_options, re_cohorts, re_main_cohorts, re_subcohorts, re_personas, re_weekly_class_plans, re_household_addon_plans, re_city_migration_overlays, re_engine_versions, re_meal_class_overlap_rules, re_nonveg_logic, re_routing_rules. Also added own-row ALL policy (re_uea_all_own) to re_user_engine_assignments. All 24 RE tables now have exactly 1 policy. NOT yet on production. |
 | SCHEMA-RE-011    | 20260615_001_re_generation_run_id.sql       | ✅ staging  | ✅              | B1: added `generation_run_id UUID DEFAULT gen_random_uuid()` to re_user_weekly_plans; `generation_run_id UUID` (FK nullable) to re_user_feedback. Links feedback events to exact plan generation run. Applied 2026-06-15 via Supabase MCP to foofoo-staging. NOT yet on production. |
 | SCHEMA-RE-012    | 20260615_002_re_plan_lock.sql               | ⚠️ PENDING  | ✅              | B2: adds `locked BOOLEAN NOT NULL DEFAULT false` to re_user_weekly_plans and re_user_addon_plans. SQL files committed. Apply manually: `supabase db push` or via MCP with explicit permission. NOT yet applied to staging. |
+| SCHEMA-RE-013    | 20260615_003_re_dish_safety_columns.sql     | ⚠️ PENDING  | ✅              | P0: adds `is_jain BOOLEAN NOT NULL DEFAULT false` + `allergen_ids INTEGER[] NOT NULL DEFAULT '{}'` to re_class_dish_options. Enables allergen + Jain hard-filters in dish expander. SQL committed 2026-06-15. NOT yet applied to staging. Data enrichment (populating rows) is a separate manual seed task. |
+| SCHEMA-RE-014    | 20260615_004_re_rename_household_members.sql | ⚠️ PENDING  | ✅              | W5: renames `household_members` → `re_household_members` to align with re_ prefix convention. Updates index + RLS policy name. SQL committed 2026-06-15. NOT yet applied to staging. |
 
 ---
 
