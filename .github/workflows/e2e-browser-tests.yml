@@ -48,7 +48,7 @@ jobs:
       # Lets this CI job through Vercel's preview/branch login wall without
       # disabling protection project-wide. Generate in Vercel Project Settings →
       # Deployment Protection → Protection Bypass for Automation.
-      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
+      VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_BYPASS_SECRET }}
 
     defaults:
       run:

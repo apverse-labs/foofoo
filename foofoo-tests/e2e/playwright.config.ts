@@ -57,9 +57,9 @@ export default defineConfig({
     // Lets CI through Vercel's Deployment Protection login wall on preview/
     // branch URLs without disabling protection project-wide. No-op locally
     // and against unprotected deployments (header is simply ignored).
-    ...(process.env.VERCEL_AUTOMATION_BYPASS_SECRET ? {
+    ...(process.env.VERCEL_BYPASS_SECRET ? {
       extraHTTPHeaders: {
-        'x-vercel-protection-bypass': process.env.VERCEL_AUTOMATION_BYPASS_SECRET,
+        'x-vercel-protection-bypass': process.env.VERCEL_BYPASS_SECRET,
       },
     } : {}),
   },
