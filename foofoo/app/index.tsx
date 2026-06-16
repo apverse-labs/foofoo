@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter, usePathname } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../src/services/supabase';
 import { resetOnboardingProgress } from '../src/repositories/profiles.repository';
@@ -26,8 +26,13 @@ const INTRO_SEEN_KEY = STORAGE_KEYS.INTRO_SEEN;
  */
 export default function Index() {
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
+    // On web, _layout.tsx's initialRouteName mounts this screen in the background
+    // stack even when navigating directly to a specific route (e.g. /(auth)/sign-in).
+    // Skip routing logic in that case — the active screen owns its own render.
+    if (Platform.OS === 'web' && pathname !== '/') return;
     checkAndRoute();
   }, []);
 
