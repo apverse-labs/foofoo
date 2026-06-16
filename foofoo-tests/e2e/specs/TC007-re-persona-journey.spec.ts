@@ -39,7 +39,7 @@
  *   their credentials stored in GitHub Actions secrets (or .env.test.local).
  */
 
-import { test, expect } from '@playwright/test';
+import { test, expect, type Page } from '@playwright/test';
 import { AuthPage } from '../pages/auth.page';
 import { HomePage } from '../pages/home.page';
 import { E2E_CONFIG } from '../e2e-config';
@@ -80,7 +80,7 @@ const VEG_FORBIDDEN_KEYWORDS = [
 
 /** Asserts none of the forbidden keywords appear in visible page text. */
 async function assertNoForbiddenDishText(
-  page: Parameters<typeof test>[1] extends infer P ? P extends { page: infer PP } ? PP : never : never,
+  page: Page,
   keywords: string[],
 ) {
   const bodyText = (await page.locator('body').textContent() ?? '').toLowerCase();
