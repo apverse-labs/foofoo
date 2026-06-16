@@ -10,6 +10,27 @@
     "resolveJsonModule": true,
     "outDir": "./dist",
     "rootDir": "..",
+    "baseUrl": ".",
+    "paths": {
+      // TODO: remove all paths entries below once TypeScript Project References
+      // are set up (composite:true in foofoo/tsconfig + references in this file).
+      // With Project References, foofoo-tests uses foofoo's .d.ts output and
+      // never needs to resolve foofoo's transitive dependencies itself.
+
+      // @supabase/supabase-js IS installed in foofoo-tests/node_modules, but
+      // tsc resolves it from foofoo/src/* which has no local node_modules in CI.
+      // Pin it explicitly to foofoo-tests/node_modules.
+      "@supabase/supabase-js": ["node_modules/@supabase/supabase-js"],
+      "@supabase/supabase-js/*": ["node_modules/@supabase/supabase-js/*"],
+
+      // React-Native packages are not installed in foofoo-tests — they are
+      // pulled in transitively by foofoo/src/services/supabase-re.ts and
+      // foofoo/src/utils/systemLogger.ts.  Stub declarations live in
+      // foofoo-tests/types/rn-stubs.d.ts (remove that file too when done).
+      "expo-secure-store": ["types/rn-stubs"],
+      "react-native": ["types/rn-stubs"],
+      "@react-native-async-storage/async-storage": ["types/rn-stubs"]
+    },
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "types": ["jest", "node", "detox"]
