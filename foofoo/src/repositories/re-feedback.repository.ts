@@ -67,7 +67,13 @@ export function clampHistoryModifier(rawAffinity: number): number {
  * @param {string}        today        - ISO date string for today (YYYY-MM-DD).
  * @returns {number} 0 or -0.30.
  */
-export function computeVarietyPenalty(lastSeenDate: string | null, today: string): number {
+export function computeVarietyPenalty(
+  lastSeenDate: string | null,
+  today: string,
+  repeatPreferred: boolean = false,
+): number {
+  // Seq 12: users who have locked this dish 3+ times get no variety penalty
+  if (repeatPreferred) return 0;
   if (!lastSeenDate) return 0;
   const last = new Date(lastSeenDate).getTime();
   const now = new Date(today).getTime();
@@ -109,44 +115,91 @@ interface DishAffinityRow {
   reject_count: number;
   is_never: boolean;
   not_today_until: string | null;
+  repeat_preferred: boolean;
 }
 
 interface ClassAffinityRow {
   meal_class_code: string;
   affinity_score: number;
   signal_count?: number;
+  high_complexity_accepts?: number;
+  high_complexity_rejects?: number;
+}
+
+interface DnaVectorRow {
+  dna_tag: string;
+  affinity_score: number;
+  signal_count: number;
+}
+
+interface ClassFamilyAffinityRow {
+  class_family_code: string;
+  affinity_score: number;
+  signal_count: number;
+}
+
+/** Weights for Food DNA vector updates (positive signals boost tags, negative ones reduce). */
+const DNA_SIGNAL_WEIGHT: Partial<Record<REFeedbackSignal, number>> = {
+  LOCK:             +0.30,
+  SEARCH_ADD_DISH:  +0.30,
+  ACCEPT:           +0.20,
+  ADD_TO_GROCERY:   +0.15,
+  TAP_RECIPE:       +0.05,
+  SWIPE_PAST:       -0.10,
+  NOT_TODAY:        -0.15,
+};
+
+/** Weights for class family (cuisine drift) affinity updates. */
+const CLASS_FAMILY_SIGNAL_WEIGHT: Partial<Record<REFeedbackSignal, number>> = {
+  LOCK:             +0.20,
+  SEARCH_ADD_DISH:  +0.20,
+  ACCEPT:           +0.10,
+  SWIPE_PAST:       -0.08,
+  NOT_TODAY:        -0.05,
+};
+
+/** Clamp Food DNA affinity to [-1, 1]. */
+function clampDnaScore(n: number): number {
+  return Math.max(-1, Math.min(1, parseFloat(n.toFixed(3))));
+}
+
+/** Clamp class family affinity to [-0.30, +0.35] (same range as class affinity). */
+function clampFamilyScore(n: number): number {
+  return Math.max(-0.30, Math.min(+0.35, n));
 }
 
 // ── Operations ────────────────────────────────────────────────────────────────
 
 /**
- * @summary Record a user feedback event and update materialized affinity tables.
+ * @summary Record a user feedback event and update all materialized affinity tables.
  *
  * @description
  *   1. Appends a row to re_user_feedback (raw event log).
- *   2. Upserts re_user_dish_affinity:
- *      - Updates affinity_score (cumulative weighted sum).
- *      - Updates lock/accept/reject counts.
- *      - Sets is_never = true for NEVER, false for NEVER_REMOVE.
- *      - Sets not_today_until for NOT_TODAY, clears it for NEVER_REMOVE.
- *   3. Upserts re_user_class_affinity for signals that propagate to class level.
+ *   2. Upserts re_user_dish_affinity (score, counts, is_never, not_today_until, repeat_preferred).
+ *   3. Upserts re_user_class_affinity (class score, cook complexity tolerance — Seq 14).
+ *   4. Upserts re_user_food_dna_vector per tag from foodDnaTags (Seq 11).
+ *   5. Upserts re_user_class_family_affinity for cuisine drift (Seq 13).
  *
- * @param {string}           userId      - Supabase auth UID.
- * @param {string}           dishOptionId - From re_class_dish_options.
- * @param {string}           mealClassCode - Class the dish belongs to.
- * @param {REFeedbackSignal} signal       - The feedback event type.
- * @returns {Promise<void>}
- *
- * @calledBy REDishPick component on user gesture.
+ * @param {string}           userId         - Supabase auth UID.
+ * @param {string}           dishOptionId   - From re_class_dish_options.
+ * @param {string}           mealClassCode  - Class the dish belongs to.
+ * @param {REFeedbackSignal} signal         - The feedback event type.
+ * @param {string|null}      [foodDnaTags]  - re_meal_classes.food_dna_tags (comma-separated). Pass for DNA vector update (Seq 11).
+ * @param {string|null}      [classFamilyCode] - re_meal_classes.class_family_code. Pass for cuisine drift (Seq 13).
+ * @param {string|null}      [cookComplexity] - re_meal_classes.cook_complexity. Pass for cook tolerance (Seq 14).
  */
 export async function recordFeedback(
   userId: string,
   dishOptionId: string,
   mealClassCode: string,
   signal: REFeedbackSignal,
+  foodDnaTags: string | null = null,
+  classFamilyCode: string | null = null,
+  cookComplexity: string | null = null,
 ): Promise<void> {
   const weight = RE_SIGNAL_WEIGHTS[signal];
   const today = new Date().toISOString().slice(0, 10);
+  const now = new Date().toISOString();
 
   try {
     // 1. Append raw event
@@ -177,12 +230,13 @@ export async function recordFeedback(
     const newAccepts = (prev?.accept_count ?? 0) + (signal === 'ACCEPT' ? 1 : 0);
     const newRejects = (prev?.reject_count ?? 0) + (signal === 'SWIPE_PAST' ? 1 : 0);
     const isNever = signal === 'NEVER' ? true : signal === 'NEVER_REMOVE' ? false : (prev?.is_never ?? false);
-    // SEARCH_ADD_DISH overrides repeat guard: clears NOT_TODAY cooldown (DOC-21 §5 signal 9)
     const notTodayUntil = signal === 'NOT_TODAY'
       ? computeNotTodayExpiry(today)
       : signal === 'NEVER_REMOVE' || signal === 'SEARCH_ADD_DISH'
         ? null
-        : undefined; // undefined = don't touch the column
+        : undefined;
+    // Seq 12: mark repeat_preferred once user has locked this dish 3+ times
+    const repeatPreferred = newLocks >= 3;
 
     const dishRow: Record<string, unknown> = {
       profile_id: userId,
@@ -193,7 +247,8 @@ export async function recordFeedback(
       accept_count: newAccepts,
       reject_count: newRejects,
       is_never: isNever,
-      last_updated: new Date().toISOString(),
+      repeat_preferred: repeatPreferred,
+      last_updated: now,
     };
     if (notTodayUntil !== undefined) dishRow.not_today_until = notTodayUntil;
 
@@ -202,12 +257,12 @@ export async function recordFeedback(
       .upsert(dishRow, { onConflict: 'profile_id,dish_option_id' });
     if (dishErr) throw dishErr;
 
-    // 3. Update class affinity (only for signals that have a class-level delta)
+    // 3. Update class affinity + cook complexity tolerance (Seq 14)
     const classDelta = CLASS_SIGNAL_WEIGHTS[signal];
     if (classDelta !== undefined) {
       const { data: existingClass, error: classFetchErr } = await supabaseRE
         .from('re_user_class_affinity')
-        .select('affinity_score, signal_count')
+        .select('affinity_score, signal_count, high_complexity_accepts, high_complexity_rejects')
         .eq('profile_id', userId)
         .eq('meal_class_code', mealClassCode)
         .maybeSingle();
@@ -218,6 +273,14 @@ export async function recordFeedback(
         (prevClass?.affinity_score ?? 0) + classDelta,
       ));
 
+      // Seq 14: track how often user accepts/rejects high-complexity dishes
+      const isHighComplexity = (cookComplexity ?? '').toLowerCase() === 'high';
+      const isPositiveSignal = classDelta > 0;
+      const newHighAccepts = (prevClass?.high_complexity_accepts ?? 0)
+        + (isHighComplexity && isPositiveSignal ? 1 : 0);
+      const newHighRejects = (prevClass?.high_complexity_rejects ?? 0)
+        + (isHighComplexity && !isPositiveSignal ? 1 : 0);
+
       const { error: classErr } = await supabaseRE
         .from('re_user_class_affinity')
         .upsert({
@@ -225,9 +288,61 @@ export async function recordFeedback(
           meal_class_code: mealClassCode,
           affinity_score: newClassAffinity,
           signal_count: (prevClass?.signal_count ?? 0) + 1,
-          last_updated: new Date().toISOString(),
+          high_complexity_accepts: newHighAccepts,
+          high_complexity_rejects: newHighRejects,
+          last_updated: now,
         }, { onConflict: 'profile_id,meal_class_code' });
       if (classErr) throw classErr;
+    }
+
+    // 4. Seq 11: update Food DNA preference vector (fire-and-forget on error — non-critical)
+    const dnaDelta = DNA_SIGNAL_WEIGHT[signal];
+    if (dnaDelta !== undefined && foodDnaTags) {
+      const tags = foodDnaTags.split(',').map((t) => t.trim().toLowerCase()).filter(Boolean);
+      if (tags.length > 0) {
+        const { data: existingDna } = await supabaseRE
+          .from('re_user_food_dna_vector')
+          .select('dna_tag, affinity_score, signal_count')
+          .eq('profile_id', userId)
+          .in('dna_tag', tags);
+        const dnaMap = new Map<string, DnaVectorRow>(
+          ((existingDna ?? []) as DnaVectorRow[]).map((r) => [r.dna_tag, r]),
+        );
+        const dnaUpserts = tags.map((tag) => {
+          const prev = dnaMap.get(tag);
+          return {
+            profile_id: userId,
+            dna_tag: tag,
+            affinity_score: clampDnaScore((prev?.affinity_score ?? 0) + dnaDelta),
+            signal_count: (prev?.signal_count ?? 0) + 1,
+            last_updated: now,
+          };
+        });
+        await supabaseRE
+          .from('re_user_food_dna_vector')
+          .upsert(dnaUpserts, { onConflict: 'profile_id,dna_tag' });
+      }
+    }
+
+    // 5. Seq 13: update class family affinity (cuisine drift)
+    const familyDelta = CLASS_FAMILY_SIGNAL_WEIGHT[signal];
+    if (familyDelta !== undefined && classFamilyCode) {
+      const { data: existingFamily } = await supabaseRE
+        .from('re_user_class_family_affinity')
+        .select('affinity_score, signal_count')
+        .eq('profile_id', userId)
+        .eq('class_family_code', classFamilyCode)
+        .maybeSingle();
+      const prevFamily = existingFamily as ClassFamilyAffinityRow | null;
+      await supabaseRE
+        .from('re_user_class_family_affinity')
+        .upsert({
+          profile_id: userId,
+          class_family_code: classFamilyCode,
+          affinity_score: clampFamilyScore((prevFamily?.affinity_score ?? 0) + familyDelta),
+          signal_count: (prevFamily?.signal_count ?? 0) + 1,
+          last_updated: now,
+        }, { onConflict: 'profile_id,class_family_code' });
     }
 
     Logger.info('RE_FEEDBACK', 'Feedback recorded', {
@@ -284,6 +399,7 @@ export async function fetchDishAffinities(
         rejectCount: row.reject_count,
         isNever: row.is_never,
         notTodayUntil: row.not_today_until,
+        repeatPreferred: row.repeat_preferred ?? false,
       };
     }
     return map;
@@ -373,5 +489,76 @@ export async function fetchRecentAcceptDates(
       error: err instanceof Error ? err.message : String(err), userId,
     });
     return {};
+  }
+}
+
+/**
+ * @summary Fetch the user's Food DNA preference vector (Seq 11).
+ * @returns Map of dna_tag → affinity_score (clamped -1..1). Empty on error.
+ */
+export async function fetchFoodDnaVector(userId: string): Promise<Record<string, number>> {
+  try {
+    const { data, error } = await supabaseRE
+      .from('re_user_food_dna_vector')
+      .select('dna_tag, affinity_score')
+      .eq('profile_id', userId);
+    if (error) throw error;
+    const map: Record<string, number> = {};
+    for (const row of (data ?? []) as DnaVectorRow[]) map[row.dna_tag] = row.affinity_score;
+    return map;
+  } catch (err: unknown) {
+    Logger.error('RE_FEEDBACK', 'fetchFoodDnaVector failed', {
+      error: err instanceof Error ? err.message : String(err), userId,
+    });
+    return {};
+  }
+}
+
+/**
+ * @summary Fetch class family affinity scores for cuisine drift (Seq 13).
+ * @returns Map of class_family_code → affinity_score. Empty on error.
+ */
+export async function fetchClassFamilyAffinities(userId: string): Promise<Record<string, number>> {
+  try {
+    const { data, error } = await supabaseRE
+      .from('re_user_class_family_affinity')
+      .select('class_family_code, affinity_score')
+      .eq('profile_id', userId);
+    if (error) throw error;
+    const map: Record<string, number> = {};
+    for (const row of (data ?? []) as ClassFamilyAffinityRow[]) map[row.class_family_code] = row.affinity_score;
+    return map;
+  } catch (err: unknown) {
+    Logger.error('RE_FEEDBACK', 'fetchClassFamilyAffinities failed', {
+      error: err instanceof Error ? err.message : String(err), userId,
+    });
+    return {};
+  }
+}
+
+/**
+ * @summary Compute the effective cook tolerance modifier from behavioral history (Seq 14).
+ * @description Returns a float in [-0.15, +0.15] to add to the base cookCapabilityScore.
+ *   Positive = user has repeatedly accepted high-complexity dishes → relax the penalty.
+ *   Negative = user has repeatedly rejected them → strengthen the penalty.
+ */
+export async function fetchCookToleranceModifier(userId: string, mealClassCode: string): Promise<number> {
+  try {
+    const { data, error } = await supabaseRE
+      .from('re_user_class_affinity')
+      .select('high_complexity_accepts, high_complexity_rejects')
+      .eq('profile_id', userId)
+      .eq('meal_class_code', mealClassCode)
+      .maybeSingle();
+    if (error) throw error;
+    if (!data) return 0;
+    const row = data as { high_complexity_accepts: number; high_complexity_rejects: number };
+    const net = (row.high_complexity_accepts ?? 0) - (row.high_complexity_rejects ?? 0);
+    return Math.max(-0.15, Math.min(+0.15, net * 0.03));
+  } catch (err: unknown) {
+    Logger.error('RE_FEEDBACK', 'fetchCookToleranceModifier failed', {
+      error: err instanceof Error ? err.message : String(err), userId,
+    });
+    return 0;
   }
 }
