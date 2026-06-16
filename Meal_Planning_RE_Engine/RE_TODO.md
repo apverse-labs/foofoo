@@ -8,8 +8,8 @@
 
 | Seq | ID | Task | Files | Status |
 |-----|-----|------|-------|--------|
-| 1 | C-B5-DATA | Apply SCHEMA-RE-016-RESTORE to staging — `re_household_addon_plans` has 111 rows instead of 7,992. All addon plans (infant, diabetic, elderly) are broken. | `20260615_007_re_hacp_restore_all.sql` → apply to staging DB | ⏳ PENDING (requires DB access) |
-| 2 | C-B6-ALLERG | Apply SCHEMA-RE-013 (`20260615_003_re_dish_safety_columns.sql`) to staging — adds `is_jain` + `allergen_ids` columns to `re_class_dish_options` | `20260615_003_re_dish_safety_columns.sql` → apply to staging DB | ⏳ PENDING (requires DB access) |
+| 1 | C-B5-DATA | Apply SCHEMA-RE-016-RESTORE to staging — `re_household_addon_plans` has 111 rows instead of 7,992. All addon plans (infant, diabetic, elderly) are broken. | `20260615_007_re_hacp_restore_all.sql` → apply to staging DB | ✅ DONE (2026-06-16, confirmed by founder) |
+| 2 | C-B6-ALLERG | Apply SCHEMA-RE-013 (`20260615_003_re_dish_safety_columns.sql`) to staging — adds `is_jain` + `allergen_ids` columns to `re_class_dish_options` | `20260615_003_re_dish_safety_columns.sql` → apply to staging DB | ✅ DONE (2026-06-16, verified: 2 columns confirmed) |
 | 3 | C-B6-CODE | Wire allergen + Jain hard-filter into `expandClassToDishes()` — loads user's `excluded_ingredients`, filters dishes by `allergen_ids` overlap and `is_jain` flag. **Depends on seq 2.** | `re-dish-expander.repository.ts` | ✅ DONE (2026-06-16) |
 | 4 | C-B7-SIGNAL | Add `SEARCH_ADD_DISH` as 9th feedback signal — strong positive (+0.40), also resets NOT_TODAY cooldown and overrides variety guard | `src/types/index.ts`, `re-feedback.repository.ts` | ✅ DONE (2026-06-16) |
 
@@ -19,8 +19,8 @@
 
 | Seq | ID | Task | Files | Status |
 |-----|-----|------|-------|--------|
-| 5 | C-B4-VARIETY | Add class rotation guard to `generateUserWeeklyPlan()` — detect if same primary class appears >3× (breakfast) or >2× (dinner) in 7-day output and swap with secondary class | `re-plan.repository.ts` | ⏳ TODO |
-| 6 | C-B4-COOK | Read `weekday_time_pressure` from `re_user_household_profiles` in `generateUserWeeklyPlan()` and use it to filter/swap high-complexity classes on weekdays | `re-plan.repository.ts` | ⏳ TODO |
+| 5 | C-B4-VARIETY | Add class rotation guard to `generateUserWeeklyPlan()` — detect if same primary class appears >3× (breakfast) or >2× (dinner) in 7-day output and swap with secondary class | `re-plan.repository.ts` | ✅ DONE (2026-06-16) |
+| 6 | C-B4-COOK | Read `weekday_time_pressure` from `re_user_household_profiles` in `generateUserWeeklyPlan()` and use it to filter/swap high-complexity classes on weekdays | `re-plan.repository.ts` | ✅ DONE (2026-06-16) |
 | 7 | C-B2-ROUTING | Wire `re_routing_rules` DB table to runtime onboarding screen flow — replace hardcoded `buildScreenFlow()` with DB query | `re-onboarding-flow.ts` (or equivalent) | ⏳ TODO |
 | 8 | C-B6-SCORE-CITY | Add current city lifestyle scoring component to `computeDishScore()` — +0.05 to +0.15 for city-relevant dishes | `re-dish-expander.repository.ts` | ⏳ TODO |
 | 9 | C-B6-SCORE-COOK | Add cook capability scoring component to `computeDishScore()` — -0.20 to +0.10 based on `cook_dependency` vs dish complexity | `re-dish-expander.repository.ts` | ⏳ TODO |
