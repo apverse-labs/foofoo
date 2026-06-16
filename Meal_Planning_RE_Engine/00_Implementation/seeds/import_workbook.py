@@ -438,17 +438,22 @@ ON CONFLICT (version_code) DO NOTHING;""")
         )
 
     # ── 15. NONVEG LOGIC ──────────────────────────────────────
+    # NonVeg_Logic_v3 has no state_id column (only state_ut); look it up via
+    # State_Profile_v3's state_ut -> state_id mapping (state_rows from block 2).
+    state_id_by_ut = {r[1]: r[0] for r in state_rows if r[0]}
     _, nv_rows = sheet_rows(wb, 'NonVeg_Logic_v3')
     vals = []
     for r in nv_rows:
         if not r[0]:
             continue
+        state_ut = r[0]
+        state_id = state_id_by_ut.get(state_ut)
         vals.append(
             '  (' + ','.join([
-                esc(r[0]), esc(r[1]), esc(r[2]),
+                esc(state_id), esc(state_ut), esc(r[1]),
                 int_val(r[3]), int_val(r[4]),
-                esc(r[5]) if len(r) > 5 else 'NULL',
-                esc(r[6]) if len(r) > 6 else 'NULL'
+                esc(r[8]) if len(r) > 8 else 'NULL',
+                esc(r[9]) if len(r) > 9 else 'NULL'
             ]) + ')'
         )
     if vals:
