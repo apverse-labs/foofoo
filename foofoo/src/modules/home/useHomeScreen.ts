@@ -13,6 +13,7 @@ import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../services/supabase';
+import { supabaseRE } from '../../services/supabase-re';
 import { OfflineService } from '../../services/offline.service';
 import {
   generateDailyPlan, getCarouselForSlot, getTodayIST,
@@ -60,8 +61,16 @@ export function useHomeScreen() {
   const { isOnline, wasOffline } = useNetworkStatus();
 
   useEffect(() => {
-    supabase.auth.getUser()
-      .then(({ data }) => { if (data.user) setUserId(data.user.id); })
+    // RE (class-first) users authenticate against the staging RE Supabase
+    // project, not the legacy production client — check both so RE users'
+    // userId actually resolves instead of hanging forever on a null session.
+    supabaseRE.auth.getUser()
+      .then(({ data }) => {
+        if (data.user) { setUserId(data.user.id); return; }
+        return supabase.auth.getUser().then(({ data: legacyData }) => {
+          if (legacyData.user) setUserId(legacyData.user.id);
+        });
+      })
       .catch(err => Logger.error('HOME', 'auth.getUser failed', { error: err?.message }));
     checkTutorial();
     loadPlan(false);

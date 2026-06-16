@@ -28,6 +28,7 @@ import { LoadingScreen, ErrorState, EmptyState } from '../../src/modules/home/Ho
 import { useHomeScreen } from '../../src/modules/home/useHomeScreen';
 import { useResponsive } from '../../src/utils/responsive';
 import { fetchProfile } from '../../src/repositories/profiles.repository';
+import { supabaseRE } from '../../src/services/supabase-re';
 import { PostHogService } from '../../src/services/posthog.service';
 
 type ViewMode = 'day' | 'week';
@@ -56,16 +57,25 @@ export default function HomeScreen() {
   } = useHomeScreen();
 
   // Detect RE (class-first) users so we can surface their weekly class plan.
+  // RE users authenticate against the staging RE project (supabaseRE), so
+  // their `profiles` row must be read through that client — the legacy
+  // `supabase` client has no session for them and RLS blocks the read,
+  // leaving isREUser stuck at null (and the spinner stuck) forever.
   useEffect(() => {
     if (!userId) return;
     let active = true;
     (async () => {
-      const profile = await fetchProfile(userId);
-      if (active) {
-        setIsREUser(
-          (profile as { re_engine_version?: string | null } | null)?.re_engine_version === 'classfirst_v1',
-        );
+      const { data: reProfile } = await supabaseRE
+        .from('profiles')
+        .select('re_engine_version')
+        .eq('id', userId)
+        .maybeSingle();
+      let version = (reProfile as { re_engine_version?: string | null } | null)?.re_engine_version ?? null;
+      if (!reProfile) {
+        const profile = await fetchProfile(userId);
+        version = (profile as { re_engine_version?: string | null } | null)?.re_engine_version ?? null;
       }
+      if (active) setIsREUser(version === 'classfirst_v1');
     })();
     return () => { active = false; };
   }, [userId]);
