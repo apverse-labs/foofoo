@@ -44,6 +44,11 @@ jobs:
       # ── External app URL (optional) ───────────────────────────────────────────
       # When set, Playwright skips the local webServer and tests the deployed app.
       VERCEL_URL: ${{ secrets.VERCEL_URL }}
+      # ── Deployment Protection bypass ──────────────────────────────────────────
+      # Lets this CI job through Vercel's preview/branch login wall without
+      # disabling protection project-wide. Generate in Vercel Project Settings →
+      # Deployment Protection → Protection Bypass for Automation.
+      VERCEL_AUTOMATION_BYPASS_SECRET: ${{ secrets.VERCEL_AUTOMATION_BYPASS_SECRET }}
 
     defaults:
       run:
