@@ -36,7 +36,7 @@ export default function HomeScreen() {
   const insets = useClientInsets();
   const { contentWidth } = useResponsive();
   const [viewMode, setViewMode] = useState<ViewMode>('day');
-  const [isREUser, setIsREUser] = useState(false);
+  const [isREUser, setIsREUser] = useState<boolean | null>(null);
 
   useEffect(() => {
     PostHogService.screen('home', { viewMode });
@@ -70,7 +70,11 @@ export default function HomeScreen() {
     return () => { active = false; };
   }, [userId]);
 
-  if (loading && !refreshing && viewMode === 'day') {
+  // Wait for the RE-vs-legacy decision to resolve before rendering either
+  // engine's view — otherwise an RE user transiently (or, if fetchProfile
+  // silently fails, permanently) renders the legacy view, which queries
+  // tables that don't exist for RE-only accounts.
+  if (!userId || isREUser === null || (loading && !refreshing && viewMode === 'day')) {
     return <LoadingScreen insetTop={insets.top} />;
   }
 
