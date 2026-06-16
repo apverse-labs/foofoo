@@ -41,7 +41,7 @@ export const test = base.extend<AuthFixtures>({
     // Expo Router strips group names from URLs, so /(tabs) becomes / — we check
     // that the URL is no longer on a sign-in or auth-gate page instead.
     await page.waitForURL(
-      url => !url.includes('sign-in') && !url.includes('auth-gate'),
+      url => !url.href.includes('sign-in') && !url.href.includes('auth-gate'),
       { timeout: E2E_CONFIG.timeouts.apiCall },
     );
 
@@ -61,7 +61,7 @@ export const test = base.extend<AuthFixtures>({
     );
 
     await page.waitForURL(
-      url => !url.includes('sign-in') && !url.includes('auth-gate'),
+      url => !url.href.includes('sign-in') && !url.href.includes('auth-gate'),
       { timeout: E2E_CONFIG.timeouts.apiCall },
     );
 
