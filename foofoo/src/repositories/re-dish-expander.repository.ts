@@ -156,6 +156,8 @@ interface ClassDishRow {
   dish_name: string;
   diet_type: string;
   region_relevance: string;
+  is_jain: boolean | null;
+  allergen_ids: number[] | null;
 }
 
 interface UserContextRow {
@@ -170,6 +172,10 @@ interface UserContextRow {
   lunch_display: string | null;
   snack_display: string | null;
   dinner_display: string | null;
+}
+
+interface UserDietRulesRow {
+  excluded_ingredients: number[] | null;
 }
 
 // ── Operations ────────────────────────────────────────────────────────────────
@@ -202,10 +208,13 @@ export async function expandClassToDishes(
   today: string = new Date().toISOString().slice(0, 10),
   classAffinity: number = 0,
   topN: number = TOP_DISHES_PER_SLOT,
+  excludedIngredients: number[] = [],
 ): Promise<RESlotDishCandidates> {
+  const isJainUser = userFoodPref.toLowerCase() === 'jain';
+
   const { data, error } = await supabaseRE
     .from('re_class_dish_options')
-    .select('dish_option_id, dish_name, diet_type, region_relevance')
+    .select('dish_option_id, dish_name, diet_type, region_relevance, is_jain, allergen_ids')
     .eq('meal_class_code', classCode);
   if (error) throw error;
 
@@ -213,9 +222,20 @@ export async function expandClassToDishes(
 
   const candidates: REDishCandidate[] = rows
     .filter((r) => {
+      // Hard filter 1: diet compatibility
       if (!isDietCompatible(r.diet_type, userFoodPref)) return false;
+      // Hard filter 2: Jain — dish must be Jain-safe (is_jain=true) for Jain users
+      // is_jain is null before SCHEMA-RE-013 is applied; treat null as non-Jain (safe default = exclude for Jain users)
+      if (isJainUser && r.is_jain !== true) return false;
+      // Hard filter 3: allergen exclusion — exclude if dish contains any of user's excluded allergens
+      // allergen_ids is null before SCHEMA-RE-013; treat null as no allergens (safe default = include)
+      if (excludedIngredients.length > 0 && r.allergen_ids && r.allergen_ids.length > 0) {
+        if (r.allergen_ids.some((id) => excludedIngredients.includes(id))) return false;
+      }
+      // Hard filter 4: never list
       const aff = affinities[r.dish_option_id];
       if (aff?.isNever) return false;
+      // Hard filter 5: NOT_TODAY cooldown
       if (isOnCooldown(aff?.notTodayUntil ?? null, today)) return false;
       return true;
     })
@@ -291,15 +311,15 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
     const isWeekend = plan.weekday_weekend === 'Weekend';
     const cohortId = plan.cohort_id ?? '';
 
-    // Load food_pref from profiles
-    const { data: profileData, error: profErr } = await supabaseRE
-      .from('profiles')
-      .select('food_pref')
-      .eq('id', userId)
-      .maybeSingle();
-    if (profErr) throw profErr;
+    // Load food_pref and excluded allergens from profiles + user_diet_rules
+    const [profileResult, dietRulesResult] = await Promise.all([
+      supabaseRE.from('profiles').select('food_pref').eq('id', userId).maybeSingle(),
+      supabaseRE.from('user_diet_rules').select('excluded_ingredients').eq('profile_id', userId).maybeSingle(),
+    ]);
+    if (profileResult.error) throw profileResult.error;
 
-    const foodPref = (profileData as { food_pref: string | null } | null)?.food_pref ?? 'veg';
+    const foodPref = (profileResult.data as { food_pref: string | null } | null)?.food_pref ?? 'veg';
+    const excludedIngredients = (dietRulesResult.data as UserDietRulesRow | null)?.excluded_ingredients ?? [];
     const stateId = parseStateIdFromCohort(cohortId);
     const regionArchetype = STATE_REGION_ARCHETYPE[stateId] ?? 'NORTH_WHEAT';
 
@@ -332,6 +352,8 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
           recentDates,
           todayISO,
           (classAffinityMap as Record<string, number>)[classCode] ?? 0,
+          TOP_DISHES_PER_SLOT,
+          excludedIngredients,
         );
       }),
     );
