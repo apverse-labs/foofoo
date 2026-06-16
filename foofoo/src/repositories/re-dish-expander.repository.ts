@@ -89,21 +89,109 @@ export function isDietCompatible(dishDietType: string, userFoodPref: string): bo
   return true;
 }
 
+// ── City-destination groups treated as metro lifestyle (quick/light/healthy overlay) ──
+const METRO_CITY_GROUPS = new Set(['metro', 'metro_tier1', 'tier1', 'urban', 'cosmopolitan']);
+
+/**
+ * @summary Compute city lifestyle score (DOC-19 §current city lifestyle, 0..+0.15).
+ * @description Metro/Tier-1 city users get a boost for quick, light, modern dishes.
+ *   Tier-2/regional city users get a small boost for traditional, home-style dishes.
+ */
+export function cityLifestyleScore(regionRelevance: string, cityDestinationGroup: string): number {
+  const lower = regionRelevance.toLowerCase();
+  const cityGroup = (cityDestinationGroup ?? '').toLowerCase().replace(/[\s-]/g, '_');
+  const isMetro = METRO_CITY_GROUPS.has(cityGroup) || cityGroup.startsWith('metro') || cityGroup.startsWith('tier1') || cityGroup.startsWith('urban');
+
+  if (isMetro) {
+    if (lower.includes('quick') || lower.includes('light') || lower.includes('metro') || lower.includes('modern') || lower.includes('urban')) return 0.15;
+    if (lower.includes('pan') || lower.includes('urban india') || lower.includes('healthy')) return 0.10;
+    return 0.05;
+  }
+  // Tier-2 / regional city: mild boost for traditional/home-style
+  if (lower.includes('traditional') || lower.includes('home') || lower.includes('regional')) return 0.10;
+  return 0.05;
+}
+
+// ── Cook dependency groups that indicate low kitchen access ──
+const LOW_KITCHEN_ACCESS = new Set(['tiffin_pg_no_kitchen', 'delivery_heavy']);
+const HIGH_KITCHEN_SKILL = new Set(['self_cook', 'skilled_cook']);
+
+/**
+ * @summary Compute cook capability score (DOC-19 §cook capability, −0.20..+0.10).
+ * @description Penalises high-complexity dishes for users with limited kitchen access;
+ *   rewards simple dishes for those who prefer quick cooking.
+ */
+export function cookCapabilityScore(cookComplexity: string | null, cookDependency: string | null): number {
+  const complexity = (cookComplexity ?? 'medium').toLowerCase();
+  const dependency = (cookDependency ?? '').toLowerCase();
+  if (LOW_KITCHEN_ACCESS.has(dependency)) {
+    return complexity === 'high' ? -0.20 : complexity === 'medium' ? -0.05 : 0.05;
+  }
+  if (HIGH_KITCHEN_SKILL.has(dependency)) {
+    return complexity === 'high' ? 0.10 : 0.05;
+  }
+  // cook_needs_instruction / maid_simple — prefer simple
+  return complexity === 'high' ? -0.10 : complexity === 'medium' ? 0.00 : 0.05;
+}
+
+// ── Food DNA tag keywords that indicate user familiarity / preference ──
+const COMFORT_DNA_KEYWORDS = ['comfort', 'familiar', 'regular', 'everyday', 'staple', 'home'];
+const LIGHT_DNA_KEYWORDS   = ['light', 'mild', 'simple', 'easy', 'quick'];
+const RICH_DNA_KEYWORDS    = ['rich', 'indulgent', 'elaborate', 'heavy', 'festive', 'special'];
+
+/**
+ * @summary Compute Food DNA match score (DOC-19 §Food DNA, −0.10..+0.30).
+ * @description Dishes whose food_dna_tags align with the user's behavioral class affinity
+ *   pattern get a boost; strongly mismatched DNA gets a small penalty.
+ *   Uses classAffinity sign as a proxy for user's overall openness to the class.
+ */
+export function foodDnaScore(foodDnaTags: string | null, classAffinity: number): number {
+  const tags = (foodDnaTags ?? '').toLowerCase();
+  if (!tags) return 0;
+
+  const isComfort = COMFORT_DNA_KEYWORDS.some((k) => tags.includes(k));
+  const isLight   = LIGHT_DNA_KEYWORDS.some((k) => tags.includes(k));
+  const isRich    = RICH_DNA_KEYWORDS.some((k) => tags.includes(k));
+
+  // User has shown strong positive affinity for this class → reward matching DNA
+  if (classAffinity >= 0.3) {
+    if (isComfort) return 0.30;
+    if (isLight)   return 0.20;
+    if (isRich)    return 0.15;
+    return 0.10;
+  }
+  // Neutral affinity → small comfort bonus
+  if (classAffinity >= 0) {
+    if (isComfort) return 0.10;
+    if (isLight)   return 0.05;
+    return 0;
+  }
+  // Negative affinity → penalise rich/elaborate dishes slightly
+  if (isRich) return -0.10;
+  return 0;
+}
+
 /**
  * @summary Compute the full RE dish score including history and variety modifiers.
  *
  * @description Full formula (DOC-19):
  *   score = base(1.0) + regionAffinity(0..0.20) + daySlotFit(0..0.05)
+ *           + classAffinity(-0.30..+0.35) + cityLifestyle(0..+0.15)
+ *           + cookCapability(-0.20..+0.10) + foodDna(-0.10..+0.30)
  *           + historyModifier(-0.30..+0.40) + varietyPenalty(-0.30..0)
  *           + random(0..0.10)
  *
- * @param {string}  regionRelevance  - Dish's region_relevance text.
- * @param {string}  regionArchetype  - User's home region archetype.
- * @param {boolean} isWeekend        - Whether the day is a weekend.
- * @param {number}  historyModifier  - Clamped affinity score from re_user_dish_affinity.
- * @param {number}  varietyPenalty   - 0 or -0.30 from computeVarietyPenalty.
- * @param {number}  [classAffinity]  - Behavioral class-affinity score (DOC-19 class_affinity, clamped -0.30..+0.35).
- * @param {number}  [seed]           - Optional deterministic random (for tests).
+ * @param {string}  regionRelevance      - Dish's region_relevance text.
+ * @param {string}  regionArchetype      - User's home region archetype.
+ * @param {boolean} isWeekend            - Whether the day is a weekend.
+ * @param {number}  historyModifier      - Clamped affinity score from re_user_dish_affinity.
+ * @param {number}  varietyPenalty       - 0 or -0.30 from computeVarietyPenalty.
+ * @param {number}  [classAffinity]      - Behavioral class-affinity score (DOC-19 class_affinity, clamped -0.30..+0.35).
+ * @param {number}  [seed]               - Optional deterministic random (for tests).
+ * @param {string}  [cityDestGroup]      - User's city_destination_group from household profile.
+ * @param {string}  [cookDependency]     - User's cook_dependency from household profile.
+ * @param {string}  [cookComplexity]     - Class-level cook_complexity from re_meal_classes.
+ * @param {string}  [foodDnaTags]        - Class-level food_dna_tags from re_meal_classes.
  * @returns {DishScoreBreakdown} Full breakdown (total + each component).
  */
 export function computeDishScore(
@@ -114,6 +202,10 @@ export function computeDishScore(
   varietyPenalty: number = 0,
   classAffinity: number = 0,
   seed?: number,
+  cityDestGroup: string = '',
+  cookDependency: string = '',
+  cookComplexity: string | null = null,
+  foodDnaTags: string | null = null,
 ): DishScoreBreakdown {
   const base = 1.0;
   const region = regionAffinityScore(regionRelevance, regionArchetype);
@@ -123,17 +215,27 @@ export function computeDishScore(
     ? 0.05
     : 0.0;
 
-  const classScore = Math.max(-0.30, Math.min(+0.35, classAffinity));
-  const random = seed !== undefined ? seed : Math.random() * 0.10;
-  const total = base + region + daySlot + classScore + historyModifier + varietyPenalty + random;
+  const classScore   = Math.max(-0.30, Math.min(+0.35, classAffinity));
+  const cityScore    = cityLifestyleScore(regionRelevance, cityDestGroup);
+  const cookScore    = cookCapabilityScore(cookComplexity, cookDependency);
+  const dnaScore     = foodDnaScore(foodDnaTags, classAffinity);
+  const random       = seed !== undefined ? seed : Math.random() * 0.10;
+  const total        = base + region + daySlot + classScore + cityScore + cookScore + dnaScore + historyModifier + varietyPenalty + random;
 
-  return { total, base, region, daySlot, classAffinity: classScore, history: historyModifier, variety: varietyPenalty, random };
+  return {
+    total, base, region, daySlot,
+    classAffinity: classScore,
+    cityLifestyle: cityScore,
+    cookCapability: cookScore,
+    foodDna: dnaScore,
+    history: historyModifier,
+    variety: varietyPenalty,
+    random,
+  };
 }
 
 /**
  * @summary Format a DishScoreBreakdown into a single readable line for founder reports.
- *
- * @description Example: "Score 1.47 = Base 1.00 + Region +0.20 + Class +0.02 + History +0.25 + Variety 0.00 + Random +0.00"
  */
 export function formatScoreReport(b: DishScoreBreakdown): string {
   const fmt = (n: number) => (n >= 0 ? `+${n.toFixed(2)}` : n.toFixed(2));
@@ -143,6 +245,9 @@ export function formatScoreReport(b: DishScoreBreakdown): string {
     + `| Region ${fmt(b.region)} `
     + `| DaySlot ${fmt(b.daySlot)} `
     + `| Class ${fmt(b.classAffinity)} `
+    + `| City ${fmt(b.cityLifestyle)} `
+    + `| Cook ${fmt(b.cookCapability)} `
+    + `| DNA ${fmt(b.foodDna)} `
     + `| History ${fmt(b.history)} `
     + `| Variety ${fmt(b.variety)} `
     + `| Random ${fmt(b.random)}`
@@ -178,6 +283,17 @@ interface UserDietRulesRow {
   excluded_ingredients: number[] | null;
 }
 
+interface MealClassMetaRow {
+  meal_class_code: string;
+  cook_complexity: string | null;
+  food_dna_tags: string | null;
+}
+
+interface UserHouseholdProfileRow {
+  city_destination_group: string | null;
+  cook_dependency: string | null;
+}
+
 // ── Operations ────────────────────────────────────────────────────────────────
 
 /**
@@ -209,6 +325,10 @@ export async function expandClassToDishes(
   classAffinity: number = 0,
   topN: number = TOP_DISHES_PER_SLOT,
   excludedIngredients: number[] = [],
+  cityDestGroup: string = '',
+  cookDependency: string = '',
+  cookComplexity: string | null = null,
+  foodDnaTags: string | null = null,
 ): Promise<RESlotDishCandidates> {
   const isJainUser = userFoodPref.toLowerCase() === 'jain';
 
@@ -243,7 +363,7 @@ export async function expandClassToDishes(
       const aff = affinities[r.dish_option_id];
       const history = clampHistoryModifier(aff?.affinityScore ?? 0);
       const variety = computeVarietyPenalty(recentDates[r.dish_option_id] ?? null, today);
-      const scoreBreakdown = computeDishScore(r.region_relevance, regionArchetype, isWeekend, history, variety, classAffinity);
+      const scoreBreakdown = computeDishScore(r.region_relevance, regionArchetype, isWeekend, history, variety, classAffinity, undefined, cityDestGroup, cookDependency, cookComplexity, foodDnaTags);
       return {
         dishOptionId: r.dish_option_id,
         dishName: r.dish_name,
@@ -311,15 +431,24 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
     const isWeekend = plan.weekday_weekend === 'Weekend';
     const cohortId = plan.cohort_id ?? '';
 
-    // Load food_pref and excluded allergens from profiles + user_diet_rules
-    const [profileResult, dietRulesResult] = await Promise.all([
+    // Load food_pref, allergens, and household context (city/cook) in parallel
+    const slotClassCodesEarly = [plan.breakfast_class, plan.lunch_class, plan.snack_class, plan.dinner_class].filter((c): c is string => !!c);
+    const [profileResult, dietRulesResult, householdResult, classMeta] = await Promise.all([
       supabaseRE.from('profiles').select('food_pref').eq('id', userId).maybeSingle(),
       supabaseRE.from('user_diet_rules').select('excluded_ingredients').eq('profile_id', userId).maybeSingle(),
+      supabaseRE.from('re_user_household_profiles').select('city_destination_group, cook_dependency').eq('profile_id', userId).maybeSingle(),
+      supabaseRE.from('re_meal_classes').select('meal_class_code, cook_complexity, food_dna_tags').in('meal_class_code', slotClassCodesEarly),
     ]);
     if (profileResult.error) throw profileResult.error;
 
     const foodPref = (profileResult.data as { food_pref: string | null } | null)?.food_pref ?? 'veg';
     const excludedIngredients = (dietRulesResult.data as UserDietRulesRow | null)?.excluded_ingredients ?? [];
+    const householdData = householdResult.data as UserHouseholdProfileRow | null;
+    const cityDestGroup = householdData?.city_destination_group ?? '';
+    const cookDependency = householdData?.cook_dependency ?? '';
+    const classMetaMap = new Map<string, MealClassMetaRow>(
+      ((classMeta.data ?? []) as MealClassMetaRow[]).map((r) => [r.meal_class_code, r]),
+    );
     const stateId = parseStateIdFromCohort(cohortId);
     const regionArchetype = STATE_REGION_ARCHETYPE[stateId] ?? 'NORTH_WHEAT';
 
@@ -354,6 +483,10 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
           (classAffinityMap as Record<string, number>)[classCode] ?? 0,
           TOP_DISHES_PER_SLOT,
           excludedIngredients,
+          cityDestGroup,
+          cookDependency,
+          classMetaMap.get(classCode)?.cook_complexity ?? null,
+          classMetaMap.get(classCode)?.food_dna_tags ?? null,
         );
       }),
     );
