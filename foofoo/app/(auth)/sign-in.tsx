@@ -49,7 +49,10 @@ export default function SignIn() {
    * @calledBy Sign In button onPress and password field onSubmitEditing
    */
   const handleSignIn = async () => {
-    if (!email.trim() || !password) return;
+    if (!email.trim() || !password) {
+      setErrorMsg('Please enter your email and password.');
+      return;
+    }
     setLoading(true);
     setErrorMsg('');
     try {

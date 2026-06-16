@@ -42,7 +42,7 @@ export class AuthPage extends BasePage {
   // ── Sign Up ────────────────────────────────────────────────────────────────
 
   async assertSignUpPageLoaded(): Promise<void> {
-    await expect(this.page.getByText(C.signUpTitle)).toBeVisible();
+    await expect(this.page.getByText(C.signUpTitle, { exact: true })).toBeVisible();
   }
 
   async fillSignUpForm(name: string, email: string, password: string): Promise<void> {

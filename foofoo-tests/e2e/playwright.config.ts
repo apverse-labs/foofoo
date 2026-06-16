@@ -19,7 +19,12 @@ const needsLocalServer =
 export default defineConfig({
   testDir:      './specs',
   outputDir:    '../reports/e2e/artifacts',
-  timeout:       E2E_CONFIG.timeouts.pageLoad,
+  // Per-test wall-clock budget. Must exceed the longest single-step timeout
+  // (apiCall, 20s) plus room for preceding steps in the same test (e.g.
+  // TC001-002 navigates, fills a form, submits, then waits up to apiCall
+  // for the post-sign-in redirect) — otherwise the global timeout fires
+  // before the step's own timeout gets a chance to.
+  timeout:       E2E_CONFIG.timeouts.apiCall + E2E_CONFIG.timeouts.pageLoad,
   retries:       process.env.CI ? 2 : 0,
   workers:       process.env.CI ? 1 : 2,   // serial in CI for stable screenshots
   fullyParallel: false,
