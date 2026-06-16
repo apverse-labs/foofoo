@@ -100,8 +100,9 @@ const METRO_CITY_GROUPS = new Set(['metro', 'metro_tier1', 'tier1', 'urban', 'co
  *   Tier-2/regional city users get a small boost for traditional, home-style dishes.
  */
 export function cityLifestyleScore(regionRelevance: string, cityDestinationGroup: string): number {
-  const lower = regionRelevance.toLowerCase();
   const cityGroup = (cityDestinationGroup ?? '').toLowerCase().replace(/[\s-]/g, '_');
+  if (!cityGroup) return 0;
+  const lower = regionRelevance.toLowerCase();
   const isMetro = METRO_CITY_GROUPS.has(cityGroup) || cityGroup.startsWith('metro') || cityGroup.startsWith('tier1') || cityGroup.startsWith('urban');
 
   if (isMetro) {
