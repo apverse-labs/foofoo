@@ -7,15 +7,34 @@ import type {
   FoodPref, MemberSegment,
 } from '../types';
 
-// Sub-cohort IDs that trigger the household-member capture screen (RE-step-4).
-const MEMBER_REQUIRING_SUBCOHORTS = new Set([
+// Static fallback — mirrors SCHEMA-RE-017 seed; used when DB query fails (cold-start safety).
+const MEMBER_REQUIRING_SUBCOHORTS_FALLBACK = new Set([
   'SC2D', 'SC2E', 'SC2F',           // pregnant, infant 0-6m, baby 6-18m
   'SC3A', 'SC3B', 'SC3C', 'SC3D',   // toddler, school kid, teen, picky child
   'SC4A', 'SC4B', 'SC4C', 'SC4D', 'SC4E', 'SC4F', // all MC4 health/elder
 ]);
 
-export function requiresMemberStep(subCohortId: string): boolean {
-  return MEMBER_REQUIRING_SUBCOHORTS.has(subCohortId);
+export function requiresMemberStep(subCohortId: string, liveSet?: Set<string>): boolean {
+  return (liveSet ?? MEMBER_REQUIRING_SUBCOHORTS_FALLBACK).has(subCohortId);
+}
+
+/**
+ * @summary Query re_subcohorts for sub-cohort IDs that require the member capture screen.
+ * @description Returns a Set from DB (SCHEMA-RE-017 requires_member_screen flag).
+ *   Falls back to the static set if the DB query fails so onboarding is never blocked.
+ */
+export async function fetchMemberSubcohorts(): Promise<Set<string>> {
+  try {
+    const { data, error } = await supabaseRE
+      .from('re_subcohorts')
+      .select('sub_cohort_id')
+      .eq('requires_member_screen', true);
+    if (error) throw error;
+    return new Set((data ?? []).map((r: { sub_cohort_id: string }) => r.sub_cohort_id));
+  } catch (err: any) {
+    Logger.error('RE_ONBOARDING', 'fetchMemberSubcohorts failed — using fallback set', { error: err?.message });
+    return new Set(MEMBER_REQUIRING_SUBCOHORTS_FALLBACK);
+  }
 }
 
 /**

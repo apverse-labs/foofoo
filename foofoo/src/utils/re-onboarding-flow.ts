@@ -15,8 +15,8 @@ export type OnboardingScreen =
   | 'welcome' | 'cohort' | 'members' | 'home_state' | 'current_city'
   | 'diet' | 'cook' | 'health' | 'weekday' | 'weekend' | 'swipe' | 'confirm' | 'loading' | 'reveal';
 
-/** Sub-cohorts that trigger the member-capture screen (mirrors re-onboarding.repository MEMBER_REQUIRING_SUBCOHORTS). */
-const MEMBER_SUBCOHORTS = new Set([
+/** Static fallback — matches SCHEMA-RE-017 seed. Used when caller does not inject a live DB set. */
+const MEMBER_SUBCOHORTS_FALLBACK = new Set([
   'SC2D', 'SC2E', 'SC2F', 'SC3A', 'SC3B', 'SC3C', 'SC3D', 'SC4A', 'SC4B', 'SC4C', 'SC4D', 'SC4E', 'SC4F',
 ]);
 
@@ -32,13 +32,15 @@ export interface OnboardingAnswers {
 /**
  * @summary Compute the ordered screen list for the current answers (dynamic branching).
  * @description members/health screens appear only when relevant; everything else is core.
+ * @param a - current onboarding answers
+ * @param memberSubcohorts - live Set from fetchMemberSubcohorts(); falls back to static set if omitted.
  */
-export function buildScreenFlow(a: OnboardingAnswers): OnboardingScreen[] {
+export function buildScreenFlow(a: OnboardingAnswers, memberSubcohorts: Set<string> = MEMBER_SUBCOHORTS_FALLBACK): OnboardingScreen[] {
   const flow: OnboardingScreen[] = ['welcome', 'cohort'];
   const sc = a.subCohortId ?? '';
-  if (a.hasMembers || MEMBER_SUBCOHORTS.has(sc)) flow.push('members');
+  if (a.hasMembers || memberSubcohorts.has(sc)) flow.push('members');
   flow.push('home_state', 'current_city', 'diet', 'cook');
-  if (a.healthChosen || MEMBER_SUBCOHORTS.has(sc)) flow.push('health');
+  if (a.healthChosen || memberSubcohorts.has(sc)) flow.push('health');
   flow.push('weekday', 'weekend', 'swipe', 'confirm', 'loading', 'reveal');
   return flow;
 }
@@ -53,8 +55,8 @@ export const CONFIDENCE_WEIGHTS: Partial<Record<OnboardingScreen, number>> = {
  * @summary Accumulate confidence from answered (non-skipped) screens, clamped 0..1.
  * @description Skipped screens contribute nothing (cold-start, DOC-20) — never blocks.
  */
-export function computeOnboardingConfidence(a: OnboardingAnswers): number {
-  const flow = buildScreenFlow(a).filter((s) => CONFIDENCE_WEIGHTS[s] !== undefined);
+export function computeOnboardingConfidence(a: OnboardingAnswers, memberSubcohorts?: Set<string>): number {
+  const flow = buildScreenFlow(a, memberSubcohorts).filter((s) => CONFIDENCE_WEIGHTS[s] !== undefined);
   let conf = 0;
   for (const s of flow) {
     if (a.skipped?.[s]) continue;
@@ -64,8 +66,7 @@ export function computeOnboardingConfidence(a: OnboardingAnswers): number {
 }
 
 /** High confidence (≥0.85) lets optional screens (weekend, swipe) auto-collapse to a confirm. */
-export function shouldAutoCollapseOptional(a: OnboardingAnswers): boolean {
-  // confidence from the CORE screens only (exclude the optional ones we'd collapse)
+export function shouldAutoCollapseOptional(a: OnboardingAnswers, memberSubcohorts?: Set<string>): boolean {
   const coreSkipped = { ...a, skipped: { ...a.skipped, weekend: true, swipe: true } };
-  return computeOnboardingConfidence(coreSkipped) >= 0.85;
+  return computeOnboardingConfidence(coreSkipped, memberSubcohorts) >= 0.85;
 }
