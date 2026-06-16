@@ -1,5 +1,5 @@
 # SYSTEM STATE LEDGER (v2.0)
-> Last updated: 2026-06-05
+> Last updated: 2026-06-16
 > Maintained by: Lead Systems & Release Architect (Claude)
 > Rules: See CLAUDE.md § Architect Rules
 
@@ -20,18 +20,22 @@
 > ⚠️ **Supabase Free Tier Limit: 2 active projects max**
 
 ### DEP-STAGING (Project A — Supabase Staging)
-- **Project Ref:** `[PENDING — create Project A on Supabase free tier before activating staging]`
+- **Vercel Project:** `foofoo-staging`
+- **Project Ref:** `kwypxyqxojauhiehuirz` (foofoo-staging, ap-south-1)
 - **Code Base / Checkpoint:** CKPT-001
-- **Git Release Branch:** `develop` ← PROTECTED (NEVER DELETE)
+- **Git Release Branch:** `develop` (+ Preview Deployments for feature/* and `apverse-labs-RE`) ← PROTECTED (NEVER DELETE)
 - **Target Audience:** Internal QA / Beta Cohort
-- **Status:** Standby (no Supabase project yet)
+- **Status:** Active
 
 ### DEP-PRODUCTION (Project B — Supabase Production)
+- **Vercel Project:** `foofoo`
 - **Project Ref:** `ufgfznpqixplcbhmsqqw` (foofoo-mvp, ap-south-1)
 - **Code Base / Checkpoint:** CKPT-001
 - **Git Release Branch:** `main` ← PROTECTED (NEVER DELETE)
 - **Target Audience:** Live Production Users
-- **Status:** Active
+- **Status:** Active — verified 2026-06-16 to build from `main` HEAD after a manual "promote" action had drifted production onto the unmerged `apverse-labs-RE` branch. Fixed via empty trigger commit `b089527` to `main`.
+
+> **Guardrails added 2026-06-16:** `foofoo/scripts/verify-env-match.js` runs as part of `vercel.json`'s `buildCommand` and fails the build if `VERCEL_GIT_COMMIT_REF=main` but `EXPO_PUBLIC_SUPABASE_URL` isn't the prod ref (or vice versa for any other branch). `src/components/shared/EnvBadge.tsx` renders a visible "STAGING" tag in the UI whenever the Supabase URL isn't the prod ref.
 
 ---
 

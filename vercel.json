@@ -1,7 +1,7 @@
 {
   "ignoreCommand": "exit 1",
   "installCommand": "cd foofoo && npm install",
-  "buildCommand": "cd foofoo && npx expo export --platform web",
+  "buildCommand": "cd foofoo && node scripts/verify-env-match.js && npx expo export --platform web",
   "outputDirectory": "foofoo/dist",
   "framework": null,
   "rewrites": [
