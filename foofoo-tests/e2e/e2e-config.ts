@@ -6,9 +6,17 @@
 //   • Design rework        → update `selectors` for new element structure
 // ─────────────────────────────────────────────────────────────────────────────
 
+// Vercel exposes deployment URLs (VERCEL_URL, branch aliases, etc.) as a bare
+// hostname with no scheme. Playwright's baseURL requires a full URL, so a bare
+// hostname here would otherwise fail every test with
+// "Cannot navigate to invalid URL" instead of a clear config error.
+function normalizeBaseUrl(value: string): string {
+  return /^https?:\/\//i.test(value) ? value : `https://${value}`;
+}
+
 export const E2E_CONFIG = {
   // App URL — set BASE_URL env var for Vercel/staging; defaults to local Expo web
-  baseURL: process.env.BASE_URL ?? 'http://localhost:8081',
+  baseURL: normalizeBaseUrl(process.env.BASE_URL ?? 'http://localhost:8081'),
 
   // ── Feature flags ──────────────────────────────────────────────────────────
   // Set false to skip the entire test suite for that feature
