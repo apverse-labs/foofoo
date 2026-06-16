@@ -122,6 +122,47 @@ function overlayClassFor(slot: 'LD' | 'DN', buckets: OverlayBuckets, i: number):
   return pool[i % pool.length];
 }
 
+// ── DOC-14 variety limits ─────────────────────────────────────────────────────
+
+/** Max times the same primary class may appear per slot across a 7-day plan. */
+const VARIETY_LIMITS: Record<'breakfast' | 'lunch' | 'snack' | 'dinner', number> = {
+  breakfast: 3,
+  lunch: 3,
+  snack: 3,
+  dinner: 2,
+};
+
+/**
+ * @summary Enforce DOC-14 class variety limits across a 7-day plan.
+ *
+ * @description For each slot (breakfast/lunch/snack/dinner), counts how many
+ *   times each class code appears. If any class exceeds its limit, the excess
+ *   rows are swapped to use their secondary class instead (or left null if no
+ *   secondary exists). Operates in-place on the candidate array.
+ *
+ * @param {CandidateRow[]} candidates - Mutable array; modified in place.
+ */
+function enforceVarietyLimits(candidates: CandidateRow[]): void {
+  const slots = ['breakfast', 'lunch', 'snack', 'dinner'] as const;
+  for (const slot of slots) {
+    const limit = VARIETY_LIMITS[slot];
+    const primaryKey = `${slot}_primary` as const;
+    const secondaryKey = `${slot}_secondary` as const;
+    const counts = new Map<string, number>();
+
+    for (const row of candidates) {
+      const code = row[primaryKey];
+      if (!code) continue;
+      const n = (counts.get(code) ?? 0) + 1;
+      counts.set(code, n);
+      if (n > limit) {
+        // Swap to secondary for this row; null if secondary also absent
+        row[primaryKey] = row[secondaryKey] ?? null;
+      }
+    }
+  }
+}
+
 // ── Internal DB types ─────────────────────────────────────────────────────────
 
 interface WeeklyClassPlanRow {
@@ -138,10 +179,26 @@ interface WeeklyClassPlanRow {
   scheduled_nonveg_slot: string | null;
 }
 
+/** Mutable working row used during plan construction before upsert. */
+interface CandidateRow {
+  day_of_week: string;
+  weekday_weekend: string;
+  scheduled_nonveg_slot: string | null;
+  breakfast_primary: string | null;
+  breakfast_secondary: string | null;
+  lunch_primary: string | null;
+  lunch_secondary: string | null;
+  snack_primary: string | null;
+  snack_secondary: string | null;
+  dinner_primary: string | null;
+  dinner_secondary: string | null;
+}
+
 interface MealClassRow {
   meal_class_code: string;
   class_name: string | null;
   meal_class_display_name?: string | null;
+  cook_complexity?: string | null;
 }
 
 /**
@@ -175,21 +232,28 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
   try {
     const { data: profile, error: profErr } = await supabaseRE
       .from('re_user_household_profiles')
-      .select('profile_id, cohort_id, city_destination_group')
+      .select('profile_id, cohort_id, city_destination_group, weekday_time_pressure')
       .eq('profile_id', userId)
       .maybeSingle();
     if (profErr) throw profErr;
 
-    const cohortId = (profile as { cohort_id: string | null } | null)?.cohort_id ?? null;
+    const profileRow = profile as {
+      cohort_id: string | null;
+      city_destination_group: string | null;
+      weekday_time_pressure: string | null;
+    } | null;
+
+    const cohortId = profileRow?.cohort_id ?? null;
     if (!cohortId) {
       Logger.warn('RE_PLAN', 'generateUserWeeklyPlan: no cohort_id, skipping', { userId });
       return;
     }
 
-    const cityGroup = (profile as { city_destination_group: string | null }).city_destination_group;
-    const cityOverlayApplied = !!cityGroup
-      && cityGroup !== 'HOME_STATE_TIER1'
-      && cityGroup !== 'HOME_STATE_TIER2';
+    // High weekday_time_pressure → prefer lower-complexity classes on weekdays (DOC-13 step 7)
+    const highTimePressure = (profileRow?.weekday_time_pressure ?? '').toLowerCase() === 'high';
+
+    const cityGroup = profileRow?.city_destination_group ?? null;
+    const cityOverlayApplied = !!cityGroup && cityGroup !== 'HOME_STATE_TIER1' && cityGroup !== 'HOME_STATE_TIER2';
 
     const { data: planRows, error: planErr } = await supabaseRE
       .from('re_weekly_class_plans')
@@ -246,44 +310,83 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
       }
     }
 
-    // Collect all referenced class codes to resolve display names in one query.
+    // Build mutable candidate rows (primary + secondary both retained for variety guard)
+    const candidates: CandidateRow[] = rows.map((r) => {
+      const ov = overlayByDay.get(r.day_of_week);
+      return {
+        day_of_week: r.day_of_week,
+        weekday_weekend: r.weekday_weekend,
+        scheduled_nonveg_slot: r.scheduled_nonveg_slot ?? null,
+        breakfast_primary: r.breakfast_primary_class,
+        breakfast_secondary: r.breakfast_secondary_class,
+        lunch_primary: ov?.ln ?? r.lunch_primary_class,
+        lunch_secondary: r.lunch_secondary_class,
+        snack_primary: r.snack_primary_class,
+        snack_secondary: r.snack_secondary_class,
+        dinner_primary: ov?.dn ?? r.dinner_primary_class,
+        dinner_secondary: r.dinner_secondary_class,
+      };
+    });
+
+    // Collect all class codes (primary + secondary) to fetch cook_complexity in one query
     const codes = new Set<string>();
     for (const o of overlayByDay.values()) {
       if (o.ln) codes.add(o.ln);
       if (o.dn) codes.add(o.dn);
     }
-    for (const r of rows) {
-      [
-        pickClass(r.breakfast_primary_class, r.breakfast_secondary_class),
-        pickClass(r.lunch_primary_class, r.lunch_secondary_class),
-        pickClass(r.snack_primary_class, r.snack_secondary_class),
-        pickClass(r.dinner_primary_class, r.dinner_secondary_class),
-      ].forEach((c) => { if (c) codes.add(c); });
+    for (const c of candidates) {
+      [c.breakfast_primary, c.breakfast_secondary,
+       c.lunch_primary, c.lunch_secondary,
+       c.snack_primary, c.snack_secondary,
+       c.dinner_primary, c.dinner_secondary,
+      ].forEach((code) => { if (code) codes.add(code); });
     }
 
     const { data: classRows, error: classErr } = await supabaseRE
       .from('re_meal_classes')
-      .select('meal_class_code, class_name')
+      .select('meal_class_code, class_name, cook_complexity')
       .in('meal_class_code', [...codes]);
     if (classErr) throw classErr;
-    const displayMap = buildDisplayMap((classRows ?? []) as MealClassRow[]);
+
+    const classData = (classRows ?? []) as MealClassRow[];
+    const displayMap = buildDisplayMap(classData);
+    const complexityMap = new Map<string, string | null>(
+      classData.map((r) => [r.meal_class_code, r.cook_complexity ?? null]),
+    );
+
+    // DOC-13 step 7: cook capability — on high-time-pressure weekdays, swap
+    // any high-complexity primary class to its secondary (lower complexity) alternative
+    if (highTimePressure) {
+      for (const c of candidates) {
+        if (c.weekday_weekend !== 'Weekday') continue;
+        const slots = ['breakfast', 'lunch', 'snack', 'dinner'] as const;
+        for (const slot of slots) {
+          const primaryKey = `${slot}_primary` as const;
+          const secondaryKey = `${slot}_secondary` as const;
+          const code = c[primaryKey];
+          if (code && complexityMap.get(code) === 'high' && c[secondaryKey]) {
+            c[primaryKey] = c[secondaryKey];
+          }
+        }
+      }
+    }
+
+    // DOC-14: enforce variety limits — same class max 3× breakfast/lunch/snack, 2× dinner
+    enforceVarietyLimits(candidates);
 
     const weekStart = getWeekStartMondayIST();
-    const upsertRows = rows.map((r) => {
-      const bf = pickClass(r.breakfast_primary_class, r.breakfast_secondary_class);
-      const ov = overlayByDay.get(r.day_of_week);
-      const ln = ov?.ln ?? pickClass(r.lunch_primary_class, r.lunch_secondary_class);
-      const sn = pickClass(r.snack_primary_class, r.snack_secondary_class);
-      const dn = ov?.dn ?? pickClass(r.dinner_primary_class, r.dinner_secondary_class);
-      // re_weekly_class_plans uses abbreviated day names (Mon/Tue/...); map to full
-      // names required by re_user_weekly_plans CHECK constraint.
-      const fullDayName = DAY_ABBR_TO_FULL[r.day_of_week] ?? r.day_of_week;
+    const upsertRows = candidates.map((c) => {
+      const bf = c.breakfast_primary;
+      const ln = c.lunch_primary;
+      const sn = c.snack_primary;
+      const dn = c.dinner_primary;
+      const fullDayName = DAY_ABBR_TO_FULL[c.day_of_week] ?? c.day_of_week;
       return {
         profile_id: userId,
         cohort_id: cohortId,
         plan_week_start: weekStart,
         day_of_week: fullDayName,
-        weekday_weekend: r.weekday_weekend,
+        weekday_weekend: c.weekday_weekend,
         breakfast_class: bf,
         lunch_class: ln,
         snack_class: sn,
@@ -293,7 +396,7 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
         snack_display: sn ? (displayMap.get(sn) ?? deriveMealClassDisplayName(sn)) : null,
         dinner_display: dn ? (displayMap.get(dn) ?? deriveMealClassDisplayName(dn)) : null,
         city_overlay_applied: cityOverlayApplied,
-        nonveg_scheduled_slot: r.scheduled_nonveg_slot ?? null,
+        nonveg_scheduled_slot: c.scheduled_nonveg_slot,
         engine_version: ENGINE_VERSION,
       };
     });

@@ -417,7 +417,8 @@ export type REFeedbackSignal =
   | 'SWIPE_PAST'
   | 'NOT_TODAY'
   | 'NEVER'
-  | 'NEVER_REMOVE';
+  | 'NEVER_REMOVE'
+  | 'SEARCH_ADD_DISH';
 
 export interface REDishAffinityState {
   affinityScore: number;

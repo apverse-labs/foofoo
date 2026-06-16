@@ -9,15 +9,16 @@ import type { REFeedbackSignal, REDishAffinityMap, REClassAffinityMap } from '..
  * NEVER and NEVER_REMOVE are state changes, not score additions.
  */
 export const RE_SIGNAL_WEIGHTS: Record<REFeedbackSignal, number> = {
-  LOCK:           +0.40,
-  ADD_TO_GROCERY: +0.35,
-  ACCEPT:         +0.25,
-  TAP_RECIPE:     +0.15,
-  VIEW:           +0.05,
-  SWIPE_PAST:     -0.15,
-  NOT_TODAY:      -0.30,
-  NEVER:          0,        // state change → is_never = true
-  NEVER_REMOVE:   0,        // state change → is_never = false
+  LOCK:             +0.40,
+  SEARCH_ADD_DISH:  +0.40,  // DOC-21 signal 9: strong positive + overrides repeat guard
+  ADD_TO_GROCERY:   +0.35,
+  ACCEPT:           +0.25,
+  TAP_RECIPE:       +0.15,
+  VIEW:             +0.05,
+  SWIPE_PAST:       -0.15,
+  NOT_TODAY:        -0.30,
+  NEVER:            0,      // state change → is_never = true
+  NEVER_REMOVE:     0,      // state change → is_never = false
 };
 
 /**
@@ -25,10 +26,11 @@ export const RE_SIGNAL_WEIGHTS: Record<REFeedbackSignal, number> = {
  * Only positive and mild-reject signals propagate to class level.
  */
 const CLASS_SIGNAL_WEIGHTS: Partial<Record<REFeedbackSignal, number>> = {
-  LOCK:       +0.20,
-  ACCEPT:     +0.10,
-  VIEW:       +0.02,
-  SWIPE_PAST: -0.05,
+  LOCK:            +0.20,
+  SEARCH_ADD_DISH: +0.20,  // same class boost as LOCK — user actively sought this class
+  ACCEPT:          +0.10,
+  VIEW:            +0.02,
+  SWIPE_PAST:      -0.05,
 };
 
 /** Days a NOT_TODAY cooldown lasts. */
@@ -175,9 +177,10 @@ export async function recordFeedback(
     const newAccepts = (prev?.accept_count ?? 0) + (signal === 'ACCEPT' ? 1 : 0);
     const newRejects = (prev?.reject_count ?? 0) + (signal === 'SWIPE_PAST' ? 1 : 0);
     const isNever = signal === 'NEVER' ? true : signal === 'NEVER_REMOVE' ? false : (prev?.is_never ?? false);
+    // SEARCH_ADD_DISH overrides repeat guard: clears NOT_TODAY cooldown (DOC-21 §5 signal 9)
     const notTodayUntil = signal === 'NOT_TODAY'
       ? computeNotTodayExpiry(today)
-      : signal === 'NEVER_REMOVE'
+      : signal === 'NEVER_REMOVE' || signal === 'SEARCH_ADD_DISH'
         ? null
         : undefined; // undefined = don't touch the column
 
