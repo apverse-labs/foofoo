@@ -427,6 +427,7 @@ export interface REDishAffinityState {
   rejectCount: number;
   isNever: boolean;
   notTodayUntil: string | null;
+  repeatPreferred: boolean; // Seq 12: suppresses variety penalty when user has locked ≥3×
 }
 
 /** dish_option_id → affinity state */
@@ -434,6 +435,12 @@ export type REDishAffinityMap = Record<string, REDishAffinityState>;
 
 /** meal_class_code → affinity score */
 export type REClassAffinityMap = Record<string, number>;
+
+/** dna_tag → affinity score (-1..1) — Seq 11 Food DNA preference vector */
+export type REFoodDnaVector = Record<string, number>;
+
+/** class_family_code → affinity score — Seq 13 cuisine drift */
+export type REClassFamilyAffinityMap = Record<string, number>;
 
 // ── RE BUILD-06: Dish Expansion & Food DNA Ranking ────────────────────────────
 

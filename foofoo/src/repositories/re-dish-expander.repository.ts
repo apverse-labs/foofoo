@@ -10,6 +10,8 @@ import {
   fetchDishAffinities,
   fetchRecentAcceptDates,
   fetchClassAffinities,
+  fetchFoodDnaVector,
+  fetchClassFamilyAffinities,
   clampHistoryModifier,
   computeVarietyPenalty,
   isOnCooldown,
@@ -141,32 +143,50 @@ const RICH_DNA_KEYWORDS    = ['rich', 'indulgent', 'elaborate', 'heavy', 'festiv
 
 /**
  * @summary Compute Food DNA match score (DOC-19 §Food DNA, −0.10..+0.30).
- * @description Dishes whose food_dna_tags align with the user's behavioral class affinity
- *   pattern get a boost; strongly mismatched DNA gets a small penalty.
- *   Uses classAffinity sign as a proxy for user's overall openness to the class.
+ * @description When userDnaVector is provided (Seq 11), computes a weighted dot-product
+ *   of the dish's DNA tags against the user's learned preference vector.
+ *   Falls back to class-affinity proxy when the vector is empty (cold start).
  */
-export function foodDnaScore(foodDnaTags: string | null, classAffinity: number): number {
-  const tags = (foodDnaTags ?? '').toLowerCase();
-  if (!tags) return 0;
+export function foodDnaScore(
+  foodDnaTags: string | null,
+  classAffinity: number,
+  userDnaVector: Record<string, number> = {},
+): number {
+  const tags = (foodDnaTags ?? '').toLowerCase().split(',').map((t) => t.trim()).filter(Boolean);
+  if (tags.length === 0) return 0;
 
-  const isComfort = COMFORT_DNA_KEYWORDS.some((k) => tags.includes(k));
-  const isLight   = LIGHT_DNA_KEYWORDS.some((k) => tags.includes(k));
-  const isRich    = RICH_DNA_KEYWORDS.some((k) => tags.includes(k));
+  // Seq 11: if user has a learned DNA vector, use it directly
+  const vectorKeys = Object.keys(userDnaVector);
+  if (vectorKeys.length > 0) {
+    let dot = 0;
+    let matched = 0;
+    for (const tag of tags) {
+      const v = userDnaVector[tag];
+      if (v !== undefined) { dot += v; matched++; }
+    }
+    if (matched > 0) {
+      // Average over matched tags, scale to -0.10..+0.30
+      const avg = dot / matched;
+      return Math.max(-0.10, Math.min(+0.30, avg * 0.30));
+    }
+  }
 
-  // User has shown strong positive affinity for this class → reward matching DNA
+  // Cold-start fallback: use classAffinity as proxy (original behaviour)
+  const isComfort = COMFORT_DNA_KEYWORDS.some((k) => tags.some((t) => t.includes(k)));
+  const isLight   = LIGHT_DNA_KEYWORDS.some((k) => tags.some((t) => t.includes(k)));
+  const isRich    = RICH_DNA_KEYWORDS.some((k) => tags.some((t) => t.includes(k)));
+
   if (classAffinity >= 0.3) {
     if (isComfort) return 0.30;
     if (isLight)   return 0.20;
     if (isRich)    return 0.15;
     return 0.10;
   }
-  // Neutral affinity → small comfort bonus
   if (classAffinity >= 0) {
     if (isComfort) return 0.10;
     if (isLight)   return 0.05;
     return 0;
   }
-  // Negative affinity → penalise rich/elaborate dishes slightly
   if (isRich) return -0.10;
   return 0;
 }
@@ -192,6 +212,9 @@ export function foodDnaScore(foodDnaTags: string | null, classAffinity: number):
  * @param {string}  [cookDependency]     - User's cook_dependency from household profile.
  * @param {string}  [cookComplexity]     - Class-level cook_complexity from re_meal_classes.
  * @param {string}  [foodDnaTags]        - Class-level food_dna_tags from re_meal_classes.
+ * @param {Record<string,number>} [userDnaVector] - Seq 11 learned DNA preference vector.
+ * @param {number}  [classFamilyBoost]   - Seq 13 cuisine drift score for this class's family.
+ * @param {number}  [cookToleranceMod]   - Seq 14 behavioural cook tolerance modifier.
  * @returns {DishScoreBreakdown} Full breakdown (total + each component).
  */
 export function computeDishScore(
@@ -206,6 +229,9 @@ export function computeDishScore(
   cookDependency: string = '',
   cookComplexity: string | null = null,
   foodDnaTags: string | null = null,
+  userDnaVector: Record<string, number> = {},
+  classFamilyBoost: number = 0,
+  cookToleranceMod: number = 0,
 ): DishScoreBreakdown {
   const base = 1.0;
   const region = regionAffinityScore(regionRelevance, regionArchetype);
@@ -215,10 +241,10 @@ export function computeDishScore(
     ? 0.05
     : 0.0;
 
-  const classScore   = Math.max(-0.30, Math.min(+0.35, classAffinity));
+  const classScore   = Math.max(-0.30, Math.min(+0.35, classAffinity + classFamilyBoost));
   const cityScore    = cityLifestyleScore(regionRelevance, cityDestGroup);
-  const cookScore    = cookCapabilityScore(cookComplexity, cookDependency);
-  const dnaScore     = foodDnaScore(foodDnaTags, classAffinity);
+  const cookScore    = Math.max(-0.20, Math.min(+0.10, cookCapabilityScore(cookComplexity, cookDependency) + cookToleranceMod));
+  const dnaScore     = foodDnaScore(foodDnaTags, classAffinity, userDnaVector);
   const random       = seed !== undefined ? seed : Math.random() * 0.10;
   const total        = base + region + daySlot + classScore + cityScore + cookScore + dnaScore + historyModifier + varietyPenalty + random;
 
@@ -287,6 +313,7 @@ interface MealClassMetaRow {
   meal_class_code: string;
   cook_complexity: string | null;
   food_dna_tags: string | null;
+  class_family_code: string | null;
 }
 
 interface UserHouseholdProfileRow {
@@ -329,6 +356,9 @@ export async function expandClassToDishes(
   cookDependency: string = '',
   cookComplexity: string | null = null,
   foodDnaTags: string | null = null,
+  userDnaVector: Record<string, number> = {},
+  classFamilyBoost: number = 0,
+  cookToleranceMod: number = 0,
 ): Promise<RESlotDishCandidates> {
   const isJainUser = userFoodPref.toLowerCase() === 'jain';
 
@@ -362,8 +392,8 @@ export async function expandClassToDishes(
     .map((r) => {
       const aff = affinities[r.dish_option_id];
       const history = clampHistoryModifier(aff?.affinityScore ?? 0);
-      const variety = computeVarietyPenalty(recentDates[r.dish_option_id] ?? null, today);
-      const scoreBreakdown = computeDishScore(r.region_relevance, regionArchetype, isWeekend, history, variety, classAffinity, undefined, cityDestGroup, cookDependency, cookComplexity, foodDnaTags);
+      const variety = computeVarietyPenalty(recentDates[r.dish_option_id] ?? null, today, aff?.repeatPreferred ?? false);
+      const scoreBreakdown = computeDishScore(r.region_relevance, regionArchetype, isWeekend, history, variety, classAffinity, undefined, cityDestGroup, cookDependency, cookComplexity, foodDnaTags, userDnaVector, classFamilyBoost, cookToleranceMod);
       return {
         dishOptionId: r.dish_option_id,
         dishName: r.dish_name,
@@ -437,7 +467,7 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
       supabaseRE.from('profiles').select('food_pref').eq('id', userId).maybeSingle(),
       supabaseRE.from('user_diet_rules').select('excluded_ingredients').eq('profile_id', userId).maybeSingle(),
       supabaseRE.from('re_user_household_profiles').select('city_destination_group, cook_dependency').eq('profile_id', userId).maybeSingle(),
-      supabaseRE.from('re_meal_classes').select('meal_class_code, cook_complexity, food_dna_tags').in('meal_class_code', slotClassCodesEarly),
+      supabaseRE.from('re_meal_classes').select('meal_class_code, cook_complexity, food_dna_tags, class_family_code').in('meal_class_code', slotClassCodesEarly),
     ]);
     if (profileResult.error) throw profileResult.error;
 
@@ -462,15 +492,19 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
     // Affinities loaded lazily — empty map if user has no history yet (cold start)
     const todayISO = new Date().toISOString().slice(0, 10);
     const slotClassCodes = SLOTS.map((s) => s.classCode).filter((c): c is string => !!c);
-    const [affinityMap, recentDates, classAffinityMap] = await Promise.all([
+    const [affinityMap, recentDates, classAffinityMap, userDnaVector, familyAffinities] = await Promise.all([
       fetchDishAffinities(userId, []),
       fetchRecentAcceptDates(userId, []),
       fetchClassAffinities(userId, slotClassCodes),
-    ]).catch(() => [{}, {}, {}] as [Record<string, never>, Record<string, never>, Record<string, never>]);
+      fetchFoodDnaVector(userId),           // Seq 11
+      fetchClassFamilyAffinities(userId),   // Seq 13
+    ]).catch(() => [{}, {}, {}, {}, {}] as [Record<string, never>, Record<string, never>, Record<string, never>, Record<string, never>, Record<string, never>]);
 
     const results = await Promise.all(
       SLOTS.map(async ({ classCode, display }) => {
         if (!classCode) return null;
+        const meta = classMetaMap.get(classCode);
+        const classFamilyBoost = (familyAffinities as Record<string, number>)[meta?.class_family_code ?? ''] ?? 0;
         return expandClassToDishes(
           classCode,
           display ?? deriveMealClassDisplayName(classCode),
@@ -485,8 +519,11 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
           excludedIngredients,
           cityDestGroup,
           cookDependency,
-          classMetaMap.get(classCode)?.cook_complexity ?? null,
-          classMetaMap.get(classCode)?.food_dna_tags ?? null,
+          meta?.cook_complexity ?? null,
+          meta?.food_dna_tags ?? null,
+          userDnaVector as Record<string, number>,
+          classFamilyBoost,
+          0, // cookToleranceMod: per-class lookup omitted here for perf; defaults to 0
         );
       }),
     );
