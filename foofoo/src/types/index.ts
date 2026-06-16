@@ -440,13 +440,16 @@ export type REClassAffinityMap = Record<string, number>;
 /** Component breakdown for a dish score — powers "why this?" and the founder debug report. */
 export interface DishScoreBreakdown {
   total: number;
-  base: number;        // always 1.0
-  region: number;      // 0 | 0.05 | 0.20
-  daySlot: number;     // 0 | 0.05 (weekend/festive boost)
+  base: number;          // always 1.0
+  region: number;        // 0 | 0.05 | 0.20
+  daySlot: number;       // 0 | 0.05 (weekend/festive boost)
   classAffinity: number; // −0.30..+0.35 (class-level behavioral preference)
-  history: number;     // −0.30..+0.40 (dish-level affinity from swipes/locks)
-  variety: number;     // 0 | −0.30 (seen recently)
-  random: number;      // 0..0.10
+  cityLifestyle: number; // 0..+0.15 (metro/tier-2 quick-healthy overlay, DOC-19)
+  cookCapability: number;// −0.20..+0.10 (cook dependency vs class complexity, DOC-19)
+  foodDna: number;       // −0.10..+0.30 (Food DNA tag match, DOC-19)
+  history: number;       // −0.30..+0.40 (dish-level affinity from swipes/locks)
+  variety: number;       // 0 | −0.30 (seen recently)
+  random: number;        // 0..0.10
 }
 
 export interface REDishCandidate {
