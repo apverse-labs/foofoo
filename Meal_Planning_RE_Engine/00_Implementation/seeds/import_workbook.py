@@ -345,7 +345,7 @@ ON CONFLICT (version_code) DO NOTHING;""")
         state_notes = esc(r[32]) if len(r) > 32 else 'NULL'
         meal_rule = esc(r[33]) if len(r) > 33 else 'NULL'
         confidence = esc(r[34]) if len(r) > 34 else 'NULL'
-        display_name = esc(r[36]) if len(r) > 36 else 'NULL'
+        display_name = esc(r[37]) if len(r) > 37 else 'NULL'
         all_vals.append(
             '  (' + ','.join([
                 esc(r[0]), esc(r[1]), esc(r[2]), esc(r[3]), esc(r[4]), esc(r[5]),
