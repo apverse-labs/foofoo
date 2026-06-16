@@ -11,6 +11,7 @@ import { supabase } from '../src/services/supabase';
 import { supabaseRE } from '../src/services/supabase-re';
 import { OneSignalService } from '../src/services/onesignal.service';
 import { PostHogService } from '../src/services/posthog.service';
+import { EnvBadge } from '../src/components/shared/EnvBadge';
 
 // Always start at index in dev so session-check logic runs fresh on every reload.
 export const unstable_settings = { initialRouteName: 'index' };
@@ -100,6 +101,7 @@ export default function RootLayout() {
         <meta name="apple-mobile-web-app-title" content="Foofoo" />
         <link rel="apple-touch-icon" href="/assets/icon.png" />
       </Head>
+      <EnvBadge />
       <QueryClientProvider client={queryClient}>
         <StatusBar style="light" />
         <Stack screenOptions={{ headerShown: false }}>

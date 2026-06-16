@@ -1,5 +1,5 @@
 # SYSTEM STATE LEDGER (v2.0)
-> Last updated: 2026-06-15 (SCHEMA-RE-016 applied: dedup re_household_addon_plans seed data + unique constraint)
+> Last updated: 2026-06-16 (env guardrails added; SCHEMA-RE-016 dedup restore remains pending)
 > Maintained by: Lead Systems & Release Architect (Claude)
 > Rules: See CLAUDE.md § Architect Rules
 
@@ -20,18 +20,22 @@
 > ⚠️ **Supabase Free Tier Limit: 2 active projects max**
 
 ### DEP-STAGING (Project A — Supabase Staging)
+- **Vercel Project:** `foofoo-staging`
 - **Project Ref:** `kwypxyqxojauhiehuirz` (foofoo-staging, ap-south-1)
 - **Code Base / Checkpoint:** CKPT-001 + RE BUILD-01 (apverse-labs-RE)
-- **Git Release Branch:** `develop` ← PROTECTED (NEVER DELETE)
+- **Git Release Branch:** `develop` (+ Preview Deployments for feature/* and `apverse-labs-RE`) ← PROTECTED (NEVER DELETE)
 - **Target Audience:** Internal QA / Beta Cohort — RE module validation
 - **Status:** Active — RE BUILD-01 through BUILD-10 complete (2026-06-14). SCHEMA-RE-001 through SCHEMA-RE-010 live on staging. **RE Validation Campaign (PACK 0–10) complete 2026-06-14:** all 10 build series validated against canonical docs + v3 workbook; NORTH STAR reached — staging DB reproduces exact v3 science (41/131/2952/20664/1050/24/7992); DOC-25 automated checks 0 violations. See `Meal_Planning_RE_Engine/00_Implementation/RE_VALIDATION_LOG.md`.
 
 ### DEP-PRODUCTION (Project B — Supabase Production)
+- **Vercel Project:** `foofoo`
 - **Project Ref:** `ufgfznpqixplcbhmsqqw` (foofoo-mvp, ap-south-1)
 - **Code Base / Checkpoint:** CKPT-001
 - **Git Release Branch:** `main` ← PROTECTED (NEVER DELETE)
 - **Target Audience:** Live Production Users
-- **Status:** Active
+- **Status:** Active — verified 2026-06-16 to build from `main` HEAD after a manual "promote" action had drifted production onto the unmerged `apverse-labs-RE` branch. Fixed via empty trigger commit `b089527` to `main`.
+
+> **Guardrails added 2026-06-16:** `foofoo/scripts/verify-env-match.js` runs as part of `vercel.json`'s `buildCommand` and fails the build if `VERCEL_GIT_COMMIT_REF=main` but `EXPO_PUBLIC_SUPABASE_URL` isn't the prod ref (or vice versa for any other branch). `src/components/shared/EnvBadge.tsx` renders a visible "STAGING" tag in the UI whenever the Supabase URL isn't the prod ref.
 
 ---
 
