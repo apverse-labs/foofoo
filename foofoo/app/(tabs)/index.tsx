@@ -12,7 +12,7 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, RefreshControl, Pressable,
+  View, Text, StyleSheet, ScrollView, RefreshControl, Pressable, ActivityIndicator,
 } from 'react-native';
 import { useClientInsets } from '../../src/hooks/useClientInsets';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -70,11 +70,7 @@ export default function HomeScreen() {
     return () => { active = false; };
   }, [userId]);
 
-  // Wait for the RE-vs-legacy decision to resolve before rendering either
-  // engine's view — otherwise an RE user transiently (or, if fetchProfile
-  // silently fails, permanently) renders the legacy view, which queries
-  // tables that don't exist for RE-only accounts.
-  if (!userId || isREUser === null || (loading && !refreshing && viewMode === 'day')) {
+  if (loading && !refreshing && viewMode === 'day') {
     return <LoadingScreen insetTop={insets.top} />;
   }
 
@@ -151,10 +147,15 @@ export default function HomeScreen() {
               />
             }
           >
-            {isREUser && userId ? <REHomeView userId={userId} /> : null}
-            {!isREUser && error ? (
+            {isREUser === null ? (
+              <View style={styles.inlineLoading}>
+                <ActivityIndicator color={COLORS.primary} />
+              </View>
+            ) : isREUser && userId ? (
+              <REHomeView userId={userId} />
+            ) : error ? (
               <ErrorState message={error} onRetry={() => loadPlan(false)} />
-            ) : !isREUser && plan ? (
+            ) : plan ? (
               <>
                 {(['breakfast', 'lunch', 'dinner'] as const).map((slot) => {
                   const slotData = plan[slot];
@@ -180,9 +181,9 @@ export default function HomeScreen() {
                   );
                 })}
               </>
-            ) : !isREUser ? (
+            ) : (
               <EmptyState />
-            ) : null}
+            )}
           </ScrollView>
         </>
       ) : (
@@ -191,7 +192,11 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           showsVerticalScrollIndicator={false}
         >
-          {isREUser && userId ? (
+          {isREUser === null ? (
+            <View style={styles.inlineLoading}>
+              <ActivityIndicator color={COLORS.primary} />
+            </View>
+          ) : isREUser && userId ? (
             <REWeekView userId={userId} />
           ) : (
             <WeekView
@@ -289,4 +294,5 @@ const styles = StyleSheet.create({
   },
   offlineIcon: { fontSize: 14 },
   offlineText: { color: '#856404', fontSize: 12, fontWeight: '600' },
+  inlineLoading: { paddingVertical: SPACING.xl, alignItems: 'center' },
 });
