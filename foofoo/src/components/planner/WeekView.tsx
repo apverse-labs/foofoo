@@ -93,7 +93,10 @@ export default function WeekView({ userId, initialDate, onDaySelect }: Props) {
   }, [userId]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
     load(weekStart);
   }, [userId, weekStart, load]);
 
