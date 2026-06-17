@@ -27,8 +27,6 @@ import REWeekView from '../../src/components/re/weekly/REWeekView';
 import { LoadingScreen, ErrorState, EmptyState } from '../../src/modules/home/HomeScreen.helpers';
 import { useHomeScreen } from '../../src/modules/home/useHomeScreen';
 import { useResponsive } from '../../src/utils/responsive';
-import { fetchProfile } from '../../src/repositories/profiles.repository';
-import { supabaseRE } from '../../src/services/supabase-re';
 import { PostHogService } from '../../src/services/posthog.service';
 
 type ViewMode = 'day' | 'week';
@@ -37,14 +35,13 @@ export default function HomeScreen() {
   const insets = useClientInsets();
   const { contentWidth } = useResponsive();
   const [viewMode, setViewMode] = useState<ViewMode>('day');
-  const [isREUser, setIsREUser] = useState<boolean | null>(null);
 
   useEffect(() => {
     PostHogService.screen('home', { viewMode });
   }, [viewMode]);
   const {
     planDate, plan, carousels, lockedSlots,
-    loading, refreshing, error, showTutorial, userId,
+    loading, refreshing, error, showTutorial, userId, isREUser,
     neverDish, neverSlot, notTodayDish, notTodaySlot,
     displayDate,
     isOnline, usingCachedPlan,
@@ -55,30 +52,6 @@ export default function HomeScreen() {
     handleNeverConfirmed, handleNotTodayConfirmed,
     GESTURE_TUTORIAL_KEY,
   } = useHomeScreen();
-
-  // Detect RE (class-first) users so we can surface their weekly class plan.
-  // RE users authenticate against the staging RE project (supabaseRE), so
-  // their `profiles` row must be read through that client — the legacy
-  // `supabase` client has no session for them and RLS blocks the read,
-  // leaving isREUser stuck at null (and the spinner stuck) forever.
-  useEffect(() => {
-    if (!userId) return;
-    let active = true;
-    (async () => {
-      const { data: reProfile } = await supabaseRE
-        .from('profiles')
-        .select('re_engine_version')
-        .eq('id', userId)
-        .maybeSingle();
-      let version = (reProfile as { re_engine_version?: string | null } | null)?.re_engine_version ?? null;
-      if (!reProfile) {
-        const profile = await fetchProfile(userId);
-        version = (profile as { re_engine_version?: string | null } | null)?.re_engine_version ?? null;
-      }
-      if (active) setIsREUser(version === 'classfirst_v1');
-    })();
-    return () => { active = false; };
-  }, [userId]);
 
   if (loading && !refreshing && viewMode === 'day') {
     return <LoadingScreen insetTop={insets.top} />;
