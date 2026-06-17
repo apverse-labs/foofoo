@@ -21,6 +21,10 @@ reports/md/*.md
 !reports/md/rls-audit.md
 !reports/md/edge-function-audit.md
 !reports/md/play-store-audit.md
+# RE QA layer reports — committed (human-reviewed, factual from CI)
+!reports/md/re-qa-status.md
+!reports/md/re-schema-registry.md
+!reports/md/re-persona-coverage.md
 
 # Playwright E2E generated output — artifacts, HTML report, junit, qa summaries
 reports/e2e/artifacts/

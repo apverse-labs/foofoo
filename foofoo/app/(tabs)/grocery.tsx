@@ -20,7 +20,7 @@ import {
   ActivityIndicator, Alert, Platform, Share,
 } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useClientInsets } from '../../src/hooks/useClientInsets';
 import { supabase } from '../../src/services/supabase';
 import { getGroceryList } from '../../src/repositories/grocery.repository';
 import { getTodayIST } from '../../src/repositories/plans.repository';
@@ -34,7 +34,7 @@ import type { GroceryCategory } from '../../src/types';
 
 export default function GroceryTab() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useClientInsets();
   const { contentWidth } = useResponsive();
   const [userId, setUserId] = useState<string>('');
   const [mode, setMode] = useState<'today' | 'week'>('today');

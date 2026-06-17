@@ -12,9 +12,9 @@
 
 import React, { useEffect, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, RefreshControl, Pressable,
+  View, Text, StyleSheet, ScrollView, RefreshControl, Pressable, ActivityIndicator,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useClientInsets } from '../../src/hooks/useClientInsets';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import MealCard from '../../src/components/dish/MealCard';
@@ -22,6 +22,8 @@ import GestureTutorial from '../../src/components/shared/GestureTutorial';
 import NeverModal from '../../src/components/dish/NeverModal';
 import NotTodayModal from '../../src/components/dish/NotTodayModal';
 import WeekView from '../../src/components/planner/WeekView';
+import REHomeView from '../../src/components/re/REHomeView';
+import REWeekView from '../../src/components/re/weekly/REWeekView';
 import { LoadingScreen, ErrorState, EmptyState } from '../../src/modules/home/HomeScreen.helpers';
 import { useHomeScreen } from '../../src/modules/home/useHomeScreen';
 import { useResponsive } from '../../src/utils/responsive';
@@ -30,7 +32,7 @@ import { PostHogService } from '../../src/services/posthog.service';
 type ViewMode = 'day' | 'week';
 
 export default function HomeScreen() {
-  const insets = useSafeAreaInsets();
+  const insets = useClientInsets();
   const { contentWidth } = useResponsive();
   const [viewMode, setViewMode] = useState<ViewMode>('day');
 
@@ -39,7 +41,7 @@ export default function HomeScreen() {
   }, [viewMode]);
   const {
     planDate, plan, carousels, lockedSlots,
-    loading, refreshing, error, showTutorial, userId,
+    loading, refreshing, error, showTutorial, userId, isREUser,
     neverDish, neverSlot, notTodayDish, notTodaySlot,
     displayDate,
     isOnline, usingCachedPlan,
@@ -128,7 +130,13 @@ export default function HomeScreen() {
               />
             }
           >
-            {error ? (
+            {isREUser === null ? (
+              <View style={styles.inlineLoading}>
+                <ActivityIndicator color={COLORS.primary} />
+              </View>
+            ) : isREUser && userId ? (
+              <REHomeView userId={userId} planDate={planDate} />
+            ) : error ? (
               <ErrorState message={error} onRetry={() => loadPlan(false)} />
             ) : plan ? (
               <>
@@ -167,14 +175,22 @@ export default function HomeScreen() {
           contentContainerStyle={{ paddingBottom: insets.bottom + 24 }}
           showsVerticalScrollIndicator={false}
         >
-          <WeekView
-            userId={userId ?? ''}
-            initialDate={planDate}
-            onDaySelect={(date) => {
-              setPlanDateExternal(date);
-              setViewMode('day');
-            }}
-          />
+          {isREUser === null ? (
+            <View style={styles.inlineLoading}>
+              <ActivityIndicator color={COLORS.primary} />
+            </View>
+          ) : isREUser && userId ? (
+            <REWeekView userId={userId} />
+          ) : (
+            <WeekView
+              userId={userId ?? ''}
+              initialDate={planDate}
+              onDaySelect={(date) => {
+                setPlanDateExternal(date);
+                setViewMode('day');
+              }}
+            />
+          )}
         </ScrollView>
       )}
 
@@ -261,4 +277,5 @@ const styles = StyleSheet.create({
   },
   offlineIcon: { fontSize: 14 },
   offlineText: { color: '#856404', fontSize: 12, fontWeight: '600' },
+  inlineLoading: { paddingVertical: SPACING.xl, alignItems: 'center' },
 });

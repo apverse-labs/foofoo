@@ -1,0 +1,245 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/04_Regional_Intelligence/DOC-09_State_Region_City_Migration_Overlay_v1.0.docx",
+ "paragraphs": [
+  "State, Region, City, and Migration Overlay Specification",
+  "DOC-09 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines how home state, current city, city tier, migration behavior, regional staples, local lifestyle, and national modern patterns influence the meal plan.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Location Fields",
+  "5. Weighting Model",
+  "For migrated households, use a weighted blend. A common default is 60-70 percent home-state signature, 20-25 percent current-city lifestyle, and 10-15 percent national modern influence. Actual weights should come from City_Migration_Overlay_v3 where available.",
+  "6. State Profile Examples",
+  "7. Migration Planning Rules",
+  "Resolve home_state and current_city separately.",
+  "Load state profile for home_state.",
+  "Load city overlay for home_state + current_city group if available.",
+  "Apply home-state classes as base class affinity.",
+  "Apply current-city lifestyle classes as modifiers, not full replacement.",
+  "Apply city tier and cook dependency to weekday complexity.",
+  "Validate plan still includes realistic familiar meals across the week.",
+  "8. Example Interpretation",
+  "MP-origin household in Mumbai should retain MP-style dal-sabzi-roti, poha, light grain breakfasts, and regional home meals, while also showing Mumbai/Tier 1 patterns: quick breakfasts, lighter weekday dinners, healthy snacks, and occasional city-style indulgence.",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-03, BUILD-04.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "Home state and current city are stored separately.",
+  "Migration overlay modifies, not erases, home-style food identity.",
+  "Tier 1/Tier 2 lifestyle effects are visible in class distributions.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-09"
+   ],
+   [
+    "Canonical file name",
+    "DOC-09_State_Region_City_Migration_Overlay_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-03, BUILD-04"
+   ],
+   [
+    "Purpose",
+    "Defines how home state, current city, city tier, migration behavior, regional staples, local lifestyle, and national modern patterns influence the meal plan."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "State_Profile_v3, City_Migration_Overlay_v3, Cohort_Matrix_v3"
+   ],
+   [
+    "Dependencies",
+    "DOC-03, DOC-12, DOC-13"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-03",
+    "Cohort Persona Assignment",
+    "Map profile answers to main cohort, sub-cohort, backend persona, state/city overlay, non-veg mode, and confidence."
+   ],
+   [
+    "BUILD-04",
+    "Weekly Class-First Plan Engine",
+    "Generate 7-day meal-class plan from cohort matrix, regional rules, city overlay, weekday/weekend rhythm, variety rules."
+   ]
+  ],
+  [
+   [
+    "Field",
+    "Meaning",
+    "Why separate"
+   ],
+   [
+    "home_state",
+    "Where the household food identity comes from.",
+    "Controls regional staples, familiar dishes, home-style meal classes."
+   ],
+   [
+    "current_city",
+    "Where the household currently lives.",
+    "Controls time pressure, city lifestyle, available ingredients, eating-out influence."
+   ],
+   [
+    "city_tier",
+    "Tier 1/Tier 2/current-city grouping.",
+    "Controls health/quick/modern influence and meal convenience."
+   ],
+   [
+    "destination_group_code",
+    "Grouped city overlay from v3.",
+    "Applies reusable migration overlays."
+   ]
+  ],
+  [
+   [
+    "State",
+    "Region archetype",
+    "Staple base",
+    "Non-veg intensity"
+   ],
+   [
+    "Andhra Pradesh",
+    "SOUTH_RICE",
+    "rice + millets",
+    "High"
+   ],
+   [
+    "Arunachal Pradesh",
+    "NORTHEAST_RICE_MEAT",
+    "rice",
+    "Very high"
+   ],
+   [
+    "Assam",
+    "NORTHEAST_RICE_MEAT",
+    "rice",
+    "Very high"
+   ],
+   [
+    "Bihar",
+    "EAST_RICE_FISH",
+    "rice + wheat",
+    "Moderate"
+   ],
+   [
+    "Chhattisgarh",
+    "CENTRAL_MIXED",
+    "wheat + rice + millets",
+    "Moderate"
+   ],
+   [
+    "Goa",
+    "ISLAND_COASTAL",
+    "rice + coconut + seafood",
+    "Very high"
+   ],
+   [
+    "Gujarat",
+    "WEST_VEG",
+    "wheat + rice + millet",
+    "Very low"
+   ],
+   [
+    "Haryana",
+    "NORTH_WHEAT",
+    "wheat + rice",
+    "Low"
+   ],
+   [
+    "Himachal Pradesh",
+    "HIMALAYAN",
+    "wheat + rice",
+    "Moderate"
+   ],
+   [
+    "Jharkhand",
+    "EAST_RICE_FISH",
+    "rice + wheat",
+    "Moderate"
+   ],
+   [
+    "Karnataka",
+    "SOUTH_RICE",
+    "rice + millets",
+    "High"
+   ],
+   [
+    "Kerala",
+    "SOUTH_RICE",
+    "rice + millets",
+    "Very high"
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-09 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

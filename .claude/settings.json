@@ -1,4 +1,9 @@
 {
+  "env": {
+    "EXPO_PUBLIC_SUPABASE_RE_URL": "https://kwypxyqxojauhiehuirz.supabase.co",
+    "EXPO_PUBLIC_RE_ONBOARDING_ENABLED": "true",
+    "EXPO_PUBLIC_SUPABASE_RE_ANON_KEY": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imt3eXB4eXF4b2phdWhpZWh1aXJ6Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODEzNjkxMjgsImV4cCI6MjA5Njk0NTEyOH0.FqB2GTZ-TwIS0EtWl3AbwBu5qQzT-btb8tWPV_xdUO4"
+  },
   "permissions": {
     "allow": [
       "mcp__supabase__list_tables",

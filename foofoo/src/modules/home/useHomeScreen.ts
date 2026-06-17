@@ -13,6 +13,7 @@ import { Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../../services/supabase';
+import { supabaseRE } from '../../services/supabase-re';
 import { OfflineService } from '../../services/offline.service';
 import {
   generateDailyPlan, getCarouselForSlot, getTodayIST,
@@ -57,15 +58,43 @@ export function useHomeScreen() {
   const [notTodayDish, setNotTodayDish] = useState<Dish | null>(null);
   const [notTodaySlot, setNotTodaySlot] = useState('');
   const [usingCachedPlan, setUsingCachedPlan] = useState(false);
+  const [isREUser, setIsREUser] = useState<boolean | null>(null);
   const { isOnline, wasOffline } = useNetworkStatus();
 
   useEffect(() => {
-    supabase.auth.getUser()
-      .then(({ data }) => { if (data.user) setUserId(data.user.id); })
-      .catch(err => Logger.error('HOME', 'auth.getUser failed', { error: err?.message }));
+    // RE (class-first) users authenticate against the staging RE Supabase
+    // project, not the legacy production client — check both so RE users'
+    // userId actually resolves instead of hanging forever on a null session.
+    // Resolved here (not just in the screen) so loadPlan/logScreenView below
+    // can skip the legacy tables entirely for RE users — that schema doesn't
+    // exist on the RE project and was firing noisy 400/404s on every date nav.
+    (async () => {
+      const { data: reAuth } = await supabaseRE.auth.getUser();
+      let uid = reAuth.user?.id ?? null;
+      let isRE = !!reAuth.user;
+      if (!uid) {
+        const { data: legacyAuth } = await supabase.auth.getUser();
+        uid = legacyAuth.user?.id ?? null;
+      }
+      if (uid) setUserId(uid);
+      if (isRE) setIsREUser(true);
+      else if (uid) {
+        const { data: profile } = await supabase.from('profiles').select('re_engine_version').eq('id', uid).maybeSingle();
+        setIsREUser((profile as { re_engine_version?: string | null } | null)?.re_engine_version === 'classfirst_v1');
+      } else {
+        setIsREUser(false);
+      }
+    })().catch(err => Logger.error('HOME', 'auth resolution failed', { error: err?.message }));
     checkTutorial();
+  }, []);
+
+  // Legacy plan fetch only applies to non-RE users — the RE schema has no
+  // `planner` table, so calling this for RE users just produces error noise.
+  useEffect(() => {
+    if (isREUser === null) return;
+    if (isREUser) { setLoading(false); return; }
     loadPlan(false);
-  }, [planDate]);
+  }, [planDate, isREUser]);
 
   // On reconnect after offline: drain the action queue so swipes / nevers done
   // while disconnected hit Supabase. Plan itself is refetched by loadPlan.
@@ -80,10 +109,11 @@ export function useHomeScreen() {
   }, [isOnline, wasOffline, userId]);
 
   // Log a screen_view for Home whenever userId resolves or date changes.
+  // app_events doesn't exist on the RE schema yet, so skip for RE users.
   useEffect(() => {
-    if (!userId) return;
+    if (!userId || isREUser) return;
     logScreenView(userId, 'home', { planDate });
-  }, [userId, planDate]);
+  }, [userId, planDate, isREUser]);
 
   /**
    * @summary Reads AsyncStorage to decide whether to show the gesture tutorial overlay.
@@ -309,7 +339,7 @@ export function useHomeScreen() {
 
   return {
     planDate, plan, planId, carousels, lockedSlots,
-    loading, refreshing, error, showTutorial, userId,
+    loading, refreshing, error, showTutorial, userId, isREUser,
     neverDish, neverSlot, notTodayDish, notTodaySlot,
     displayDate,
     isOnline, usingCachedPlan,

@@ -221,7 +221,7 @@ authTest.describe('TC004 | RE Safety — Hard Constraint Validation', () => {
         'THEN: App title is visible (confirming authenticated session is active)',
         async () => {
           await expect(
-            vegUserPage.getByText(E2E_CONFIG.copy.appName),
+            vegUserPage.getByText(E2E_CONFIG.copy.appName).first(),
           ).toBeVisible({ timeout: E2E_CONFIG.timeouts.pageLoad });
         },
       );

@@ -1,0 +1,252 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/07_Technical_Build/DOC-23_API_Contract_Specification_v1.0.docx",
+ "paragraphs": [
+  "API Contract Specification",
+  "DOC-23 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines backend API endpoints, request/response objects, validation errors, and service boundaries for onboarding, household profile, plan generation, feedback, admin seed data, and QA.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Service Boundaries",
+  "5. Core Endpoints",
+  "6. Generate Week Plan Request",
+  "POST /plans/week/generate{  \"user_id\": \"u_123\",  \"household_profile_id\": \"hp_123\",  \"start_date\": \"2026-06-15\",  \"timezone\": \"Asia/Kolkata\",  \"generation_mode\": \"cold_start_v1\",  \"random_seed\": 42}",
+  "7. Generate Week Plan Response",
+  "{  \"plan_id\": \"wp_123\",  \"profile_confidence\": 0.86,  \"days\": [    {      \"date\": \"2026-06-15\",      \"day_of_week\": \"Monday\",      \"meals\": {        \"breakfast\": {          \"primary_class_code\": \"BF_LIGHT_GRAIN\",          \"dish_candidates\": [{\"dish_id\": \"d_1\", \"dish_name\": \"Poha\", \"score\": 2.1}],          \"addons\": [{\"addon_class_code\": \"ADDON_INFANT_SOFT_FOOD\"}]        }      }    }  ],  \"validation\": {\"status\": \"pass\"}}",
+  "8. Validation Errors",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-08.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "Endpoints support class-first plan generation and dish ranking.",
+  "Responses include enough traceability for debugging.",
+  "Validation errors are explicit and do not silently break constraints.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-23"
+   ],
+   [
+    "Canonical file name",
+    "DOC-23_API_Contract_Specification_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-08"
+   ],
+   [
+    "Purpose",
+    "Defines backend API endpoints, request/response objects, validation errors, and service boundaries for onboarding, household profile, plan generation, feedback, admin seed data, and QA."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "N/A"
+   ],
+   [
+    "Dependencies",
+    "DOC-10, DOC-11, DOC-13, DOC-19, DOC-22"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-08",
+    "API and App Integration",
+    "Expose onboarding/profile/plan/generation/feedback endpoints with stable JSON contracts."
+   ]
+  ],
+  [
+   [
+    "Endpoint group",
+    "Purpose",
+    "Primary docs"
+   ],
+   [
+    "Onboarding",
+    "Return screens and submit answers.",
+    "DOC-10, DOC-11"
+   ],
+   [
+    "Profile",
+    "Create/update household profile.",
+    "DOC-04, DOC-11"
+   ],
+   [
+    "Plan generation",
+    "Generate weekly class-first plan.",
+    "DOC-12, DOC-13"
+   ],
+   [
+    "Recommendations",
+    "Return ranked dish candidates for class plan.",
+    "DOC-07, DOC-19"
+   ],
+   [
+    "Feedback",
+    "Capture swipes, locks, rejects, Never, Not Today.",
+    "DOC-21"
+   ],
+   [
+    "Admin",
+    "Maintain taxonomy and seed data.",
+    "DOC-27"
+   ],
+   [
+    "QA",
+    "Run synthetic profiles and validation.",
+    "DOC-25"
+   ]
+  ],
+  [
+   [
+    "Method",
+    "Path",
+    "Description"
+   ],
+   [
+    "GET",
+    "/onboarding/start",
+    "Return first main cohort screen."
+   ],
+   [
+    "POST",
+    "/onboarding/answer",
+    "Submit answer and return next screen or completion."
+   ],
+   [
+    "POST",
+    "/profiles/household",
+    "Create normalized household profile."
+   ],
+   [
+    "POST",
+    "/personas/assign",
+    "Assign persona and overlays."
+   ],
+   [
+    "POST",
+    "/plans/week/generate",
+    "Generate 7-day class-first plan."
+   ],
+   [
+    "POST",
+    "/recommendations/rank",
+    "Rank dish candidates for selected plan/classes."
+   ],
+   [
+    "POST",
+    "/feedback/events",
+    "Submit feedback event."
+   ],
+   [
+    "GET",
+    "/admin/taxonomy/version",
+    "Return active taxonomy version."
+   ],
+   [
+    "POST",
+    "/qa/run",
+    "Run validation suite."
+   ]
+  ],
+  [
+   [
+    "Code",
+    "Meaning",
+    "HTTP"
+   ],
+   [
+    "MISSING_DIET_MODE",
+    "Diet not captured; cannot expand dishes safely.",
+    "422"
+   ],
+   [
+    "UNKNOWN_MEAL_CLASS",
+    "Class code not found in active taxonomy.",
+    "500/422"
+   ],
+   [
+    "NO_DISH_CANDIDATES",
+    "Class has no eligible dishes after filters.",
+    "200 with fallback flag"
+   ],
+   [
+    "HARD_CONSTRAINT_BLOCK",
+    "All candidates blocked by hard constraints.",
+    "200 with safe fallback"
+   ],
+   [
+    "INVALID_TAXONOMY_VERSION",
+    "Client using stale taxonomy version.",
+    "409"
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-23 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

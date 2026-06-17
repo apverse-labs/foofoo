@@ -1,0 +1,14 @@
+name: Clean Vercel Previews
+on:
+  workflow_dispatch:
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Delete Preview Deployments
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+        run: |
+          npm install -g vercel
+          vercel remove ${{ secrets.VERCEL_PROJECT_NAME }} --safe --yes

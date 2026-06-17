@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>FooFoo — RE Onboarding Flow Proposal (v3-canonical)</title>
+<style>
+  :root{
+    --primary:#2D6A4F; --primary-d:#1b4332; --accent:#FF6B35;
+    --bg:#FAFAF8; --surface:#FFFFFF; --text:#1A1A1A; --text2:#6B6B6B;
+    --line:#E6E6E1; --green-soft:#E7F1EC; --orange-soft:#FFEDE4; --red:#C0392B;
+    --r-sm:8px; --r-md:16px; --r-lg:24px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;font-family:Inter,-apple-system,"Segoe UI",Roboto,sans-serif;}
+  body{background:var(--bg);color:var(--text);line-height:1.45;padding:24px;}
+  .wrap{max-width:1180px;margin:0 auto;}
+  header.page{margin-bottom:18px;}
+  header.page h1{font-size:22px;color:var(--primary-d);}
+  header.page p{color:var(--text2);font-size:13px;margin-top:4px;}
+  .legend{display:flex;flex-wrap:wrap;gap:8px;margin-top:12px;}
+  .pill{font-size:11px;padding:4px 10px;border-radius:999px;background:var(--green-soft);color:var(--primary-d);border:1px solid var(--line);}
+  .pill.gap{background:var(--orange-soft);color:#9c3d12;}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:18px;align-items:start;}
+
+  .phone{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-lg);overflow:hidden;
+         box-shadow:0 2px 14px rgba(0,0,0,.05);display:flex;flex-direction:column;min-height:560px;}
+  .phone .bar{height:5px;background:var(--line);position:relative;}
+  .phone .bar i{position:absolute;left:0;top:0;height:100%;background:var(--primary);}
+  .phone .head{padding:14px 18px 6px;}
+  .step-meta{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text2);}
+  .step-meta .rule{font-weight:600;color:var(--accent);letter-spacing:.3px;}
+  .new-tag{font-size:10px;background:var(--orange-soft);color:#9c3d12;padding:2px 7px;border-radius:999px;border:1px solid #f3cbb6;}
+  .phone h2{font-size:16px;color:var(--primary-d);margin:8px 0 2px;}
+  .phone .sub{font-size:12px;color:var(--text2);}
+  .phone .body{padding:12px 18px 16px;flex:1;}
+
+  .card{border:1.5px solid var(--line);border-radius:var(--r-md);padding:11px 13px;margin-bottom:9px;cursor:default;
+        display:flex;gap:10px;align-items:flex-start;transition:.15s;background:#fff;}
+  .card .ic{font-size:18px;line-height:1;}
+  .card .t{font-size:13px;font-weight:600;}
+  .card .d{font-size:11px;color:var(--text2);margin-top:2px;}
+  .card.sel{border-color:var(--primary);background:var(--green-soft);}
+
+  .chips{display:flex;flex-wrap:wrap;gap:7px;}
+  .chip{font-size:12px;padding:7px 11px;border:1.5px solid var(--line);border-radius:999px;background:#fff;}
+  .chip.sel{border-color:var(--accent);background:var(--orange-soft);color:#9c3d12;font-weight:600;}
+  .chip.veg{border-color:#2e7d32;} .chip.non{border-color:#b23b3b;}
+
+  .swipe{border:1.5px solid var(--line);border-radius:var(--r-md);padding:13px;margin-bottom:10px;}
+  .swipe .cn{font-size:13px;font-weight:600;}
+  .swipe .ex{font-size:11px;color:var(--text2);margin-top:3px;}
+  .swipe .acts{display:flex;gap:8px;margin-top:9px;}
+  .btn-s{flex:1;text-align:center;font-size:12px;padding:7px;border-radius:var(--r-sm);border:1px solid var(--line);font-weight:600;}
+  .btn-s.up{background:var(--green-soft);color:var(--primary-d);}
+  .btn-s.dn{background:#fbeaea;color:var(--red);}
+
+  .field{margin-bottom:11px;}
+  .field label{font-size:11px;color:var(--text2);display:block;margin-bottom:4px;}
+  .field .val{font-size:13px;border:1.5px solid var(--line);border-radius:var(--r-sm);padding:9px 11px;background:#fff;}
+
+  .note{font-size:11px;color:var(--text2);background:#f6f6f3;border-radius:var(--r-sm);padding:8px 10px;margin-top:8px;border-left:3px solid var(--primary);}
+  .foot{padding:12px 18px;border-top:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+  .next{background:var(--primary);color:#fff;border:none;font-size:13px;font-weight:600;padding:9px 18px;border-radius:999px;}
+  .back{font-size:12px;color:var(--text2);}
+  .branch{font-size:10px;color:var(--text2);font-style:italic;}
+
+  .reveal-row{display:flex;justify-content:space-between;font-size:12px;padding:6px 0;border-bottom:1px dashed var(--line);}
+  .reveal-row b{color:var(--primary-d);}
+  .contract{background:#1b4332;color:#d7ece1;border-radius:var(--r-md);padding:14px;font-size:11px;font-family:ui-monospace,Menlo,monospace;white-space:pre;overflow:auto;}
+  footer.legend-foot{margin-top:26px;font-size:12px;color:var(--text2);border-top:1px solid var(--line);padding-top:14px;}
+  footer.legend-foot b{color:var(--primary-d);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="page">
+    <h1>FooFoo — Recommendation Engine Onboarding Flow (proposal)</h1>
+    <p>Canonical, science-faithful flow mapped to Routing_Rules_v3 (R01–R08) and the DOC-10 18-field output contract.
+       Steps tagged <span class="new-tag">NEW</span> close the PACK 2 capture gaps found during validation.</p>
+    <div class="legend">
+      <span class="pill">R01–R08 = Routing_Rules_v3</span>
+      <span class="pill">5 main cohorts → 41 personas</span>
+      <span class="pill gap">NEW = closes PACK 2 gap</span>
+      <span class="pill">class-first · add-ons separate · home_state ≠ current_city</span>
+    </div>
+  </header>
+
+  <div class="grid">
+
+    <!-- STEP 1 -->
+    <section class="phone">
+      <div class="bar"><i style="width:9%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 1 of 11</span><span class="rule">R01 · main_cohort</span></div>
+        <h2>Who are we cooking for?</h2>
+        <div class="sub">Pick the one that fits best — we keep it simple, no taxonomy quiz.</div>
+      </div>
+      <div class="body">
+        <div class="card sel"><span class="ic">🧑</span><div><div class="t">Just me / shared adults</div><div class="d">Solo, flatmates, working singles · MC1</div></div></div>
+        <div class="card"><span class="ic">👫</span><div><div class="t">Couple household</div><div class="d">Newly married, DINK, expecting · MC2</div></div></div>
+        <div class="card"><span class="ic">👨‍👩‍👧</span><div><div class="t">Family with children</div><div class="d">Toddler, school kids, teens · MC3</div></div></div>
+        <div class="card"><span class="ic">👵</span><div><div class="t">Joint / elders / care</div><div class="d">Multi-gen, elderly, health needs · MC4</div></div></div>
+        <div class="card"><span class="ic">🎯</span><div><div class="t">Special goal / kitchen mode</div><div class="d">Fitness, Jain, non-veg style, cook-assisted · MC5</div></div></div>
+      </div>
+      <div class="foot"><span class="back">—</span><button class="next">Continue →</button></div>
+    </section>
+
+    <!-- STEP 2 -->
+    <section class="phone">
+      <div class="bar"><i style="width:18%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 2 of 11</span><span class="rule">R02 · persona_id</span></div>
+        <h2>Which sounds most like you?</h2>
+        <div class="sub">Only the sub-cohorts under your choice — maps to a backend persona.</div>
+      </div>
+      <div class="body">
+        <p class="sub" style="margin-bottom:8px">Family with children →</p>
+        <div class="chips">
+          <span class="chip sel">Toddler at home</span><span class="chip">School kids</span>
+          <span class="chip">Teenagers</span><span class="chip">Picky eater</span>
+          <span class="chip">Budget family</span><span class="chip">Home-maker, elaborate</span>
+        </div>
+        <div class="note">Resolves <b>base_persona_id</b> (e.g. P10 Nuclear family with toddler) + main/sub cohort IDs. Composite needs (child + diabetic elder) become overlays later, not extra personas.</div>
+      </div>
+      <div class="foot"><span class="back">← Back</span><button class="next">Continue →</button></div>
+    </section>
+
+    <!-- STEP 3 -->
+    <section class="phone">
+      <div class="bar"><i style="width:27%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 3 of 11</span><span class="rule">R03 · member_segments[]</span> <span class="new-tag">NEW · multi-member</span></div>
+        <h2>Who else is at the table?</h2>
+        <div class="sub">Add each member who needs their own component. You can add several.</div>
+      </div>
+      <div class="body">
+        <div class="card sel"><span class="ic">👶</span><div><div class="t">Baby 6–18 months</div><div class="d">Soft add-on · target: baby_6_18m</div></div></div>
+        <div class="card sel"><span class="ic">🧓</span><div><div class="t">Elderly parent (diabetic)</div><div class="d">Soft + low-GI add-on · elderly_member</div></div></div>
+        <div class="card" style="border-style:dashed;justify-content:center;color:var(--text2)"><span class="ic">＋</span><div><div class="t">Add another member</div></div></div>
+        <div class="note">Each member loops back here → builds <b>member_segments[]</b>. Add-ons attach to the family meal, never replace it (DOC-06). Fixes prior single-member-only capture.</div>
+      </div>
+      <div class="foot"><span class="back">← Back</span><button class="next">Continue →</button></div>
+    </section>
+
+    <!-- STEP 4 -->
+    <section class="phone">
+      <div class="bar"><i style="width:36%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 4 of 11</span><span class="rule">R04 · health_overlay</span></div>
+        <h2>Any health focus?</h2>
+        <div class="sub">For a member or the whole house? This sets scope, not medical advice.</div>
+      </div>
+      <div class="body">
+        <div class="chips" style="margin-bottom:10px">
+          <span class="chip sel">Diabetic / low-GI</span><span class="chip">BP / heart</span>
+          <span class="chip">Weight loss</span><span class="chip">Fitness / protein</span>
+          <span class="chip">Pregnancy</span><span class="chip">None</span>
+        </div>
+        <div class="field"><label>Applies to</label><div class="val">⦿ One member (elderly parent)&nbsp;&nbsp;○ Whole household</div></div>
+        <div class="note">One member → swap/add-on overlay (persona P15). Whole household → health classes may enter primary rotation. Sets <b>health_overlay_code</b> + <b>health_scope</b> + <b>overlay_persona_ids[]</b>.</div>
+      </div>
+      <div class="foot"><span class="back">← Back</span><button class="next">Continue →</button></div>
+    </section>
+
+    <!-- STEP 5 -->
+    <section class="phone">
+      <div class="bar"><i style="width:45%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 5 of 11</span><span class="rule">R05 · cook_capability</span> <span class="new-tag">NEW · time pressure</span></div>
+        <h2>How does cooking happen?</h2>
+        <div class="sub">Tunes complexity, batching, and instruction detail.</div>
+      </div>
+      <div class="body">
+        <div class="chips" style="margin-bottom:12px">
+          <span class="chip sel">Self-cook</span><span class="chip">Skilled cook/maid</span>
+          <span class="chip">Cook needs steps</span><span class="chip">Tiffin / PG</span><span class="chip">Delivery-heavy</span>
+        </div>
+        <div class="field"><label>Weekday time pressure <span class="new-tag">NEW</span></label>
+          <div class="val">○ Relaxed&nbsp;&nbsp;⦿ Busy&nbsp;&nbsp;○ Very time-starved</div></div>
+        <div class="note">Captures <b>cook_capability</b> + <b>weekday_time_pressure</b> (DOC-16) — the latter was previously never asked.</div>
+      </div>
+      <div class="foot"><span class="back">← Back</span><button class="next">Continue →</button></div>
+    </section>
+
+    <!-- STEP 6 -->
+    <section class="phone">
+      <div class="bar"><i style="width:54%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 6 of 11</span><span class="rule">R06 · diet_mode / nonveg_mode</span></div>
+        <h2>Your food rules</h2>
+        <div class="sub">Hard constraints — applied before any scoring.</div>
+      </div>
+      <div class="body">
+        <div class="chips" style="margin-bottom:10px">
+          <span class="chip veg sel">Veg</span><span class="chip veg">Vegan</span><span class="chip veg">Jain</span>
+          <span class="chip non">Egg-only</span><span class="chip non">Non-veg</span>
+        </div>
+        <div class="field"><label>Egg allowed? <span class="new-tag">NEW</span></label><div class="val">⦿ Yes&nbsp;&nbsp;○ No</div></div>
+        <div class="field"><label>Fasting / ritual pattern <span class="new-tag">NEW</span></label>
+          <div class="val">○ None&nbsp;&nbsp;⦿ Weekly (e.g. Tue/Thu)&nbsp;&nbsp;○ Navratri/seasonal</div></div>
+        <div class="note">Sets <b>diet_mode, nonveg_mode, egg_allowed, fasting_pattern</b>. For non-veg, a follow-up asks weekly cadence + proteins (state prior from NonVeg_Logic_v3).</div>
+      </div>
+      <div class="foot"><span class="back">← Back</span><button class="next">Continue →</button></div>
+    </section>
+
+    <!-- STEP 7 -->
+    <section class="phone">
+      <div class="bar"><i style="width:63%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 7 of 11</span><span class="rule">R06b · excluded_ingredients[]</span> <span class="new-tag">NEW · allergy screen</span></div>
+        <h2>Anything to always avoid?</h2>
+        <div class="sub">Allergies & strong dislikes — a hard filter on every suggestion.</div>
+      </div>
+      <div class="body">
+        <div class="chips" style="margin-bottom:10px">
+          <span class="chip sel">Peanut</span><span class="chip">Tree nuts</span><span class="chip sel">Shellfish</span>
+          <span class="chip">Gluten</span><span class="chip">Soy</span><span class="chip">Dairy</span><span class="chip">None</span>
+        </div>
+        <div class="field"><label>Search more…</label><div class="val" style="color:var(--text2)">🔎 type an ingredient</div></div>
+        <div class="note">Stores <b>excluded_ingredients[]</b> as integer IDs (matches MVP <code>user_diet_rules</code>). Previously hardcoded to <code>[]</code> — this is the missing screen.</div>
+      </div>
+      <div class="foot"><span class="back">← Back</span><button class="next">Continue →</button></div>
+    </section>
+
+    <!-- STEP 8 -->
+    <section class="phone">
+      <div class="bar"><i style="width:72%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 8 of 11</span><span class="rule">R07 · home_state + current_city</span></div>
+        <h2>Where's home, where's now?</h2>
+        <div class="sub">Two separate signals — native food identity vs current lifestyle.</div>
+      </div>
+      <div class="body">
+        <div class="field"><label>Home state (food identity)</label><div class="val">Uttar Pradesh ▾</div></div>
+        <div class="field"><label>Current city (lifestyle overlay)</label><div class="val">Delhi NCR ▾</div></div>
+        <div class="note">Never collapsed (DOC-09). Resolves <b>home_state, current_city, city_tier, migration_overlay</b>. UP-in-Delhi blends ~55% home + 30% city + 15% modern → adds migration overlay P28.</div>
+      </div>
+      <div class="foot"><span class="back">← Back</span><button class="next">Continue →</button></div>
+    </section>
+
+    <!-- STEP 9 -->
+    <section class="phone">
+      <div class="bar"><i style="width:81%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 9 of 11</span><span class="rule">R08 · class_affinity_vector</span> <span class="new-tag">NEW · class swipes</span></div>
+        <h2>Swipe a few meal styles</h2>
+        <div class="sub">Classes, not dishes — teaches the engine your rhythm. Optional, ~5 swipes.</div>
+      </div>
+      <div class="body">
+        <div class="swipe"><div class="cn">Dal · Roti · Sabzi</div><div class="ex">the everyday home lunch</div>
+          <div class="acts"><span class="btn-s up">👍 Yes, often</span><span class="btn-s dn">👎 Not really</span></div></div>
+        <div class="swipe"><div class="cn">One-pot / Pressure meal</div><div class="ex">khichdi, pulao, quick dinner</div>
+          <div class="acts"><span class="btn-s up">👍 Yes, often</span><span class="btn-s dn">👎 Not really</span></div></div>
+        <div class="note">Writes <b>class_affinity_vector</b> keyed by re_meal_classes codes — feeds the now-closed PACK 7 class-affinity scoring term. No such step existed before.</div>
+      </div>
+      <div class="foot"><span class="branch">Skippable → lowers confidence, cold-start defaults apply</span><button class="next">Continue →</button></div>
+    </section>
+
+    <!-- STEP 10 -->
+    <section class="phone">
+      <div class="bar"><i style="width:90%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 10 of 11</span><span class="rule">reveal · read-only</span></div>
+        <h2>Here's what we understood</h2>
+        <div class="sub">A quick mirror before we build your week — edit anything.</div>
+      </div>
+      <div class="body">
+        <div class="reveal-row"><span>Cohort</span><b>MC3 · Family w/ toddler</b></div>
+        <div class="reveal-row"><span>Base persona</span><b>P10</b></div>
+        <div class="reveal-row"><span>Overlays</span><b>P15 diabetic · P28 migration</b></div>
+        <div class="reveal-row"><span>Members</span><b>baby_6_18m · elderly_member</b></div>
+        <div class="reveal-row"><span>Diet</span><b>Veg · egg ✓ · weekly fast</b></div>
+        <div class="reveal-row"><span>Avoid</span><b>peanut, shellfish</b></div>
+        <div class="reveal-row"><span>Home / City</span><b>UP → Delhi NCR (T1)</b></div>
+        <div class="reveal-row"><span>Confidence</span><b>0.83</b></div>
+      </div>
+      <div class="foot"><span class="back">← Edit</span><button class="next">Build my week →</button></div>
+    </section>
+
+    <!-- STEP 11 -->
+    <section class="phone">
+      <div class="bar"><i style="width:100%"></i></div>
+      <div class="head">
+        <div class="step-meta"><span>Step 11 of 11</span><span class="rule">processing → tabs</span></div>
+        <h2>Building your 7-day plan…</h2>
+        <div class="sub">Class-first, then dishes, then member add-ons.</div>
+      </div>
+      <div class="body">
+        <p class="sub" style="margin-bottom:8px">Running the engine:</p>
+        <div class="reveal-row"><span>1 · runCohortAssignment</span><b>✓</b></div>
+        <div class="reveal-row"><span>2 · completeREOnboarding</span><b>✓</b></div>
+        <div class="reveal-row"><span>3 · generateWeeklyPlan (via resolver)</span><b>✓</b></div>
+        <div class="reveal-row"><span>4 · generateUserAddonPlan</span><b>✓</b></div>
+        <div class="note">Routes through <code>re-engine.service</code> → resolver → RE_V1 (the PACK 8 boundary). Persists <b>onboarding_step</b> each screen so a kill-and-resume lands where you left off.</div>
+      </div>
+      <div class="foot"><span class="back">—</span><button class="next">Open home →</button></div>
+    </section>
+
+    <!-- OUTPUT CONTRACT -->
+    <section class="phone" style="grid-column:span 1;">
+      <div class="head" style="padding-bottom:8px">
+        <div class="step-meta"><span>Output</span><span class="rule">DOC-10 · 18-field contract</span></div>
+        <h2>household_profile emitted</h2>
+        <div class="sub">All 18 fields now captured (was 8 captured / 4 partial / 5 missing).</div>
+      </div>
+      <div class="body">
+<div class="contract">{
+  "main_cohort_id": "MC3",
+  "sub_cohort_id": "SC3A",
+  "base_persona_id": "P10",
+  "overlay_persona_ids": ["P15","P28"],
+  "home_state": "Uttar Pradesh",
+  "current_city": "Delhi",
+  "city_tier": "T1",
+  "migration_overlay": "DELHI_NCR",
+  "diet_mode": "veg",
+  "nonveg_mode": "none",
+  "egg_allowed": true,
+  "excluded_ingredients": [42, 91],
+  "fasting_pattern": "weekly_tue_thu",
+  "member_segments": [
+    "baby_6_18m","elderly_member"
+  ],
+  "cook_capability": "self_cook",
+  "weekday_time_pressure": "busy",
+  "class_affinity_vector": {
+    "LD_DAL_ROTI_SABZI": 0.20,
+    "LD_ONE_POT_PRESSURE": -0.05
+  },
+  "confidence": 0.83
+}</div>
+      </div>
+    </section>
+
+  </div>
+
+  <footer class="legend-foot">
+    <p><b>What changed vs the current build:</b> 5 net-new captures (allergy screen, class-swipe → class_affinity_vector,
+       multi-member loop, weekday_time_pressure, fasting_pattern + egg_allowed) plus onboarding_step resume persistence and
+       routing through the RE service resolver. Backend, DB schema (SCHEMA-RE-008/009/010), and scoring are already in place
+       from the validation campaign — this flow is the UI layer that feeds them a contract-complete profile.</p>
+    <p style="margin-top:8px"><b>Decision still open:</b> make this RE flow the default (set <code>EXPO_PUBLIC_RE_ONBOARDING_ENABLED=true</code> / flip routing)
+       vs keep it behind the flag while the legacy 7-step flow remains default.</p>
+  </footer>
+</div>
+</body>
+</html>

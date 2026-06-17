@@ -1,0 +1,211 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/05_Onboarding/DOC-10_Onboarding_Journey_Dynamic_Flow_v1.0.docx",
+ "paragraphs": [
+  "Onboarding Journey + Dynamic Question Flow Specification",
+  "DOC-10 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines the user-facing onboarding journey that captures a small number of high-signal answers without forcing users to choose from a long persona list.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Onboarding Principles",
+  "Ask only questions that change the first-week plan.",
+  "Use cards/chips/swipes instead of long forms wherever possible.",
+  "Keep main cohort selection to around 4-5 options.",
+  "Ask sub-cohort questions dynamically after main cohort.",
+  "Capture home state and current city separately.",
+  "Prefer class-level preference signals over dish-level aspirational choices.",
+  "Allow skip; use DOC-20 cold-start defaults when skipped.",
+  "5. Recommended Screen Flow",
+  "6. Dynamic Branching",
+  "If the user selects family with kids, ask age-band chips for infant/toddler/school child/teen. If the user selects family with elders, ask soft/digestive/diabetic follow-ups. If the user selects special health/life stage, ask pregnancy/postpartum/diabetes/fitness/recovery. If the user selects solo/couple, avoid irrelevant child screens unless they explicitly add a member.",
+  "7. Output Contract",
+  "onboarding_result = {  \"main_cohort_id\": \"MC_FAMILY\",  \"sub_cohort_id\": \"SC_COUPLE_WITH_INFANT\",  \"home_state\": \"Madhya Pradesh\",  \"current_city\": \"Mumbai\",  \"diet_mode\": \"vegetarian\",  \"member_segments\": [\"INFANT\", \"DIABETIC_ELDER\"],  \"cook_capability\": \"assisted_cook_needs_instruction\",  \"class_preference_swipes\": [\"BF_LIGHT_GRAIN\", \"LUNCH_DAL_SABZI_ROTI\"]}",
+  "8. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-02.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "9. Acceptance Criteria",
+  "Onboarding can be completed quickly while still producing a valid household profile.",
+  "Every answer maps to a known backend field in DOC-11.",
+  "Skipped answers have defined fallback behavior in DOC-20.",
+  "10. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-10"
+   ],
+   [
+    "Canonical file name",
+    "DOC-10_Onboarding_Journey_Dynamic_Flow_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-02"
+   ],
+   [
+    "Purpose",
+    "Defines the user-facing onboarding journey that captures a small number of high-signal answers without forcing users to choose from a long persona list."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "Main_Cohort_Hierarchy, Subcohort_Routing, Routing_Rules_v3"
+   ],
+   [
+    "Dependencies",
+    "DOC-03, DOC-04, DOC-11, DOC-20"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-02",
+    "Onboarding and Household Profile Builder",
+    "Build dynamic onboarding, household/member capture, diet and city inputs, and profile object."
+   ]
+  ],
+  [
+   [
+    "Step",
+    "Question",
+    "Output fields"
+   ],
+   [
+    "1",
+    "Who are we planning meals for?",
+    "main_cohort_id"
+   ],
+   [
+    "2",
+    "Which option best describes your household?",
+    "sub_cohort_id, base_persona_id"
+   ],
+   [
+    "3",
+    "Any babies, kids, elders, pregnancy, postpartum, diabetes, fitness needs?",
+    "member_segments, overlay_persona_ids, addon_flags"
+   ],
+   [
+    "4",
+    "Where is your family food from?",
+    "home_state"
+   ],
+   [
+    "5",
+    "Where do you live now?",
+    "current_city, city_tier, migration_overlay"
+   ],
+   [
+    "6",
+    "What is your diet pattern?",
+    "diet_mode, nonveg_mode, egg_allowed"
+   ],
+   [
+    "7",
+    "Who cooks and how much time do you have?",
+    "cook_capability, weekday_time_pressure"
+   ],
+   [
+    "8",
+    "Swipe meal-class examples, not only dish names.",
+    "class_affinity_vector"
+   ]
+  ],
+  [
+   [
+    "Trigger",
+    "Ask next",
+    "Do not ask"
+   ],
+   [
+    "Family with kids",
+    "Child age band, tiffin need, spice tolerance.",
+    "Pregnancy questions unless indicated."
+   ],
+   [
+    "Family with elders",
+    "Soft food, diabetes, low-oil preference.",
+    "Child/tiffin questions unless children also present."
+   ],
+   [
+    "Couple with infant",
+    "Infant age band and feeding type.",
+    "Full child school/tiffin flow."
+   ],
+   [
+    "Fitness/health",
+    "Goal, protein preference, restrictions.",
+    "Detailed medical plan."
+   ],
+   [
+    "Non-veg allowed",
+    "Frequency and protein type.",
+    "Non-veg dishes for veg/Jain users."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-10 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

@@ -193,6 +193,88 @@ export interface RESummaryAlternative {
   why_not_first: string;
 }
 
+// ─── RE Module Types ──────────────────────────────────────────────────────────
+
+export type REEngineVersion =
+  | 'classfirst_v1'
+  | 'legacy_dish_scoring_v1'
+  | 'legacy_dish_scoring_v2';
+
+export type CookDependency =
+  | 'self_cook'
+  | 'skilled_cook'
+  | 'cook_needs_instruction'
+  | 'maid_simple'
+  | 'tiffin_pg_no_kitchen'
+  | 'delivery_heavy';
+
+export type HealthOverlayCode =
+  | 'weight_loss'
+  | 'high_protein_fitness'
+  | 'veg_protein_seeker'
+  | 'diabetic_management'
+  | 'hypertension_heart'
+  | 'fasting_ritual'
+  | 'pregnancy_support'
+  | 'postpartum_lactation';
+
+export type HealthScope = 'all' | 'member_only';
+
+export type MemberSegment =
+  | 'baby_6_18m'
+  | 'toddler'
+  | 'school_child'
+  | 'teen_high_appetite'
+  | 'picky_child'
+  | 'pregnant_member'
+  | 'lactating_or_postpartum_mother'
+  | 'elderly_member'
+  | 'diabetic_member'
+  | 'hypertension_heart_member'
+  | 'recovery_member';
+
+export interface REState {
+  state_id: string;
+  state_ut: string;
+}
+
+export interface REMainCohort {
+  main_cohort_id: string;
+  main_cohort_label: string;
+  user_understands_as: string;
+  subcohort_screen_copy: string;
+}
+
+export interface RESubcohort {
+  sub_cohort_id: string;
+  main_cohort_id: string;
+  show_as_chip_text: string;
+  maps_to_persona_id: string;
+}
+
+export interface REHouseholdProfile {
+  id?: string;
+  profile_id: string;
+  main_cohort_id: string | null;
+  sub_cohort_id: string | null;
+  persona_id: string | null;
+  cohort_id: string | null;
+  overlay_persona_ids: string[];
+  nonveg_meals_per_week: number | null;
+  preferred_protein_types: string[];
+  cook_dependency: CookDependency | null;
+  health_overlay_code: HealthOverlayCode | null;
+  health_scope: HealthScope | null;
+  city_destination_group: string | null;
+}
+
+export interface REHouseholdMember {
+  id?: string;
+  profile_id: string;
+  member_segment: MemberSegment;
+  age_band: string | null;
+}
+
 export interface RESummarySlot {
   winner: { name: string; score: number; cuisine: string };
   alternatives: RESummaryAlternative[];
@@ -272,3 +354,130 @@ export interface OfflinePlan {
 }
 
 export type LoadingState = 'idle' | 'loading' | 'success' | 'error';
+
+// ── RE BUILD-04: Weekly Class-First Plan ──────────────────────────────────────
+export interface REMealClassRef {
+  classCode: string;
+  display: string;
+}
+
+export interface REDayPlan {
+  dayOfWeek: string;
+  weekdayWeekend: 'Weekday' | 'Weekend';
+  breakfast: REMealClassRef | null;
+  lunch: REMealClassRef | null;
+  snack: REMealClassRef | null;
+  dinner: REMealClassRef | null;
+}
+
+export interface REWeeklyPlan {
+  profileId: string;
+  cohortId: string | null;
+  planWeekStart: string;
+  days: REDayPlan[];
+  engineVersion: string;
+}
+
+// ── RE BUILD-05: Member-Specific Add-on Plans ─────────────────────────────────
+
+export interface REAddonComponent {
+  addonClassCode: string;
+  addonClassName: string;
+  targetMemberSegment: string;
+  attachedToPrimaryClass: string | null;
+}
+
+export interface RESlotAddons {
+  breakfast: REAddonComponent[];
+  lunch: REAddonComponent[];
+  snack: REAddonComponent[];
+  dinner: REAddonComponent[];
+}
+
+export interface REDayAddonPlan {
+  dayOfWeek: string;
+  addons: RESlotAddons;
+}
+
+export interface REWeeklyAddonPlan {
+  profileId: string;
+  planWeekStart: string;
+  days: REDayAddonPlan[];
+  engineVersion: string;
+}
+
+// ── RE BUILD-07: Feedback Learning Loop ──────────────────────────────────────
+
+export type REFeedbackSignal =
+  | 'VIEW'
+  | 'ACCEPT'
+  | 'LOCK'
+  | 'TAP_RECIPE'
+  | 'ADD_TO_GROCERY'
+  | 'SWIPE_PAST'
+  | 'NOT_TODAY'
+  | 'NEVER'
+  | 'NEVER_REMOVE'
+  | 'SEARCH_ADD_DISH';
+
+export interface REDishAffinityState {
+  affinityScore: number;
+  lockCount: number;
+  acceptCount: number;
+  rejectCount: number;
+  isNever: boolean;
+  notTodayUntil: string | null;
+  repeatPreferred: boolean; // Seq 12: suppresses variety penalty when user has locked ≥3×
+}
+
+/** dish_option_id → affinity state */
+export type REDishAffinityMap = Record<string, REDishAffinityState>;
+
+/** meal_class_code → affinity score */
+export type REClassAffinityMap = Record<string, number>;
+
+/** dna_tag → affinity score (-1..1) — Seq 11 Food DNA preference vector */
+export type REFoodDnaVector = Record<string, number>;
+
+/** class_family_code → affinity score — Seq 13 cuisine drift */
+export type REClassFamilyAffinityMap = Record<string, number>;
+
+// ── RE BUILD-06: Dish Expansion & Food DNA Ranking ────────────────────────────
+
+/** Component breakdown for a dish score — powers "why this?" and the founder debug report. */
+export interface DishScoreBreakdown {
+  total: number;
+  base: number;          // always 1.0
+  region: number;        // 0 | 0.05 | 0.20
+  daySlot: number;       // 0 | 0.05 (weekend/festive boost)
+  classAffinity: number; // −0.30..+0.35 (class-level behavioral preference)
+  cityLifestyle: number; // 0..+0.15 (metro/tier-2 quick-healthy overlay, DOC-19)
+  cookCapability: number;// −0.20..+0.10 (cook dependency vs class complexity, DOC-19)
+  foodDna: number;       // −0.10..+0.30 (Food DNA tag match, DOC-19)
+  history: number;       // −0.30..+0.40 (dish-level affinity from swipes/locks)
+  variety: number;       // 0 | −0.30 (seen recently)
+  random: number;        // 0..0.10
+}
+
+export interface REDishCandidate {
+  dishOptionId: string;
+  dishName: string;
+  dietType: string;
+  regionRelevance: string;
+  score: number;
+  scoreBreakdown?: DishScoreBreakdown;
+}
+
+export interface RESlotDishCandidates {
+  classCode: string;
+  classDisplay: string;
+  topDishes: REDishCandidate[];
+}
+
+export interface REDayDishCandidates {
+  dayOfWeek: string;
+  breakfast: RESlotDishCandidates | null;
+  lunch: RESlotDishCandidates | null;
+  snack: RESlotDishCandidates | null;
+  dinner: RESlotDishCandidates | null;
+}

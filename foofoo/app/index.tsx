@@ -1,10 +1,10 @@
 import { useEffect } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { useRouter } from 'expo-router';
+import { Platform, View, Text, StyleSheet, TouchableOpacity } from 'react-native';
+import { useRouter, usePathname } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { supabase } from '../src/services/supabase';
 import { resetOnboardingProgress } from '../src/repositories/profiles.repository';
-import { COLORS, APP_NAME, STORAGE_KEYS, ONBOARDING } from '../src/config/constants';
+import { COLORS, APP_NAME, STORAGE_KEYS, ONBOARDING, RE_FEATURE_FLAGS } from '../src/config/constants';
 import { Logger } from '../src/utils/systemLogger';
 import { OneSignalService } from '../src/services/onesignal.service';
 import { PostHogService } from '../src/services/posthog.service';
@@ -26,8 +26,13 @@ const INTRO_SEEN_KEY = STORAGE_KEYS.INTRO_SEEN;
  */
 export default function Index() {
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
+    // On web, _layout.tsx's initialRouteName mounts this screen in the background
+    // stack even when navigating directly to a specific route (e.g. /(auth)/sign-in).
+    // Skip routing logic in that case — the active screen owns its own render.
+    if (Platform.OS === 'web' && pathname !== '/') return;
     checkAndRoute();
   }, []);
 
@@ -71,8 +76,23 @@ export default function Index() {
         return;
       }
 
-      const step = Math.min(Math.max((profile?.onboarding_step ?? 0) + 1, 1), ONBOARDING.STEPS);
-      router.replace(`/(onboarding)/step-${step}` as never);
+      // RE onboarding is now the default for all new signups (D1 confirmed).
+      // Any user whose step is 0 (never started) goes to RE onboarding.
+      // If they have an onboarding_step from a prior RE session (1–8) we resume there.
+      // Only users who already started the legacy 7-step flow (and have food_pref set
+      // from that flow) are routed back to the legacy flow to finish it.
+      const step = profile?.onboarding_step ?? 0;
+      const startedLegacy = !RE_FEATURE_FLAGS.ONBOARDING_ENABLED && step > 0 && !!profile?.food_pref;
+
+      if (!startedLegacy) {
+        // RE onboarding: new user (step 0) starts at 1; resume uses the saved step.
+        const reStep = step === 0 ? 1 : Math.min(Math.max(step, 1), 9);
+        router.replace(`/(re-onboarding)/re-step-${reStep === 9 ? '8-reveal' : reStep}` as never);
+        return;
+      }
+
+      const legacyStep = Math.min(Math.max(step + 1, 1), ONBOARDING.STEPS);
+      router.replace(`/(onboarding)/step-${legacyStep}` as never);
     } catch {
       Logger.error('INDEX', 'Route resolution failed — defaulting to auth-gate');
       router.replace('/(auth)/auth-gate' as never);

@@ -1,0 +1,184 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/02_Cohorts_Personas/DOC-17_Health_Fitness_Lifestyle_Overlays_v1.0.docx",
+ "paragraphs": [
+  "Health, Fitness, and Lifestyle Overlay Specification",
+  "DOC-17 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines overlays for diabetic, weight loss, high protein, gym/fitness, elderly digestion, pregnancy, postpartum, child growth, recovery, and modern healthy lifestyle patterns.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Overlay Principle",
+  "Health and lifecycle needs modify planning and add member-specific components. They should not automatically turn the whole household into a diet plan unless the household explicitly chooses that mode.",
+  "5. Overlay Types",
+  "6. Safety and Scope",
+  "The system should provide meal-planning personalization and not claim medical treatment. Health overlays must be described as preferences and food suitability filters. For serious medical conditions, the app can allow user-entered restrictions but should avoid diagnosis.",
+  "7. Ranking Effects",
+  "Diabetic overlay: demote sugar-heavy classes and boost low-GI add-ons.",
+  "Fitness overlay: boost protein-rich dish candidates and high-protein snacks.",
+  "Elderly overlay: demote very spicy, deep fried, and hard texture dishes.",
+  "Pregnancy/postpartum: use explicit safe/avoid flags as hard or strong constraints once defined.",
+  "Child overlay: boost familiar, mild, portable, and tiffin-friendly classes.",
+  "8. Implementation Output",
+  "health_overlays = [  {\"type\": \"DIABETIC\", \"target_member_id\": \"elder_1\", \"strength\": \"hard_for_member_soft_for_household\"},  {\"type\": \"INFANT\", \"target_member_id\": \"baby_1\", \"strength\": \"addon_required\"}]",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-02, BUILD-05, BUILD-07.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "Health/lifecycle overlays do not incorrectly replace primary meals.",
+  "Member-specific constraints are applied to add-ons and relevant dish ranking.",
+  "Fitness and health preferences remain configurable and learn from behavior.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-17"
+   ],
+   [
+    "Canonical file name",
+    "DOC-17_Health_Fitness_Lifestyle_Overlays_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-02, BUILD-05, BUILD-07"
+   ],
+   [
+    "Purpose",
+    "Defines overlays for diabetic, weight loss, high protein, gym/fitness, elderly digestion, pregnancy, postpartum, child growth, recovery, and modern healthy lifestyle patterns."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "Persona_Master_v3, Addon_Component_Class_Master, Addon_Dish_Options"
+   ],
+   [
+    "Dependencies",
+    "DOC-04, DOC-06, DOC-18, DOC-19"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-02",
+    "Onboarding and Household Profile Builder",
+    "Build dynamic onboarding, household/member capture, diet and city inputs, and profile object."
+   ],
+   [
+    "BUILD-05",
+    "Member-Specific Add-on Component Engine",
+    "Attach infant/toddler/child/elderly/pregnancy/postpartum/diabetic/fitness add-ons without replacing family primary meal."
+   ],
+   [
+    "BUILD-07",
+    "Feedback Personalization Loop",
+    "Use swipes, locks, Not Today, Never, search, and accepted repeats to adjust preferences and class weights."
+   ]
+  ],
+  [
+   [
+    "Overlay",
+    "Planning effect",
+    "Add-on effect"
+   ],
+   [
+    "Diabetic",
+    "Demote sweets/refined-carb-heavy/fried classes; prefer low-GI sides.",
+    "Low-oil sabzi, sprouts, curd side, methi/lauki/chana dal."
+   ],
+   [
+    "Weight loss",
+    "Prefer light dinners, protein snacks, controlled indulgence.",
+    "High-protein/low-oil add-ons."
+   ],
+   [
+    "Fitness/gym",
+    "Increase protein frequency and post-workout snack classes.",
+    "Egg/paneer/dal/sprout/chicken/fish if allowed."
+   ],
+   [
+    "Pregnancy",
+    "Avoid unsafe foods; add nourishing mild components.",
+    "Milk/curd/dal/soft balanced add-ons."
+   ],
+   [
+    "Postpartum",
+    "Recovery foods as add-ons, not family-wide primary.",
+    "Laddoo/panjeeri/ajwain/gond type components where regionally suitable."
+   ],
+   [
+    "Elderly digestion",
+    "Softer/lighter, lower oil/spice classes.",
+    "Soft khichdi, curd rice, dalia, steamed veg."
+   ],
+   [
+    "Child growth",
+    "Familiar meals plus protein/fruit/tiffin add-ons.",
+    "Paneer/egg/dal/sprouts/fruit snack if allowed."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-17 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

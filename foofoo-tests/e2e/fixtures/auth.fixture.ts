@@ -9,7 +9,7 @@ import { E2E_CONFIG } from '../e2e-config';
  *
  * Usage:
  *   import { test, expect } from '../fixtures/auth.fixture';
- *   test('my test', async ({ vegUserPage }) => { ... });
+ *   test('my test', async ({ vegUserPage }) => { ... });  
  */
 
 type AuthFixtures = {
@@ -37,8 +37,13 @@ export const test = base.extend<AuthFixtures>({
       E2E_CONFIG.users.vegUser.password,
     );
 
-    // Wait for redirect to home after successful sign-in
-    await page.waitForURL(/tabs/, { timeout: E2E_CONFIG.timeouts.apiCall });
+    // Wait for redirect away from auth screens after successful sign-in.
+    // Expo Router strips group names from URLs, so /(tabs) becomes / — we check
+    // that the URL is no longer on a sign-in or auth-gate page instead.
+    await page.waitForURL(
+      url => !url.href.includes('sign-in') && !url.href.includes('auth-gate'),
+      { timeout: E2E_CONFIG.timeouts.apiCall },
+    );
 
     await use(page);
     await ctx.close();
@@ -55,8 +60,10 @@ export const test = base.extend<AuthFixtures>({
       E2E_CONFIG.users.nonVegUser.password,
     );
 
-    // Wait for redirect to home after successful sign-in
-    await page.waitForURL(/tabs/, { timeout: E2E_CONFIG.timeouts.apiCall });
+    await page.waitForURL(
+      url => !url.href.includes('sign-in') && !url.href.includes('auth-gate'),
+      { timeout: E2E_CONFIG.timeouts.apiCall },
+    );
 
     await use(page);
     await ctx.close();

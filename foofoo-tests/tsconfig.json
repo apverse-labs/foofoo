@@ -9,7 +9,30 @@
     "moduleResolution": "node",
     "resolveJsonModule": true,
     "outDir": "./dist",
-    "rootDir": "./",
+    "rootDir": "..",
+    "baseUrl": ".",
+    "paths": {
+      // WHY PATHS INSTEAD OF PROJECT REFERENCES:
+      // foofoo uses expo/tsconfig.base which sets moduleResolution:"bundler" +
+      // customConditions:["react-native"]. TypeScript Project References require
+      // overriding this to moduleResolution:"node", which breaks the Expo config
+      // (TS5098 error). The paths approach below is the correct permanent solution
+      // for a Node.js test project type-checking against a React Native app.
+
+      // @supabase/supabase-js IS installed in foofoo-tests/node_modules, but tsc
+      // resolves it from foofoo/src/* which has no local node_modules in CI.
+      "@supabase/supabase-js": ["node_modules/@supabase/supabase-js"],
+      "@supabase/supabase-js/*": ["node_modules/@supabase/supabase-js/*"],
+
+      // React-Native packages are not installed in foofoo-tests — they are pulled
+      // in transitively via foofoo/src/services/supabase-re.ts and
+      // foofoo/src/utils/systemLogger.ts. Minimal stubs in types/rn-stubs.d.ts
+      // are the correct approach since installing the full RN packages in a
+      // Node.js test project would pull in unnecessary native dependencies.
+      "expo-secure-store": ["types/rn-stubs"],
+      "react-native": ["types/rn-stubs"],
+      "@react-native-async-storage/async-storage": ["types/rn-stubs"]
+    },
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
     "types": ["jest", "node", "detox"]

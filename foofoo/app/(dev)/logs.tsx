@@ -15,7 +15,7 @@ import {
   View, Text, StyleSheet, ScrollView, Pressable, Share, ActivityIndicator,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useClientInsets } from '../../src/hooks/useClientInsets';
 import { supabase } from '../../src/services/supabase';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { REDecisionLogger } from '../../src/utils/reDecisionLogger';
@@ -46,7 +46,7 @@ export default function DevLogsScreen() {
 
 function DevLogsContent() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useClientInsets();
   const [activeTab, setActiveTab] = useState<TabName>('journey');
   const [userId, setUserId] = useState<string | null>(null);
   const [logText, setLogText] = useState('Loading…');
