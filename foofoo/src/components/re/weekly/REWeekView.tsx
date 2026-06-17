@@ -33,7 +33,6 @@ interface WeekRow {
   lunchDisplay:     string | null;
   snackDisplay:     string | null;
   dinnerDisplay:    string | null;
-  locked: boolean;
 }
 
 interface SwapSheet {
@@ -67,7 +66,7 @@ export default function REWeekView({ userId }: { userId: string }) {
         const { data, error } = await supabaseRE
           .from('re_user_weekly_plans')
           .select(
-            'day_of_week, weekday_weekend, locked, '
+            'day_of_week, weekday_weekend, '
             + 'breakfast_class, lunch_class, snack_class, dinner_class, '
             + 'breakfast_display, lunch_display, snack_display, dinner_display',
           )
@@ -77,7 +76,7 @@ export default function REWeekView({ userId }: { userId: string }) {
         if (!active) return;
 
         type RawRow = {
-          day_of_week: string; weekday_weekend?: string; locked?: boolean;
+          day_of_week: string; weekday_weekend?: string;
           breakfast_class?: string | null; lunch_class?: string | null;
           snack_class?: string | null; dinner_class?: string | null;
           breakfast_display?: string | null; lunch_display?: string | null;
@@ -96,7 +95,6 @@ export default function REWeekView({ userId }: { userId: string }) {
             lunchDisplay:     r?.lunch_display ?? null,
             snackDisplay:     r?.snack_display ?? null,
             dinnerDisplay:    r?.dinner_display ?? null,
-            locked: r?.locked ?? false,
           };
         });
         setRows(mapped);
@@ -157,7 +155,7 @@ export default function REWeekView({ userId }: { userId: string }) {
                     slot={slot}
                     friendlyClass={friendlyClass}
                     isWeekend={r.weekdayWeekend === 'Weekend'}
-                    locked={r.locked}
+                    locked={false}
                     onPress={() => classCode && openSheet(r.day, slot, classCode, friendlyClass)}
                   />
                 );
