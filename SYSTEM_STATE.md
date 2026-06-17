@@ -1,5 +1,5 @@
 # SYSTEM STATE LEDGER (v2.0)
-> Last updated: 2026-06-16 (env guardrails added; SCHEMA-RE-016 dedup restore remains pending)
+> Last updated: 2026-06-17 (SCHEMA-BASE-002 applied to foofoo-staging — restores MVP baseline tables, fixes CI test failures; SCHEMA-RE-016 dedup restore remains pending)
 > Maintained by: Lead Systems & Release Architect (Claude)
 > Rules: See CLAUDE.md § Architect Rules
 
@@ -76,6 +76,7 @@
 | SCHEMA-RE-015    | 20260615_005_re_addon_plans_unique_constraint.sql | ✅ staging  | ✅              | Bug-fix: widened `re_user_addon_plans` UNIQUE constraint from (profile_id, plan_week_start, day_of_week, meal_slot, target_member_segment) to also include addon_class_code. Fixes "ON CONFLICT DO UPDATE command cannot affect row a second time" 500 error when a persona has multiple addon classes per slot. Applied 2026-06-15 to foofoo-staging. NOT yet on production. |
 | SCHEMA-RE-016    | 20260615_006_re_household_addon_plans_unique.sql  | ⚠️ PARTIALLY REVERTED | ✅              | Bug-fix (REVERTED DATA PART): The UNIQUE constraint was added but the SQL DELETE was wrong — it collapsed 7,992 cohort-differentiated rows to 111 by ignoring cohort_id/state_ut/city_tier. UNIQUE constraint was dropped (2026-06-15). Data restore pending (SCHEMA-RE-016-RESTORE). Client-side Set dedup guard in generateUserAddonPlan remains. |
 | SCHEMA-RE-016-RESTORE | 20260615_007_re_hacp_restore_all.sql       | ⚠️ PENDING  | ✅              | Re-seeds re_household_addon_plans with all 7,992 cohort-specific rows from the v3 workbook. Rows are unique by addon_plan_id (PK). ON CONFLICT DO NOTHING. Must be applied manually via Supabase SQL editor (file is 3.5MB). Down script deletes all rows. NOT yet applied to staging. |
+| SCHEMA-BASE-002  | 20260617_001_staging_restore_mvp_baseline_up.sql / 20260617_002_staging_restore_mvp_baseline_down.sql | ✅ staging  | ✅              | Replicates 9 legacy MVP-baseline tables (audit_log, cuisine_groups, cuisines, dish_combos, ingredients, never_list, planner, suggestion_logs, user_inferred_prefs) onto foofoo-staging, since SCHEMA-BASE-001 was applied to production pre-ledger and was never captured/replicated to the newer staging project. Fixes CI failures in rls-security.test.ts / dpdp-compliance.test.ts (PGRST205/PGRST204/42703) caused by the staging schema gap. Columns, constraints, indexes, and RLS policies copied verbatim from production (ufgfznpqixplcbhmsqqw). Applied 2026-06-17 via Supabase MCP to foofoo-staging only. NOT applied to production (would be a no-op there since tables already exist). |
 
 ---
 
