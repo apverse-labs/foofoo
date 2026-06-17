@@ -14,7 +14,7 @@
  * @calledBy Expo Router tabs
  */
 
-import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, ActivityIndicator, Pressable,
   Platform,

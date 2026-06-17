@@ -68,12 +68,6 @@ export function dayNameFromDateIST(dateISO: string): string {
   return new Date(`${dateISO}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long' });
 }
 
-/**
- * @summary Pick the primary class code for a slot, falling back to secondary.
- */
-function pickClass(primary: string | null, secondary: string | null): string | null {
-  return primary ?? secondary ?? null;
-}
 
 // ── City-overlay blending (DOC-09 / DOC-13) ────────────────────────────────────
 

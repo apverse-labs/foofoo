@@ -1,5 +1,5 @@
 import React from 'react';
-import { ScrollView, View, Text, Pressable, StyleSheet } from 'react-native';
+import { ScrollView, Text, Pressable, StyleSheet } from 'react-native';
 import { SPACING, BORDER_RADIUS, RE_TYPE, getREPalette } from '../../../config/re-theme';
 import type { REDishCandidate } from '../../../types';
 

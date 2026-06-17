@@ -1,6 +1,6 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { SPACING, BORDER_RADIUS, RE_TYPE, getREPalette } from '../../../config/re-theme';
+import { SPACING, RE_TYPE, getREPalette } from '../../../config/re-theme';
 import type { REMealClassRef, REDishCandidate, REAddonComponent } from '../../../types';
 import type { ReasonSignal } from '../../../utils/re-reason-tags';
 import RECard from '../foundation/RECard';

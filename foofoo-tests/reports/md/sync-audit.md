@@ -171,3 +171,21 @@ Unit tests: 104/104 passing
 | RE v2 unit tests (spice/complexity/drift/affinity boosts) | MISSING coverage — new tests would require mocking `user_inferred_prefs` data. Marked NEEDS_MANUAL_REVIEW as adding them risks false positives without real inference data. |
 | `integration/edge-functions.test.ts` decay_config assertion | The `user_inferred_prefs` table has a `decay_config` column (added by migration) but `calculate-inferred-prefs` Edge Function does not write it. The test assertion is technically STALE but removing it could mask a future regression. Marked NEEDS_MANUAL_REVIEW. |
 | `lib/types.ts` `WeatherCondition` change | Changing `WeatherCondition` from human-readable `condition: string` to `{ weatherCode, tempCelsius }` breaks the `REContext.weather` type used by unit tests. The re-engine.ts internal functions are updated but test fixtures in `unit/re-scoring.test.ts` still pass `{ temperature_c, humidity_percent, condition }`. This is an intentional interface boundary — re-engine.ts `WeatherCondition` is kept as the test-facing type and converted internally. |
+
+---
+
+## 2026-06-17 Test Suite Re-check
+
+Re-ran `foofoo-tests/` unit suite this session: **417/417 passing** (suite has grown since the 104/104 figure recorded above on 2026-05-25 — the unit-test count increase is consistent with newer RE-related test files such as `unit/re-constraint-validator.test.ts`, `unit/re-gesture-input.test.ts`, `unit/re-reason-tags.test.ts` now present in `foofoo-tests/unit/`, which sit outside this doc's original `lib/re-engine.ts`-vs-Edge-Function drift scope). No new drift was investigated this session beyond confirming the suite still passes after the dependency `npm audit fix` and hygiene import cleanups (see `dependency-audit.md` and `hygiene-audit.md` 2026-06-17 entries) — those changes touched `foofoo/app/_layout.tsx`, `foofoo/app/(tabs)/search.tsx`, and 3 `src/components/re/*`/`src/repositories/re-plan.repository.ts` files, none of which this doc's drift table covers.
+
+---
+
+## apverse-labs-re (Meal_Planning_RE_Engine) Scope
+
+**Coverage:** This audit's scope is explicitly `foofoo-tests/` vs `foofoo/supabase/functions/` + `foofoo/src/` — i.e., the **app-side RE v1/v2 scoring logic** (`generate-daily-plan`, `generate-daily-plans-batch` Edge Functions and their test mock `foofoo-tests/lib/re-engine.ts`). This is a different, older, simpler scoring system than the standalone `Meal_Planning_RE_Engine/` module (which implements the full class-first / cohort-persona / Food-DNA pipeline described in that module's own `CLAUDE.md`). The two are easy to conflate by name ("RE") but are architecturally and organizationally distinct — this doc's findings (weight drift, type mismatches between test mock and Edge Function) do not apply to `Meal_Planning_RE_Engine/` code at all.
+
+**Not yet covered for RE:**
+- No sync/drift audit exists between `Meal_Planning_RE_Engine/00_Implementation/__tests__/` (3 test files) and any RE module implementation, because the implementation versions (`RE_V1`–`RE_V4`) are still unbuilt scaffolding per that module's `CLAUDE.md`.
+- When `Meal_Planning_RE_Engine/00_Implementation/versions/RE_V1/` is built, a sync audit equivalent to this one (test mock vs. actual scoring weights/thresholds) should be created to prevent the same class of drift documented here.
+
+**Cross-reference:** `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/03_CODE_AUDIT/TEST_COVERAGE_AUDIT.md` (the RE module's existing test-coverage assessment — currently PASS at gate G4, but assesses coverage against the 482-requirement ledger, not test-vs-implementation value drift, since there's no implementation yet to drift against) and `04_TRACEABILITY_MATRIX/REQUIREMENT_TO_DB_CODE_TEST_MATRIX.md`.
