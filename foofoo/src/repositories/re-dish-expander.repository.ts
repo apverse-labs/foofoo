@@ -469,7 +469,7 @@ export async function fetchTodayDishCandidates(userId: string, dateISO?: string)
     const slotClassCodesEarly = [plan.breakfast_class, plan.lunch_class, plan.snack_class, plan.dinner_class].filter((c): c is string => !!c);
     const [profileResult, dietRulesResult, householdResult, classMeta] = await Promise.all([
       supabaseRE.from('profiles').select('food_pref').eq('id', userId).maybeSingle(),
-      supabaseRE.from('user_diet_rules').select('excluded_ingredients').eq('profile_id', userId).maybeSingle(),
+      supabaseRE.from('user_diet_rules').select('excluded_ingredients').eq('user_id', userId).maybeSingle(),
       supabaseRE.from('re_user_household_profiles').select('city_destination_group, cook_dependency').eq('profile_id', userId).maybeSingle(),
       supabaseRE.from('re_meal_classes').select('meal_class_code, cook_complexity, food_dna_tags, class_family_code').in('meal_class_code', slotClassCodesEarly),
     ]);
@@ -570,7 +570,7 @@ export async function fetchSwapCandidatesForClass(
   try {
     const [profileResult, dietRulesResult, householdResult, classMetaResult] = await Promise.all([
       supabaseRE.from('profiles').select('food_pref').eq('id', userId).maybeSingle(),
-      supabaseRE.from('user_diet_rules').select('excluded_ingredients').eq('profile_id', userId).maybeSingle(),
+      supabaseRE.from('user_diet_rules').select('excluded_ingredients').eq('user_id', userId).maybeSingle(),
       supabaseRE.from('re_user_household_profiles').select('cohort_id, city_destination_group, cook_dependency').eq('profile_id', userId).maybeSingle(),
       supabaseRE.from('re_meal_classes').select('meal_class_code, cook_complexity, food_dna_tags, class_family_code').eq('meal_class_code', classCode).maybeSingle(),
     ]);
