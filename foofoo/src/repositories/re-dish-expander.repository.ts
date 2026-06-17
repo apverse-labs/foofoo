@@ -320,9 +320,45 @@ interface MealClassMetaRow {
 interface UserHouseholdProfileRow {
   city_destination_group: string | null;
   cook_dependency: string | null;
+  persona_id: string | null;
 }
 
 // ── Operations ────────────────────────────────────────────────────────────────
+
+/**
+ * @summary Fetch persona-level class affinity boosts for a set of class codes.
+ * @description Reads re_persona_class_affinity for the user's assigned persona.
+ *   Used to seed the class affinity score at cold-start before behavioural
+ *   history accumulates. Persona preference is a prior; behavioural history overrides.
+ * @param {string} personaId - from re_user_household_profiles.persona_id
+ * @param {string[]} classCodes - the class codes in today's plan slots
+ * @returns {Promise<Record<string, number>>} map of meal_class_code → affinity_weight
+ * @calledBy fetchTodayDishCandidates
+ */
+export async function fetchPersonaClassAffinities(
+  personaId: string,
+  classCodes: string[],
+): Promise<Record<string, number>> {
+  if (!personaId || classCodes.length === 0) return {};
+  try {
+    const { data, error } = await supabaseRE
+      .from('re_persona_class_affinity')
+      .select('meal_class_code, affinity_weight')
+      .eq('persona_id', personaId)
+      .in('meal_class_code', classCodes);
+    if (error) throw error;
+    const map: Record<string, number> = {};
+    for (const row of (data ?? []) as { meal_class_code: string; affinity_weight: number }[]) {
+      map[row.meal_class_code] = row.affinity_weight;
+    }
+    return map;
+  } catch (err) {
+    Logger.error('RE_DISH', 'fetchPersonaClassAffinities failed', {
+      error: err instanceof Error ? err.message : String(err), personaId,
+    });
+    return {};
+  }
+}
 
 /**
  * @summary Expand a meal class code into a ranked dish candidate list.
@@ -470,7 +506,7 @@ export async function fetchTodayDishCandidates(userId: string, dateISO?: string)
     const [profileResult, dietRulesResult, householdResult, classMeta] = await Promise.all([
       supabaseRE.from('profiles').select('food_pref').eq('id', userId).maybeSingle(),
       supabaseRE.from('user_diet_rules').select('excluded_ingredients').eq('user_id', userId).maybeSingle(),
-      supabaseRE.from('re_user_household_profiles').select('city_destination_group, cook_dependency').eq('profile_id', userId).maybeSingle(),
+      supabaseRE.from('re_user_household_profiles').select('city_destination_group, cook_dependency, persona_id').eq('profile_id', userId).maybeSingle(),
       supabaseRE.from('re_meal_classes').select('meal_class_code, cook_complexity, food_dna_tags, class_family_code').in('meal_class_code', slotClassCodesEarly),
     ]);
     if (profileResult.error) throw profileResult.error;
@@ -480,6 +516,7 @@ export async function fetchTodayDishCandidates(userId: string, dateISO?: string)
     const householdData = householdResult.data as UserHouseholdProfileRow | null;
     const cityDestGroup = householdData?.city_destination_group ?? '';
     const cookDependency = householdData?.cook_dependency ?? '';
+    const personaId = householdData?.persona_id ?? '';
     const classMetaMap = new Map<string, MealClassMetaRow>(
       ((classMeta.data ?? []) as MealClassMetaRow[]).map((r) => [r.meal_class_code, r]),
     );
@@ -496,13 +533,14 @@ export async function fetchTodayDishCandidates(userId: string, dateISO?: string)
     // Affinities loaded lazily — empty map if user has no history yet (cold start)
     const todayISO = dateISO ?? new Date().toISOString().slice(0, 10);
     const slotClassCodes = SLOTS.map((s) => s.classCode).filter((c): c is string => !!c);
-    const [affinityMap, recentDates, classAffinityMap, userDnaVector, familyAffinities] = await Promise.all([
+    const [affinityMap, recentDates, classAffinityMap, userDnaVector, familyAffinities, personaClassAffinityMap] = await Promise.all([
       fetchDishAffinities(userId, []),
       fetchRecentAcceptDates(userId, []),
       fetchClassAffinities(userId, slotClassCodes),
       fetchFoodDnaVector(userId),           // Seq 11
       fetchClassFamilyAffinities(userId),   // Seq 13
-    ]).catch(() => [{}, {}, {}, {}, {}] as [Record<string, never>, Record<string, never>, Record<string, never>, Record<string, never>, Record<string, never>]);
+      fetchPersonaClassAffinities(personaId, slotClassCodes), // cold-start persona prior
+    ]).catch(() => [{}, {}, {}, {}, {}, {}] as [Record<string, never>, Record<string, never>, Record<string, never>, Record<string, never>, Record<string, never>, Record<string, never>]);
 
     const results = await Promise.all(
       SLOTS.map(async ({ classCode, display }) => {
@@ -518,7 +556,9 @@ export async function fetchTodayDishCandidates(userId: string, dateISO?: string)
           affinityMap,
           recentDates,
           todayISO,
-          (classAffinityMap as Record<string, number>)[classCode] ?? 0,
+          (classAffinityMap as Record<string, number>)[classCode]
+            ?? (personaClassAffinityMap as Record<string, number>)[classCode]
+            ?? 0,
           TOP_DISHES_PER_SLOT,
           excludedIngredients,
           cityDestGroup,
