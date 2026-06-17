@@ -1,0 +1,204 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/02_Cohorts_Personas/DOC-16_Cook_Dependency_Kitchen_Capability_v1.0.docx",
+ "paragraphs": [
+  "Cook Dependency + Kitchen Capability Persona Specification",
+  "DOC-16 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines how cook availability, cook skill, need for instructions, household time pressure, kitchen capability, and batch-cooking behavior influence meal classes and dish ranking.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Why Cook Capability Matters",
+  "A technically perfect meal recommendation fails if the household cannot execute it. Many urban Indian homes rely on cooks with different skill levels: skilled cook, basic cook, cook needing constant instruction, no cook, working woman managing cooking, elderly cook, or batch-prep household.",
+  "5. Cook Personas",
+  "6. Class Filtering by Complexity",
+  "Meal classes have cook_complexity and cook_time-like attributes in the taxonomy. Weekday plans should demote high-complexity classes for no-cook/basic-cook/high-time-pressure households. Weekend can restore some complexity if cohort allows.",
+  "7. Instruction Quality Requirements",
+  "For assisted cook households, dish cards should include short cook instructions, not just recipe name.",
+  "For basic cooks, prefer dishes with repeatable base gravies, pressure cooker dal, simple sabzi, and familiar breakfast classes.",
+  "For no-cook households, use classes that can be assembled or outsourced, but still map to meal classes.",
+  "For batch-cook households, allow dal/sabzi bases that can carry forward into next day variations.",
+  "8. Implementation Fields",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-02, BUILD-04.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "Weekday plans are executable for cook capability.",
+  "Complex dishes are not suggested to no-cook/basic-cook households by default.",
+  "Cook-dependent users get classes and dishes with appropriate instruction complexity.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-16"
+   ],
+   [
+    "Canonical file name",
+    "DOC-16_Cook_Dependency_Kitchen_Capability_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-02, BUILD-04"
+   ],
+   [
+    "Purpose",
+    "Defines how cook availability, cook skill, need for instructions, household time pressure, kitchen capability, and batch-cooking behavior influence meal classes and dish ranking."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "Persona_Master_v3, Meal_Class_Master_v3"
+   ],
+   [
+    "Dependencies",
+    "DOC-10, DOC-13, DOC-19"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-02",
+    "Onboarding and Household Profile Builder",
+    "Build dynamic onboarding, household/member capture, diet and city inputs, and profile object."
+   ],
+   [
+    "BUILD-04",
+    "Weekly Class-First Plan Engine",
+    "Generate 7-day meal-class plan from cohort matrix, regional rules, city overlay, weekday/weekend rhythm, variety rules."
+   ]
+  ],
+  [
+   [
+    "Cook mode",
+    "Weekday planning rule",
+    "Weekend planning rule"
+   ],
+   [
+    "Skilled home cook",
+    "Medium complexity allowed; regional variety possible.",
+    "Elaborate regional/festive classes allowed."
+   ],
+   [
+    "Basic cook",
+    "Use repeatable sabzi/dal/rice/roti, simple breakfasts.",
+    "Allow one guided special meal."
+   ],
+   [
+    "Cook needs assistance",
+    "Prefer clear, low-step, familiar classes.",
+    "Only moderate complexity if user available."
+   ],
+   [
+    "No cook",
+    "Quick assembly, leftovers, ready components, low-cook dishes.",
+    "Can include order-in style or simple special."
+   ],
+   [
+    "Working woman manages cooking",
+    "Low time weekday, batch-cook, pressure cooker, one-pot.",
+    "More variety if weekend time available."
+   ],
+   [
+    "Elderly cook",
+    "Low effort, soft/digestive, less chopping/frying.",
+    "Avoid high-complexity festive unless support exists."
+   ]
+  ],
+  [
+   [
+    "Field",
+    "Values",
+    "Usage"
+   ],
+   [
+    "cook_capability",
+    "skilled, basic, needs_assistance, no_cook, self_quick, elderly_cook",
+    "Controls complexity filtering."
+   ],
+   [
+    "weekday_time_pressure",
+    "low, medium, high",
+    "Controls weekday class complexity."
+   ],
+   [
+    "weekend_cooking_interest",
+    "low, medium, high",
+    "Controls weekend specials."
+   ],
+   [
+    "batch_cooking_allowed",
+    "boolean",
+    "Allows leftovers/base reuse logic."
+   ],
+   [
+    "instruction_need_level",
+    "none, short, detailed",
+    "Controls recipe card detail."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-16 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

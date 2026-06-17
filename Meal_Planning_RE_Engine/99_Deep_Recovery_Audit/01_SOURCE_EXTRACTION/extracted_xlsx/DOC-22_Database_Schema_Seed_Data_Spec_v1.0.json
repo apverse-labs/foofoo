@@ -1,0 +1,769 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/07_Technical_Build/DOC-22_Database_Schema_Seed_Data_Spec_v1.0.xlsx",
+ "named_ranges": {},
+ "sheets": [
+  {
+   "name": "README",
+   "state": "visible",
+   "max_row": 12,
+   "max_col": 2,
+   "headers": [
+    "field",
+    "value"
+   ],
+   "rows": [
+    [
+     "field",
+     "value"
+    ],
+    [
+     "document_id",
+     "DOC-22"
+    ],
+    [
+     "title",
+     "Database Schema + Seed Data Specification"
+    ],
+    [
+     "version",
+     "1.0"
+    ],
+    [
+     "purpose",
+     "Defines database tables, columns, keys, source sheet mappings, import order, constraints, and validation rules required to load the v3 workbook and power the recommendation engine."
+    ],
+    [
+     "applicable_build_ids",
+     "BUILD-01"
+    ],
+    [
+     "canonical_source",
+     "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+    ],
+    [
+     "source_sheets_used",
+     "DB_Implementation_v3, Data_Dictionary_v3, All source sheets"
+    ],
+    [
+     "rule_1",
+     "Generate weekly meal classes before dish recommendations."
+    ],
+    [
+     "rule_2",
+     "Keep primary family meals separate from member-specific add-ons."
+    ],
+    [
+     "rule_3",
+     "Join dish pools by meal_class_code only."
+    ],
+    [
+     "rule_4",
+     "Do not invent IDs in application code; use governance docs for changes."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "DB_Implementation_v3",
+   "state": "visible",
+   "max_row": 11,
+   "max_col": 5,
+   "headers": [
+    "table_name",
+    "primary_key",
+    "purpose",
+    "important_columns",
+    "notes"
+   ],
+   "rows": [
+    [
+     "table_name",
+     "primary_key",
+     "purpose",
+     "important_columns",
+     "notes"
+    ],
+    [
+     "main_cohort_master",
+     "main_cohort_id",
+     "5 user-facing onboarding cards",
+     "main_cohort_label, subcohort_screen_copy",
+     "Never show 41 persona list on first screen."
+    ],
+    [
+     "persona_master",
+     "persona_id",
+     "Detailed persona priors after routing",
+     "main_cohort_id, sub_cohort_id, cook_dependency, dependent_addon_default",
+     "A user can map to base persona plus overlays."
+    ],
+    [
+     "state_profile",
+     "state_id",
+     "Home-state signature class pools",
+     "breakfast/lunch/dinner/snack pools, nonveg_intensity",
+     "State is a signal; not a hard partition."
+    ],
+    [
+     "city_migration_overlay",
+     "origin_state + destination_group_code",
+     "Blend home food and current city lifestyle",
+     "home_state_signature_weight, current_city_lifestyle_weight, overlay classes",
+     "Use for MP-in-Mumbai type behavior."
+    ],
+    [
+     "meal_class_master",
+     "meal_class_code",
+     "Class-first planning taxonomy",
+     "planning_role_v3, allowed_as_weekly_primary_v3, food DNA fields",
+     "Only MAIN_PRIMARY classes enter main weekly plan."
+    ],
+    [
+     "class_dish_options",
+     "dish_option_id",
+     "Exhaustive dishes under each meal class",
+     "meal_class_code, dish_name, region_relevance",
+     "Dish recommendation joins from weekly class codes."
+    ],
+    [
+     "addon_component_class_master",
+     "addon_class_code",
+     "Member-specific add-ons/sides/swaps",
+     "target_member_segment, example_dishes, planning_note",
+     "For kids, infant, elderly, pregnancy, postpartum, recovery, diabetic, etc."
+    ],
+    [
+     "weekly_class_plan",
+     "plan_day_id",
+     "One-week class plan per cohort",
+     "primary/secondary/tertiary classes plus add-on columns",
+     "Primary plan remains class-level; dishes fetched separately."
+    ],
+    [
+     "household_addon_component_plan",
+     "addon_plan_id",
+     "Normalized add-on schedule",
+     "cohort_id, day, slot, target_member_segment, addon_class_code",
+     "Add-on is not a meal replacement."
+    ],
+    [
+     "nonveg_logic",
+     "state_ut",
+     "State/persona protein frequency priors",
+     "default and regular nonveg counts, preferred classes",
+     "User diet/religion/allergy hard filters override."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Import_Order",
+   "state": "visible",
+   "max_row": 18,
+   "max_col": 4,
+   "headers": [
+    "order",
+    "table_name",
+    "source_sheet",
+    "notes"
+   ],
+   "rows": [
+    [
+     "order",
+     "table_name",
+     "source_sheet",
+     "notes"
+    ],
+    [
+     1,
+     "states",
+     "State_Profile_v3",
+     "Load states/UT and staples."
+    ],
+    [
+     2,
+     "city_migration_overlays",
+     "City_Migration_Overlay_v3",
+     "Depends on states."
+    ],
+    [
+     3,
+     "main_cohorts",
+     "Main_Cohort_Hierarchy",
+     "User-facing cohort layer."
+    ],
+    [
+     4,
+     "personas",
+     "Persona_Master_v3",
+     "Backend persona master."
+    ],
+    [
+     5,
+     "subcohorts",
+     "Subcohort_Routing",
+     "Depends on main_cohorts and personas."
+    ],
+    [
+     6,
+     "routing_rules",
+     "Routing_Rules_v3",
+     "Onboarding routing logic."
+    ],
+    [
+     7,
+     "meal_classes",
+     "Meal_Class_Master_v3",
+     "Meal class taxonomy."
+    ],
+    [
+     8,
+     "meal_class_overlap_rules",
+     "Meal_Class_Overlap_Resolution",
+     "Primary/add-on governance."
+    ],
+    [
+     9,
+     "class_dish_options",
+     "Class_Dish_Options_v3",
+     "Dish pool under class."
+    ],
+    [
+     10,
+     "addon_classes",
+     "Addon_Component_Class_Master",
+     "Add-on class master."
+    ],
+    [
+     11,
+     "addon_dish_options",
+     "Addon_Dish_Options",
+     "Add-on dishes/components."
+    ],
+    [
+     12,
+     "cohorts",
+     "Cohort_Matrix_v3",
+     "State/tier/persona cohort rows."
+    ],
+    [
+     13,
+     "weekly_class_plans",
+     "Weekly_Class_Plan_v3",
+     "7-day class matrix."
+    ],
+    [
+     14,
+     "household_addon_component_plans",
+     "Household_Addon_Component_Plan",
+     "Add-on component matrix."
+    ],
+    [
+     15,
+     "nonveg_logic",
+     "NonVeg_Logic_v3",
+     "Non-veg cadence."
+    ],
+    [
+     16,
+     "sources",
+     "Sources_v3",
+     "Source references."
+    ],
+    [
+     17,
+     "qa_checks",
+     "QA_Checks_v3",
+     "QA metadata."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Canonical_Tables",
+   "state": "visible",
+   "max_row": 17,
+   "max_col": 4,
+   "headers": [
+    "table_name",
+    "primary_key",
+    "important_columns",
+    "purpose"
+   ],
+   "rows": [
+    [
+     "table_name",
+     "primary_key",
+     "important_columns",
+     "purpose"
+    ],
+    [
+     "states",
+     "state_id",
+     "state_ut, region_archetype, staple_base, nonveg_intensity",
+     "Regional base intelligence."
+    ],
+    [
+     "city_migration_overlays",
+     "overlay_id",
+     "origin_state_ut, destination_group_code, weights, overlay_meal_classes",
+     "Home-state/current-city blend."
+    ],
+    [
+     "main_cohorts",
+     "main_cohort_id",
+     "label, routing_notes",
+     "User-facing cohort choices."
+    ],
+    [
+     "personas",
+     "persona_id",
+     "persona_name, age_band, household_stage, cook_dependency, nonveg_mode",
+     "Backend persona master."
+    ],
+    [
+     "subcohorts",
+     "sub_cohort_id",
+     "main_cohort_id, maps_to_persona_id, ask_next",
+     "Dynamic onboarding routing."
+    ],
+    [
+     "meal_classes",
+     "meal_class_code",
+     "slot_group, category, diet_type, weekday_fit, weekend_fit, complexity",
+     "Class-first taxonomy."
+    ],
+    [
+     "class_dish_options",
+     "dish_option_id",
+     "meal_class_code, dish_name, diet_type, region_relevance, slot_group",
+     "Dish candidate pool."
+    ],
+    [
+     "addon_classes",
+     "addon_class_code",
+     "target_member_segment, addon_class_name, diet_type",
+     "Add-on class master."
+    ],
+    [
+     "addon_dish_options",
+     "addon_dish_option_id",
+     "addon_class_code, dish_or_component_name",
+     "Add-on candidate pool."
+    ],
+    [
+     "cohorts",
+     "cohort_id",
+     "state_id, city_tier_code, main_cohort_id, sub_cohort_id, persona_id",
+     "Cohort rows."
+    ],
+    [
+     "weekly_class_plans",
+     "plan_day_id",
+     "cohort_id, day_of_week, primary/secondary/tertiary classes",
+     "Weekly class-first plan source."
+    ],
+    [
+     "household_addon_component_plans",
+     "addon_plan_id",
+     "cohort_id, persona_id, day, meal_slot, target_member_segment",
+     "Add-on matrix."
+    ],
+    [
+     "user_household_profiles",
+     "household_profile_id",
+     "user_id, home_state, current_city, diet_mode, cook_capability",
+     "Runtime profile."
+    ],
+    [
+     "user_meal_plans",
+     "plan_id",
+     "household_profile_id, start_date, generation_mode, status",
+     "Generated plans."
+    ],
+    [
+     "user_meal_plan_items",
+     "plan_item_id",
+     "plan_id, day, meal_slot, class codes, dish candidates",
+     "Generated plan slots."
+    ],
+    [
+     "user_feedback_events",
+     "event_id",
+     "user_id, meal_class_code, dish_id, event_type, timestamp",
+     "Learning loop."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Column_Spec",
+   "state": "visible",
+   "max_row": 11,
+   "max_col": 5,
+   "headers": [
+    "table_name",
+    "column_name",
+    "type",
+    "required",
+    "notes"
+   ],
+   "rows": [
+    [
+     "table_name",
+     "column_name",
+     "type",
+     "required",
+     "notes"
+    ],
+    [
+     "weekly_class_plans",
+     "breakfast_primary_class",
+     "string/FK meal_classes",
+     "yes",
+     "Primary breakfast class."
+    ],
+    [
+     "weekly_class_plans",
+     "lunch_primary_class",
+     "string/FK meal_classes",
+     "yes",
+     "Primary lunch class."
+    ],
+    [
+     "weekly_class_plans",
+     "dinner_primary_class",
+     "string/FK meal_classes",
+     "yes",
+     "Primary dinner class."
+    ],
+    [
+     "class_dish_options",
+     "meal_class_code",
+     "string/FK meal_classes",
+     "yes",
+     "Join key; never use class_name text."
+    ],
+    [
+     "addon_dish_options",
+     "addon_class_code",
+     "string/FK addon_classes",
+     "yes",
+     "Join key for add-ons."
+    ],
+    [
+     "user_household_profiles",
+     "home_state",
+     "string/FK states",
+     "yes",
+     "Food identity."
+    ],
+    [
+     "user_household_profiles",
+     "current_city",
+     "string",
+     "recommended",
+     "Lifestyle context."
+    ],
+    [
+     "user_household_profiles",
+     "diet_mode",
+     "enum",
+     "yes",
+     "Hard constraints before dish expansion."
+    ],
+    [
+     "user_household_profiles",
+     "member_segments",
+     "json/array",
+     "optional",
+     "Drives add-on components."
+    ],
+    [
+     "user_feedback_events",
+     "event_type",
+     "enum",
+     "yes",
+     "See DOC-21."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Constraints",
+   "state": "visible",
+   "max_row": 9,
+   "max_col": 3,
+   "headers": [
+    "constraint_id",
+    "constraint",
+    "implementation"
+   ],
+   "rows": [
+    [
+     "constraint_id",
+     "constraint",
+     "implementation"
+    ],
+    [
+     "DB_C_001",
+     "meal_class_code unique in meal_classes",
+     "Unique index."
+    ],
+    [
+     "DB_C_002",
+     "dish_option_id unique in class_dish_options",
+     "Primary key."
+    ],
+    [
+     "DB_C_003",
+     "weekly plan class codes must exist in meal_classes",
+     "Foreign key or import validation."
+    ],
+    [
+     "DB_C_004",
+     "addon_class_code must exist in addon_classes",
+     "Foreign key."
+    ],
+    [
+     "DB_C_005",
+     "No add-on-only class in primary weekly slots",
+     "Import validation."
+    ],
+    [
+     "DB_C_006",
+     "diet_mode enum controlled by DOC-02/DOC-18",
+     "Enum table."
+    ],
+    [
+     "DB_C_007",
+     "source_data_version stored on every seed import",
+     "Version tracking."
+    ],
+    [
+     "DB_C_008",
+     "Never list blocks dish candidates before scoring",
+     "Runtime hard filter."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Runtime_Entities",
+   "state": "visible",
+   "max_row": 7,
+   "max_col": 3,
+   "headers": [
+    "runtime_entity",
+    "database_table",
+    "notes"
+   ],
+   "rows": [
+    [
+     "runtime_entity",
+     "database_table",
+     "notes"
+    ],
+    [
+     "HouseholdProfile",
+     "user_household_profiles",
+     "Created from onboarding."
+    ],
+    [
+     "PersonaAssignment",
+     "user_persona_assignments",
+     "Can be table or JSON field; include confidence."
+    ],
+    [
+     "WeeklyPlan",
+     "user_meal_plans",
+     "One generated plan per user/week."
+    ],
+    [
+     "PlanItem",
+     "user_meal_plan_items",
+     "Day + slot + class candidates + dish candidates."
+    ],
+    [
+     "FeedbackEvent",
+     "user_feedback_events",
+     "Used to update preference vectors."
+    ],
+    [
+     "PreferenceVector",
+     "user_preference_vectors",
+     "Class/Food DNA/cook/repeat preferences."
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  },
+  {
+   "name": "Data_Dictionary_v3",
+   "state": "visible",
+   "max_row": 21,
+   "max_col": 3,
+   "headers": [
+    "sheet_name",
+    "row_count_or_scope",
+    "description"
+   ],
+   "rows": [
+    [
+     "sheet_name",
+     "row_count_or_scope",
+     "description"
+    ],
+    [
+     "README",
+     "guide",
+     "How to use v3 workbook"
+    ],
+    [
+     "Main_Cohort_Hierarchy",
+     5,
+     "5 user-facing main cohorts"
+    ],
+    [
+     "Subcohort_Routing",
+     41,
+     "Sub-cohort chips mapping to detailed personas"
+    ],
+    [
+     "Persona_Master_v3",
+     41,
+     "41 detailed personas with hierarchy/overlay fields"
+    ],
+    [
+     "Routing_Rules_v3",
+     8,
+     "Dynamic onboarding questions and mapping"
+    ],
+    [
+     "State_Profile_v3",
+     36,
+     "36 state/UT food signatures"
+    ],
+    [
+     "City_Migration_Overlay_v3",
+     324,
+     "Origin-current city lifestyle blending"
+    ],
+    [
+     "Meal_Class_Master_v3",
+     131,
+     "Meal classes with MAIN vs ADDON roles"
+    ],
+    [
+     "Meal_Class_Overlap_Resolution",
+     13,
+     "Classes moved out of main weekly plan and why"
+    ],
+    [
+     "Class_Dish_Options_v3",
+     1050,
+     "Exhaustive dish list by meal_class_code"
+    ],
+    [
+     "Addon_Component_Class_Master",
+     24,
+     "Member-specific add-on component classes"
+    ],
+    [
+     "Addon_Dish_Options",
+     142,
+     "Dish/component options under each add-on class"
+    ],
+    [
+     "Cohort_Matrix_v3",
+     2952,
+     "State x tier x persona cohort assumptions with unique IDs"
+    ],
+    [
+     "Weekly_Class_Plan_v3",
+     20664,
+     "7-day class plan by cohort; main classes + add-on columns"
+    ],
+    [
+     "Household_Addon_Component_Plan",
+     7992,
+     "Normalized add-on plan rows for dependents/health/cook overlays"
+    ],
+    [
+     "NonVeg_Logic_v3",
+     36,
+     "Nonveg/egg frequency logic by state"
+    ],
+    [
+     "DB_Implementation_v3",
+     10,
+     "Suggested DB tables"
+    ],
+    [
+     "Sources_v3",
+     7,
+     "Source URLs and usage notes"
+    ],
+    [
+     "QA_Checks_v3",
+     7,
+     "Data quality checks"
+    ],
+    [
+     "Data_Dictionary_v3",
+     0,
+     "This sheet"
+    ]
+   ],
+   "formulas": [],
+   "comments": [],
+   "data_validations": [],
+   "merged_cells": [],
+   "hidden_rows": [],
+   "hidden_cols": [],
+   "hyperlinks": []
+  }
+ ],
+ "limitations": []
+}

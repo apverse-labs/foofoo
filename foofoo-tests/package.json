@@ -20,7 +20,15 @@
     "test:all": "npm run test && npm run test:personas",
     "report": "ts-node --project tsconfig.json reports/generate-html.ts",
     "typecheck": "tsc --noEmit",
-    "test:watch": "jest --watch --testPathPattern='unit'"
+    "test:watch": "jest --watch --testPathPattern='unit'",
+    "test:unit:re": "jest --testPathPattern='unit/re-'",
+    "test:integration:re": "jest --testPathPattern='integration/re-'",
+    "test:personas:re": "jest --testPathPattern='integration/re-persona-journey'",
+    "test:security:re": "jest --testPathPattern='integration/re-(rls-security|dpdp-compliance)'",
+    "test:re": "jest --testPathPattern='unit/re-|integration/re-'",
+    "test:edge:re": "jest --testPathPattern='integration/re-edge-functions'",
+    "run:personas:re": "ts-node --project tsconfig.json personas/re-persona-runner.ts",
+    "report:re": "ts-node --project tsconfig.json reports/re-report-generator.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.0"

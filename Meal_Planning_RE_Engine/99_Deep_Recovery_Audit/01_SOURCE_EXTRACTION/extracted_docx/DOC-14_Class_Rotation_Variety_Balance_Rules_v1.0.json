@@ -1,0 +1,175 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/06_Planning_Engine/DOC-14_Class_Rotation_Variety_Balance_Rules_v1.0.docx",
+ "paragraphs": [
+  "Class Rotation, Variety, and Balance Rules Specification",
+  "DOC-14 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines rotation, variety, heaviness, repeat tolerance, weekday/weekend, meal-slot, and coherence rules for realistic weekly meal-class plans.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Why Variety Rules Exist",
+  "Indian meal weeks have stable patterns but not random dish chaos. Users repeat classes such as dal-sabzi-roti, rice-dal, poha/upma, simple sabzi, fish curry rice, or khichdi, but they expect sensible spacing and weekend shifts. The engine should balance familiarity and freshness.",
+  "5. Default Rotation Rules",
+  "6. Meal-Slot Specific Logic",
+  "Breakfast can repeat more than lunch/dinner for many Indian households.",
+  "Lunch is often the most stable home-style meal: dal, sabzi, roti, rice, fish curry, curd rice, etc.",
+  "Dinner is often lighter or simpler on weekdays and more special on weekends.",
+  "Snacks vary strongly by kids, office, fitness, and city lifestyle.",
+  "Weekend plans can introduce richer regional specials, fried breakfast, non-veg, sweets, or elaborate meals.",
+  "7. Heaviness and Coherence",
+  "Coherence sensitivity should be learned over time. Before learning, use gentle defaults: working urban families often prefer balanced weekday heaviness; elderly and health-conscious households lean lighter; young high-calorie households may tolerate heavy meals more often. The planner should not force everyone into diet-style balance.",
+  "8. Validation Algorithm",
+  "Count primary class occurrences by slot and week.",
+  "Count heavy classes per day.",
+  "Check consecutive heavy meals.",
+  "Check weekend special allocation.",
+  "Check state/city overlay representation.",
+  "Check add-on presence for required member segments.",
+  "If violation occurs, replace using secondary/tertiary class or safe fallback.",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-04.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "Weekly plan feels realistic, not random.",
+  "Class repetition is allowed when behaviorally normal but controlled.",
+  "Weekend meals differ from weekdays in appropriate cohorts.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-14"
+   ],
+   [
+    "Canonical file name",
+    "DOC-14_Class_Rotation_Variety_Balance_Rules_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-04"
+   ],
+   [
+    "Purpose",
+    "Defines rotation, variety, heaviness, repeat tolerance, weekday/weekend, meal-slot, and coherence rules for realistic weekly meal-class plans."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "Meal_Class_Master_v3, Weekly_Class_Plan_v3"
+   ],
+   [
+    "Dependencies",
+    "DOC-05, DOC-12, DOC-13"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-04",
+    "Weekly Class-First Plan Engine",
+    "Generate 7-day meal-class plan from cohort matrix, regional rules, city overlay, weekday/weekend rhythm, variety rules."
+   ]
+  ],
+  [
+   [
+    "Rule",
+    "Default",
+    "Override"
+   ],
+   [
+    "Same primary breakfast class",
+    "Max 3 times/week unless high-repeat breakfast persona.",
+    "User accepts repeated breakfast often."
+   ],
+   [
+    "Same primary lunch class",
+    "Max 3 times/week; dal/sabzi staples can repeat with dish variation.",
+    "Regional staple households."
+   ],
+   [
+    "Same primary dinner class",
+    "Max 2 times/week unless light dinner persona.",
+    "Elderly/light dinner households."
+   ],
+   [
+    "Heavy class consecutive meals",
+    "Avoid heavy breakfast + heavy lunch + heavy dinner for normal coherence users.",
+    "Low coherence/high calorie persona."
+   ],
+   [
+    "Weekend indulgence",
+    "Allow 1-3 richer/fried/non-veg/festive classes where cohort permits.",
+    "Strict health/fasting/Jain constraints."
+   ],
+   [
+    "Non-veg spacing",
+    "State/persona dependent; see DOC-15.",
+    "User explicit preference."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-14 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

@@ -1,6 +1,6 @@
 import { View, Text, Pressable, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useClientInsets } from '../../src/hooks/useClientInsets';
 import { COLORS, SPACING, BORDER_RADIUS, APP_NAME } from '../../src/config/constants';
 
 /**
@@ -16,7 +16,7 @@ import { COLORS, SPACING, BORDER_RADIUS, APP_NAME } from '../../src/config/const
  */
 export default function AuthGate() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useClientInsets();
 
   return (
     <View

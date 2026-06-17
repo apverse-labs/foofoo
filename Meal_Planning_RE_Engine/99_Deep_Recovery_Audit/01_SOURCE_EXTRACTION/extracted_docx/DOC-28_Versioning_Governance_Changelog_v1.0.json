@@ -1,0 +1,218 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/08_Operations/DOC-28_Versioning_Governance_Changelog_v1.0.docx",
+ "paragraphs": [
+  "Versioning, Governance, and Change Log Specification",
+  "DOC-28 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines versioning, release governance, taxonomy changes, source-data upgrades, rollback, approvals, changelog format, and compatibility expectations.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Versioning Model",
+  "5. Semantic Release Rules",
+  "6. Governance Rules",
+  "Every production data release must have changelog, QA run, approver, timestamp, and rollback path.",
+  "No deletion of IDs in active user history; deprecate instead.",
+  "Additions must include source, purpose, owner, and test cases.",
+  "Hard constraints require stricter review than soft scoring changes.",
+  "DOC-00 document map must be updated when new canonical documents are added.",
+  "7. Change Log Template",
+  "8. Backward Compatibility",
+  "Existing plan history should remain interpretable even if classes are deprecated. New recommendations should not use deprecated classes unless a migration map exists. User feedback tied to old classes should map to successor classes through a controlled migration table.",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-10.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "All future changes are traceable.",
+  "Breaking changes are intentionally versioned.",
+  "Rollback is possible for data and taxonomy releases.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-28"
+   ],
+   [
+    "Canonical file name",
+    "DOC-28_Versioning_Governance_Changelog_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-10"
+   ],
+   [
+    "Purpose",
+    "Defines versioning, release governance, taxonomy changes, source-data upgrades, rollback, approvals, changelog format, and compatibility expectations."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "Data_Dictionary_v3, QA_Checks_v3, Sources_v3"
+   ],
+   [
+    "Dependencies",
+    "DOC-22, DOC-25, DOC-27"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-10",
+    "Analytics, Experimentation, QA, Governance",
+    "Track funnel, plan quality, acceptance, add-on relevance, class accuracy, taxonomy changes, and A/B tests."
+   ]
+  ],
+  [
+   [
+    "Version type",
+    "Example",
+    "Meaning"
+   ],
+   [
+    "Source data version",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx",
+    "Seed data workbook version."
+   ],
+   [
+    "Documentation version",
+    "DOC-13 v1.0",
+    "Spec/document version."
+   ],
+   [
+    "Taxonomy version",
+    "meal_taxonomy_1.0.0",
+    "Production taxonomy release."
+   ],
+   [
+    "API version",
+    "/v1/plans/week/generate",
+    "Backward-compatible API contract."
+   ],
+   [
+    "Model/engine version",
+    "RE-v1, RE-v2",
+    "Recommendation engine capability version."
+   ]
+  ],
+  [
+   [
+    "Change type",
+    "Version bump",
+    "Examples"
+   ],
+   [
+    "Patch",
+    "1.0.1",
+    "Fix typo, correct dish tag, add source note."
+   ],
+   [
+    "Minor",
+    "1.1.0",
+    "Add new meal class, new dish options, new city overlay."
+   ],
+   [
+    "Major",
+    "2.0.0",
+    "Change class hierarchy, alter API contract, rewrite cohort assignment."
+   ]
+  ],
+  [
+   [
+    "Field",
+    "Description"
+   ],
+   [
+    "release_id",
+    "Unique release identifier."
+   ],
+   [
+    "version_from / version_to",
+    "Old and new versions."
+   ],
+   [
+    "changed_entities",
+    "Classes, dishes, personas, overlays, APIs, rules."
+   ],
+   [
+    "risk_level",
+    "low, medium, high."
+   ],
+   [
+    "qa_status",
+    "pass/fail with link to report."
+   ],
+   [
+    "approved_by",
+    "Owner approval."
+   ],
+   [
+    "rollback_plan",
+    "How to revert."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-28 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

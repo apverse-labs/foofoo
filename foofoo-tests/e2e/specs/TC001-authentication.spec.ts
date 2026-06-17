@@ -174,14 +174,13 @@ test.describe('TC001 | Authentication', () => {
       // Should NOT navigate away from auth screen
       expect(url, 'User should remain on sign-in screen when fields are empty').not.toMatch(/tabs/);
 
-      // HTML5 validation, native validation message, or inline error — one must be visible
-      const emailInput = page.getByPlaceholder('Email');
-      // evaluate() runs inside the browser — cast to `any` since dom lib is not in tsconfig
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const emailValid = await emailInput.evaluate(
-        (el: any) => (el as { validity: { valid: boolean } }).validity.valid,
-      );
-      expect(emailValid, 'Email input should be invalid when empty').toBe(false);
+      // App shows an inline error message rather than relying on native HTML validation
+      const errorVisible = await page
+        .locator('text=/please enter|required|invalid|incorrect|wrong|error/i')
+        .first()
+        .isVisible()
+        .catch(() => false);
+      expect(errorVisible, 'Validation error should be shown when fields are empty').toBe(true);
     });
   });
 
@@ -196,7 +195,9 @@ test.describe('TC001 | Authentication', () => {
     });
 
     await test.step('THEN: Title text is visible', async () => {
-      await expect(authPage['page'].getByText(C.signUpTitle)).toBeVisible({
+      await expect(
+        authPage['page'].getByText(C.signUpTitle, { exact: true }),
+      ).toBeVisible({
         timeout: E2E_CONFIG.timeouts.pageLoad,
       });
     });

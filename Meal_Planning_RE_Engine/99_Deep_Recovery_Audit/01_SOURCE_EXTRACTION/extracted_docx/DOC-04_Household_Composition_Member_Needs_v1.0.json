@@ -1,0 +1,228 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/02_Cohorts_Personas/DOC-04_Household_Composition_Member_Needs_v1.0.docx",
+ "paragraphs": [
+  "Household Composition + Member-Specific Needs Specification",
+  "DOC-04 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines how household members influence planning: adults, infants, toddlers, school children, teens, elderly members, pregnant/postpartum women, diabetic members, recovery members, and fitness-focused members.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Household Model",
+  "A household can have one or many members. The planning engine should create a common primary meal for the majority of the household and attach member-specific add-ons for special needs. This avoids the error of making infant food, elderly soft food, or diabetic dishes the main family class.",
+  "5. Member Segments",
+  "6. Add-on Trigger Rules",
+  "If any infant member exists, generate infant add-on slots for breakfast/lunch/dinner as appropriate.",
+  "If toddler exists, generate mild soft add-on when main meal is spicy, fried, or hard texture.",
+  "If diabetic elder exists, generate diabetic-friendly side/add-on and demote sugar-heavy/fried classes.",
+  "If pregnant/postpartum member exists, add relevant recovery/nutrition component without changing all household meals.",
+  "If elderly-only household, elderly soft/digestive classes may become primary because the majority household need is elderly-oriented.",
+  "7. Data Structures",
+  "8. Implementation Rules",
+  "Build household profile before planning meals.",
+  "Identify majority meal group.",
+  "Generate primary class plan for majority household.",
+  "Run add-on trigger logic per member segment.",
+  "Attach add-ons to the relevant meal slot as separate columns/objects.",
+  "Apply hard constraints to add-ons independently and jointly with household diet.",
+  "9. Worked Examples",
+  "Family meal plus add-ons",
+  "Dinner primary class is dal-sabzi-roti for the family. Infant receives dal-rice mash. Diabetic elder receives low-oil lauki chana dal or cucumber curd side. The dinner is still a family dinner, not an infant or diabetic-only plan.",
+  "10. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-02, BUILD-05.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "11. Acceptance Criteria",
+  "Member-specific needs produce add-ons without hijacking the family meal.",
+  "Whole-household special cases are handled separately.",
+  "Add-on generation is deterministic and testable.",
+  "12. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-04"
+   ],
+   [
+    "Canonical file name",
+    "DOC-04_Household_Composition_Member_Needs_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-02, BUILD-05"
+   ],
+   [
+    "Purpose",
+    "Defines how household members influence planning: adults, infants, toddlers, school children, teens, elderly members, pregnant/postpartum women, diabetic members, recovery members, and fitness-focused members."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "Persona_Master_v3, Addon_Component_Class_Master, Household_Addon_Component_Plan, Addon_Dish_Options"
+   ],
+   [
+    "Dependencies",
+    "DOC-03, DOC-06, DOC-17"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-02",
+    "Onboarding and Household Profile Builder",
+    "Build dynamic onboarding, household/member capture, diet and city inputs, and profile object."
+   ],
+   [
+    "BUILD-05",
+    "Member-Specific Add-on Component Engine",
+    "Attach infant/toddler/child/elderly/pregnancy/postpartum/diabetic/fitness add-ons without replacing family primary meal."
+   ]
+  ],
+  [
+   [
+    "Segment",
+    "Planning impact",
+    "Primary or add-on?"
+   ],
+   [
+    "Adult general",
+    "Influences main family meal classes, quantity, diet, and cook complexity.",
+    "Primary meal participant"
+   ],
+   [
+    "Infant",
+    "Requires soft mash, dal-rice mash, age-safe food components.",
+    "Add-on except infant-only household"
+   ],
+   [
+    "Toddler",
+    "May need soft, mild, smaller portion version.",
+    "Add-on or mild side"
+   ],
+   [
+    "School child",
+    "May need tiffin, familiar food, protein snack.",
+    "Primary influence plus add-on snack"
+   ],
+   [
+    "Teen",
+    "Higher calorie/protein and preference-driven snacks.",
+    "Primary influence"
+   ],
+   [
+    "Elderly",
+    "May need soft, lower oil, digestive-friendly side.",
+    "Add-on unless elderly-only household"
+   ],
+   [
+    "Pregnancy/postpartum",
+    "May need specific extra items, mild, nutritious, recovery foods.",
+    "Add-on / overlay"
+   ],
+   [
+    "Diabetic member",
+    "Low-GI side, portion guard, avoid sugar-heavy classes.",
+    "Add-on plus constraints"
+   ],
+   [
+    "Fitness-focused",
+    "Protein add-on, balanced snack, calorie-aware ranking.",
+    "Overlay/add-on"
+   ]
+  ],
+  [
+   [
+    "Field",
+    "Type",
+    "Meaning"
+   ],
+   [
+    "household_members[]",
+    "array",
+    "Each member has age_band, role, diet restrictions, health/lifecycle flags, preference signals."
+   ],
+   [
+    "target_member_segment",
+    "enum",
+    "Segment receiving an add-on, e.g., INFANT, TODDLER, DIABETIC_ELDER."
+   ],
+   [
+    "addon_class_code",
+    "string",
+    "Add-on class selected from Addon_Component_Class_Master."
+   ],
+   [
+    "addon_slot",
+    "enum",
+    "breakfast/lunch/snack/dinner or all-day component."
+   ],
+   [
+    "safety_constraints",
+    "array",
+    "Allergy, age safety, diabetic sugar guard, Jain/veg rules."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-04 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

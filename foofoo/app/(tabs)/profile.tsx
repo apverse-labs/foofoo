@@ -22,7 +22,7 @@ import {
   Switch, TextInput, Alert, Platform,
 } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useClientInsets } from '../../src/hooks/useClientInsets';
 import { COLORS, SPACING, BORDER_RADIUS, APP_VERSION, APP_NAME, TIMING } from '../../src/config/constants';
 import { supabase } from '../../src/services/supabase';
 import { Logger } from '../../src/utils/systemLogger';
@@ -36,7 +36,7 @@ import {
 
 export default function ProfileTab() {
   const router = useRouter();
-  const insets = useSafeAreaInsets();
+  const insets = useClientInsets();
   const [summary, setSummary] = useState<ProfileSummary | null>(null);
   const [loading, setLoading] = useState(true);
   const [toast, setToast] = useState<string | null>(null);

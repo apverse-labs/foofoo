@@ -97,6 +97,15 @@ export const ONBOARDING = {
   STEPS: 7,
 } as const;
 
+export const RE_FEATURE_FLAGS = {
+  /**
+   * When true, new signups (onboarding not yet started) are routed to the RE
+   * onboarding flow instead of the legacy 7-step flow.
+   * Set EXPO_PUBLIC_RE_ONBOARDING_ENABLED=true in .env to enable.
+   */
+  ONBOARDING_ENABLED: process.env.EXPO_PUBLIC_RE_ONBOARDING_ENABLED !== 'false',
+} as const;
+
 export const LEGAL = {
   PRIVACY_POLICY_URL: 'https://foofoo-privacy.vercel.app/privacy',
   TERMS_OF_SERVICE_URL: 'https://foofoo-privacy.vercel.app/terms',

@@ -12,15 +12,18 @@ on:
         required: false
         default: 'chromium'
       suite:
-        description: 'Test suite filter (TC001/TC002/TC003/TC004 or blank for all)'
+        description: 'Test suite filter (TC001/TC002/TC003/TC004/TC005/TC006 or blank for all)'
         required: false
         default: ''
   push:
-    branches: [main]
+    branches: [main, apverse-labs-RE]
     paths:
       - 'foofoo-tests/e2e/**'
       - 'foofoo/app/**'
       - 'foofoo/src/**'
+      - 'foofoo/src/re-engine/**'
+      - 'foofoo/src/repositories/re-*.ts'
+      - 'foofoo/src/services/re-*.ts'
 
 jobs:
   e2e-browser-tests:
@@ -41,6 +44,11 @@ jobs:
       # ── External app URL (optional) ───────────────────────────────────────────
       # When set, Playwright skips the local webServer and tests the deployed app.
       VERCEL_URL: ${{ secrets.VERCEL_URL }}
+      # ── Deployment Protection bypass ──────────────────────────────────────────
+      # Lets this CI job through Vercel's preview/branch login wall without
+      # disabling protection project-wide. Generate in Vercel Project Settings →
+      # Deployment Protection → Protection Bypass for Automation.
+      VERCEL_BYPASS_SECRET: ${{ secrets.VERCEL_BYPASS_SECRET }}
 
     defaults:
       run:
@@ -85,13 +93,26 @@ jobs:
         run: npx playwright install --with-deps
 
       # ── 6. Resolve BASE_URL ───────────────────────────────────────────────────
-      # Priority: dispatch input → VERCEL_URL secret → localhost (webServer)
+      # Priority: dispatch input → branch-specific Vercel alias (so pushes to
+      # apverse-labs-RE always test that branch's own foofoo-staging
+      # deployment, never whatever VERCEL_URL happens to point at) →
+      # VERCEL_URL secret → localhost (webServer).
+      # NOTE: the alias below targets the `foofoo-staging` Vercel project
+      # (Apverse-Labs-RE's deployment target), not the `foofoo` project — the
+      # two are separate Vercel projects sharing this repo. The branch alias
+      # check MUST come before the VERCEL_URL secret check: VERCEL_URL is a
+      # generic/non-branch-aware secret, and previously took priority,
+      # silently testing the wrong (`foofoo`) project's deployment on every
+      # apverse-labs-RE run regardless of this fallback.
       - name: Set BASE_URL
         id: set-url
         run: |
           if [ -n "${{ inputs.base_url }}" ]; then
             echo "BASE_URL=${{ inputs.base_url }}" >> "$GITHUB_ENV"
             echo "Resolved BASE_URL from dispatch input: ${{ inputs.base_url }}"
+          elif [ "${{ github.ref_name }}" = "apverse-labs-RE" ]; then
+            echo "BASE_URL=foofoo-staging-git-apverse-labs-re-apv-erse-s-projects.vercel.app" >> "$GITHUB_ENV"
+            echo "Resolved BASE_URL from apverse-labs-RE branch alias on foofoo-staging"
           elif [ -n "${{ secrets.VERCEL_URL }}" ]; then
             echo "BASE_URL=${{ secrets.VERCEL_URL }}" >> "$GITHUB_ENV"
             echo "Resolved BASE_URL from VERCEL_URL secret"

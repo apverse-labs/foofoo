@@ -1,0 +1,212 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/04_Regional_Intelligence/DOC-18_Diet_Religion_Allergy_Fasting_Constraints_v1.0.docx",
+ "paragraphs": [
+  "Diet, Religion, Allergy, and Fasting Constraint Specification",
+  "DOC-18 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines hard and soft constraints for vegetarian, non-vegetarian, eggetarian, Jain, vegan, allergies, fasting days, onion/garlic restrictions, and lifecycle-specific safety filters.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Constraint Hierarchy",
+  "5. Diet Modes",
+  "6. Fasting Logic",
+  "Fasting should be modeled as a mode/day/member-level override. A household may have one fasting member while others eat normal meals. Do not force the whole family into fasting meals unless the whole household selected it.",
+  "7. Implementation Order",
+  "Resolve household-wide hard constraints.",
+  "Resolve member-specific hard constraints.",
+  "Filter classes if the class itself is incompatible.",
+  "Filter dish candidates by ingredient and diet tags.",
+  "Filter add-on candidates by target member constraints.",
+  "Apply soft preference demotions after hard filters.",
+  "Log excluded items for explainability and QA.",
+  "8. Example",
+  "A Jain family with a toddler should receive Jain-compatible primary meal classes and Jain-compatible toddler add-ons. A non-Jain family with one fasting member should receive normal household meals plus fasting add-on/substitution for that member.",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-02, BUILD-04, BUILD-06.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "No hard constraint violation is possible in dish candidates or add-ons.",
+  "Fasting can be member-specific or household-wide.",
+  "Jain, vegan, allergy, and non-veg logic are explicit and testable.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-18"
+   ],
+   [
+    "Canonical file name",
+    "DOC-18_Diet_Religion_Allergy_Fasting_Constraints_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-02, BUILD-04, BUILD-06"
+   ],
+   [
+    "Purpose",
+    "Defines hard and soft constraints for vegetarian, non-vegetarian, eggetarian, Jain, vegan, allergies, fasting days, onion/garlic restrictions, and lifecycle-specific safety filters."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "Meal_Class_Master_v3, Class_Dish_Options_v3, Addon_Dish_Options"
+   ],
+   [
+    "Dependencies",
+    "DOC-10, DOC-15, DOC-19"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-02",
+    "Onboarding and Household Profile Builder",
+    "Build dynamic onboarding, household/member capture, diet and city inputs, and profile object."
+   ],
+   [
+    "BUILD-04",
+    "Weekly Class-First Plan Engine",
+    "Generate 7-day meal-class plan from cohort matrix, regional rules, city overlay, weekday/weekend rhythm, variety rules."
+   ],
+   [
+    "BUILD-06",
+    "Dish Expansion and Food DNA Ranking",
+    "Expand selected meal classes into dish candidate pools and rank dishes using Food DNA + constraints + context."
+   ]
+  ],
+  [
+   [
+    "Level",
+    "Constraint",
+    "Action"
+   ],
+   [
+    "Hard",
+    "Allergy",
+    "Exclude dish and add-on if ingredient or sub-ingredient contains allergen."
+   ],
+   [
+    "Hard",
+    "Diet mode",
+    "Exclude incompatible dishes/classes: veg, vegan, Jain, egg-only, non-veg."
+   ],
+   [
+    "Hard",
+    "Jain",
+    "Exclude onion, garlic, root vegetables, and non-Jain dishes."
+   ],
+   [
+    "Hard/Mode",
+    "Fasting",
+    "Use fasting-compatible classes for active day/member."
+   ],
+   [
+    "Hard/Soft",
+    "Pregnancy/infant safety",
+    "Exclude unsafe foods for target member; household may still see normal primary meal."
+   ],
+   [
+    "Soft",
+    "Preference restrictions",
+    "Demote rather than exclude unless user marks Never."
+   ]
+  ],
+  [
+   [
+    "Diet mode",
+    "Allowed",
+    "Blocked by default"
+   ],
+   [
+    "vegetarian",
+    "Plant foods and dairy where allowed.",
+    "Meat, fish, seafood, egg unless separately allowed."
+   ],
+   [
+    "eggetarian",
+    "Vegetarian + egg.",
+    "Meat, fish, seafood."
+   ],
+   [
+    "non_veg",
+    "Veg + allowed animal proteins.",
+    "Only explicit allergies/religious restrictions."
+   ],
+   [
+    "vegan",
+    "Plant foods.",
+    "Dairy, ghee, butter, paneer, honey if configured."
+   ],
+   [
+    "jain",
+    "Jain-compatible vegetarian foods.",
+    "Meat, fish, egg, onion, garlic, root vegetables."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-18 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}

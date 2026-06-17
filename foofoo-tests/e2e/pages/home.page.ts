@@ -15,10 +15,20 @@ export class HomePage extends BasePage {
   // ── View toggles ───────────────────────────────────────────────────────────
 
   async assertLoaded(): Promise<void> {
-    // App name in header should be visible
-    await expect(this.page.getByText(E2E_CONFIG.copy.appName)).toBeVisible({
+    // App name in header should be visible. LoadingScreen and the loaded
+    // home view each render their own "Foofoo" header and are mutually
+    // exclusive in React state, but during the loading->loaded transition
+    // (and web hydration) both nodes can be momentarily present in the DOM,
+    // so match the first rather than requiring exactly one.
+    await expect(this.page.getByText(E2E_CONFIG.copy.appName).first()).toBeVisible({
       timeout: E2E_CONFIG.timeouts.pageLoad,
     });
+    // Wait for the loading skeleton to clear so subsequent assertions run
+    // against the fully-loaded home view, not the transitional state.
+    await this.page.getByText(/breakfast|lunch|dinner/i).first().waitFor({
+      state: 'visible',
+      timeout: E2E_CONFIG.timeouts.pageLoad,
+    }).catch(() => {});
     // Either Day or Week tab should be visible
     const dayOrWeek = this.page.getByText(C.dayTab).or(this.page.getByText(C.weekTab));
     await expect(dayOrWeek.first()).toBeVisible();

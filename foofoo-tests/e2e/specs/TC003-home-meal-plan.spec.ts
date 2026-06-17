@@ -34,8 +34,11 @@ authTest.describe('TC003 | Home Screen & Meal Plan', () => {
     });
 
     await authTest.step('THEN: App name "Foofoo" is visible in the header', async () => {
+      // .first() because the loading skeleton and the loaded home view each
+      // render their own "Foofoo" header; both can be transiently present
+      // in the DOM during the loading->loaded transition.
       await expect(
-        vegUserPage.getByText(E2E_CONFIG.copy.appName),
+        vegUserPage.getByText(E2E_CONFIG.copy.appName).first(),
       ).toBeVisible({ timeout: E2E_CONFIG.timeouts.pageLoad });
     });
   });

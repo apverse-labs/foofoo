@@ -1,0 +1,222 @@
+{
+ "file": "/home/user/foofoo/Meal_Planning_RE_Engine/Meal_Planning_RE_Technical_Docs_v1/06_Planning_Engine/DOC-13_Weekly_Meal_Plan_Generation_Algorithm_v1.0.docx",
+ "paragraphs": [
+  "Weekly Meal Plan Generation Algorithm Specification",
+  "DOC-13 | Version 1.0 | Meal Planning RE Technical Docs v1",
+  "1. Purpose and Scope",
+  "Defines the deterministic algorithm that generates a 7-day class-first meal plan from household profile, cohort/persona assignment, state/city overlay, diet constraints, cook capability, and weekday/weekend rules.",
+  "This document is part of the canonical 28-document technical system. It should be read in the order defined in DOC-00. It is written for an AI coding agent that must implement the agreed recommendation engine exactly, without inventing a competing architecture.",
+  "2. Applicable Build Series",
+  "3. Core Implementation Invariants",
+  "Always build a household profile before generating any plan.",
+  "Always map user-facing cohort answers into backend personas and overlays; do not expose all backend personas in onboarding.",
+  "Always generate a 7-day class-first plan before selecting dishes.",
+  "Always keep primary family meal classes separate from member-specific add-on components.",
+  "Never allow kid, elderly, pregnancy, postpartum, diabetic, or recovery add-on classes to replace the main family meal unless the household itself has only that member segment.",
+  "Always apply hard constraints before scoring: diet type, allergies, Jain/fasting rules, and Never list.",
+  "Always use home state and current city as separate signals; do not collapse them into one location field.",
+  "Always use class-to-dish mapping keyed by meal_class_code; never mix dishes from unrelated meal classes.",
+  "Use v3 workbook IDs as canonical seed IDs unless a later approved source-data version supersedes them.",
+  "4. Algorithm Overview",
+  "Build or load household profile.",
+  "Apply hard constraints.",
+  "Assign persona and overlays.",
+  "Find cohort rows in Cohort_Matrix_v3.",
+  "Load weekly class plan rows from Weekly_Class_Plan_v3.",
+  "Apply state profile and current city migration overlay.",
+  "Apply cook capability and time pressure adjustments.",
+  "Apply weekday/weekend cadence.",
+  "Validate class rotation and variety.",
+  "Generate add-on component plan for member segments.",
+  "Expand classes to dish candidates.",
+  "Return class-first plan plus ranked dishes and explanation tags.",
+  "5. Decision Hierarchy",
+  "6. Pseudocode",
+  "def generate_weekly_class_plan(profile):    constraints = resolve_constraints(profile)    persona = assign_persona(profile)    cohort = find_best_cohort(profile, persona)    base_plan = load_weekly_plan(cohort.cohort_id)    plan = apply_state_profile(base_plan, profile.home_state)    plan = apply_city_overlay(plan, profile.current_city, profile.home_state)    plan = apply_cook_capability(plan, profile.cook_capability)    plan = apply_weekday_weekend_rules(plan)    plan = validate_variety(plan, profile.repeat_tolerance)    addons = generate_member_addons(plan, profile.household_members)    candidates = expand_classes_to_dishes(plan, constraints)    ranked = score_candidates(candidates, profile, plan, addons)    return assemble_week_plan(plan, addons, ranked)",
+  "7. Failure Handling",
+  "8. Output Shape",
+  "week_plan_day = {  \"date\": \"2026-06-15\",  \"day_of_week\": \"Monday\",  \"breakfast\": {\"primary_class_code\": \"BF_LIGHT_GRAIN\", \"dish_candidates\": [...]},  \"lunch\": {\"primary_class_code\": \"LUNCH_DAL_SABZI_ROTI\", \"dish_candidates\": [...]},  \"snack\": {\"primary_class_code\": \"SNACK_LIGHT_HOME\", \"dish_candidates\": [...]},  \"dinner\": {\"primary_class_code\": \"DIN_SIMPLE_SABZI_DAL\", \"dish_candidates\": [...]},  \"addons\": [...]}",
+  "9. AI Coding Agent Instructions",
+  "Read DOC-00 first to understand build sequence and document dependencies.",
+  "Use this document when implementing: BUILD-04, BUILD-05, BUILD-06.",
+  "Treat all IDs in source workbook v3 as canonical seed data identifiers.",
+  "When logic and data conflict, follow the rule hierarchy: hard constraints > add-on separation > weekly class matrix > state/city overlay > dish scoring > randomization.",
+  "Do not create new meal class codes, persona codes, or enum values in application code. Additions must go through DOC-27 Admin CMS and DOC-28 governance.",
+  "Write unit tests based on the acceptance criteria in this document and DOC-25.",
+  "10. Acceptance Criteria",
+  "Algorithm is deterministic with fixed seed.",
+  "Plan can be generated even with minimal profile.",
+  "All output classes exist in DOC-05/DOC-12.",
+  "All add-ons are separate from primary meals.",
+  "11. Change Log"
+ ],
+ "tables": [
+  [
+   [
+    "Field",
+    "Value"
+   ],
+   [
+    "Document ID",
+    "DOC-13"
+   ],
+   [
+    "Canonical file name",
+    "DOC-13_Weekly_Meal_Plan_Generation_Algorithm_v1.0.docx"
+   ],
+   [
+    "Applicable build IDs",
+    "BUILD-04, BUILD-05, BUILD-06"
+   ],
+   [
+    "Purpose",
+    "Defines the deterministic algorithm that generates a 7-day class-first meal plan from household profile, cohort/persona assignment, state/city overlay, diet constraints, cook capability, and weekday/weekend rules."
+   ],
+   [
+    "Primary source data",
+    "Indian_Meal_Cohort_Persona_DB_v3.xlsx"
+   ],
+   [
+    "Source workbook sheets used",
+    "Cohort_Matrix_v3, Weekly_Class_Plan_v3, Weekly_Plan_Join_Rules, Household_Addon_Component_Plan"
+   ],
+   [
+    "Dependencies",
+    "DOC-03, DOC-06, DOC-09, DOC-12, DOC-14, DOC-18"
+   ],
+   [
+    "Audience",
+    "Claude / AI coding agent, product owner, backend developer, data operations, QA"
+   ],
+   [
+    "Non-negotiable rule",
+    "Generate meal classes first; expand to dishes second; attach member add-ons separately."
+   ]
+  ],
+  [
+   [
+    "Build ID",
+    "Build name",
+    "Implementation meaning"
+   ],
+   [
+    "BUILD-04",
+    "Weekly Class-First Plan Engine",
+    "Generate 7-day meal-class plan from cohort matrix, regional rules, city overlay, weekday/weekend rhythm, variety rules."
+   ],
+   [
+    "BUILD-05",
+    "Member-Specific Add-on Component Engine",
+    "Attach infant/toddler/child/elderly/pregnancy/postpartum/diabetic/fitness add-ons without replacing family primary meal."
+   ],
+   [
+    "BUILD-06",
+    "Dish Expansion and Food DNA Ranking",
+    "Expand selected meal classes into dish candidate pools and rank dishes using Food DNA + constraints + context."
+   ]
+  ],
+  [
+   [
+    "Priority",
+    "Rule group",
+    "Reason"
+   ],
+   [
+    "1",
+    "Hard constraints",
+    "Safety and cultural correctness."
+   ],
+   [
+    "2",
+    "Primary/add-on separation",
+    "Prevents special member needs from hijacking family meal."
+   ],
+   [
+    "3",
+    "Cohort weekly matrix",
+    "Base behavior for persona/state/tier."
+   ],
+   [
+    "4",
+    "State/city overlay",
+    "Adapts home-style and current-city lifestyle."
+   ],
+   [
+    "5",
+    "Cook/time capability",
+    "Ensures executable meals."
+   ],
+   [
+    "6",
+    "Variety and balance",
+    "Prevents repetitive or unrealistic week."
+   ],
+   [
+    "7",
+    "Dish scoring",
+    "Selects best instance under class."
+   ],
+   [
+    "8",
+    "Randomization",
+    "Adds freshness without breaking logic."
+   ]
+  ],
+  [
+   [
+    "Failure",
+    "Fallback"
+   ],
+   [
+    "No exact cohort row",
+    "Use nearest persona within same state; if none, use state + main cohort default."
+   ],
+   [
+    "Class blocked by diet",
+    "Use secondary class, then tertiary, then safe default class."
+   ],
+   [
+    "No dish candidates under class",
+    "Return class only and flag data gap for admin CMS."
+   ],
+   [
+    "Too many repeats",
+    "Swap lower-priority repeated class with allowed secondary/tertiary class."
+   ],
+   [
+    "Missing current city",
+    "Use home state tier2 baseline or state capital proxy."
+   ]
+  ],
+  [
+   [
+    "Version",
+    "Date",
+    "Change",
+    "Author"
+   ],
+   [
+    "1.0",
+    "2026-06-13",
+    "Initial canonical technical document generated from agreed v3 workbook and documentation architecture.",
+    "ChatGPT"
+   ]
+  ]
+ ],
+ "comments": [],
+ "footnotes": [],
+ "headers_footers": [
+  {
+   "part": "word/footer1.xml",
+   "text": "DOC-13 | Meal Planning RE Technical Docs v1.0 | Confidential | Page"
+  }
+ ],
+ "core_props": {
+  "creator": "python-docx",
+  "description": "generated by python-docx",
+  "revision": "1",
+  "created": "2013-12-23T23:15:00Z",
+  "modified": "2013-12-23T23:15:00Z"
+ },
+ "limitations": []
+}
