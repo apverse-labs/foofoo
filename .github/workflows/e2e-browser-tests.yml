@@ -93,24 +93,29 @@ jobs:
         run: npx playwright install --with-deps
 
       # ── 6. Resolve BASE_URL ───────────────────────────────────────────────────
-      # Priority: dispatch input → VERCEL_URL secret → branch-specific Vercel
-      # alias (so pushes to apverse-labs-RE test that branch's own deployment,
-      # not whatever VERCEL_URL happens to point at) → localhost (webServer)
+      # Priority: dispatch input → branch-specific Vercel alias (so pushes to
+      # apverse-labs-RE always test that branch's own foofoo-staging
+      # deployment, never whatever VERCEL_URL happens to point at) →
+      # VERCEL_URL secret → localhost (webServer).
       # NOTE: the alias below targets the `foofoo-staging` Vercel project
       # (Apverse-Labs-RE's deployment target), not the `foofoo` project — the
-      # two are separate Vercel projects sharing this repo.
+      # two are separate Vercel projects sharing this repo. The branch alias
+      # check MUST come before the VERCEL_URL secret check: VERCEL_URL is a
+      # generic/non-branch-aware secret, and previously took priority,
+      # silently testing the wrong (`foofoo`) project's deployment on every
+      # apverse-labs-RE run regardless of this fallback.
       - name: Set BASE_URL
         id: set-url
         run: |
           if [ -n "${{ inputs.base_url }}" ]; then
             echo "BASE_URL=${{ inputs.base_url }}" >> "$GITHUB_ENV"
             echo "Resolved BASE_URL from dispatch input: ${{ inputs.base_url }}"
-          elif [ -n "${{ secrets.VERCEL_URL }}" ]; then
-            echo "BASE_URL=${{ secrets.VERCEL_URL }}" >> "$GITHUB_ENV"
-            echo "Resolved BASE_URL from VERCEL_URL secret"
           elif [ "${{ github.ref_name }}" = "apverse-labs-RE" ]; then
             echo "BASE_URL=foofoo-staging-git-apverse-labs-re-apv-erse-s-projects.vercel.app" >> "$GITHUB_ENV"
             echo "Resolved BASE_URL from apverse-labs-RE branch alias on foofoo-staging"
+          elif [ -n "${{ secrets.VERCEL_URL }}" ]; then
+            echo "BASE_URL=${{ secrets.VERCEL_URL }}" >> "$GITHUB_ENV"
+            echo "Resolved BASE_URL from VERCEL_URL secret"
           else
             echo "BASE_URL=http://localhost:8081" >> "$GITHUB_ENV"
             echo "BASE_URL not set — playwright.config.ts will start a local Expo web server"
