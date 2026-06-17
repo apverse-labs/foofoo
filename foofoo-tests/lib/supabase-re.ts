@@ -21,27 +21,22 @@
  * Requires: SUPABASE_STAGING_URL + SUPABASE_STAGING_ANON_KEY (GitHub Secrets).
  *           SUPABASE_STAGING_SERVICE_ROLE_KEY for RLS / DPDP / seed-count tests.
  *           EXPO_PUBLIC_SUPABASE_RE_* accepted as local-dev fallback.
+ *
+ * Env resolution lives in config/targets.ts (RE_STAGING) — this module just
+ * re-exports it under the names re-*.test.ts already imports, and runs it
+ * through the same production-target safety gate as lib/supabase.ts.
  */
 
 import { createClient, SupabaseClient } from '@supabase/supabase-js';
+import { RE_STAGING, assertSafeForTesting } from '../config/targets';
 
-export const RE_URL =
-  process.env.SUPABASE_STAGING_URL ||
-  process.env.SUPABASE_RE_URL ||
-  process.env.EXPO_PUBLIC_SUPABASE_RE_URL ||
-  '';
+export const RE_URL = RE_STAGING.url;
+export const RE_ANON_KEY = RE_STAGING.anonKey;
+export const RE_SERVICE_KEY = RE_STAGING.serviceKey;
 
-export const RE_ANON_KEY =
-  process.env.SUPABASE_STAGING_ANON_KEY ||
-  process.env.SUPABASE_RE_ANON_KEY ||
-  process.env.EXPO_PUBLIC_SUPABASE_RE_ANON_KEY ||
-  '';
-
-export const RE_SERVICE_KEY =
-  process.env.SUPABASE_STAGING_SERVICE_ROLE_KEY ||
-  process.env.SUPABASE_RE_SERVICE_KEY ||
-  process.env.SUPABASE_RE_SERVICE_ROLE_KEY ||
-  '';
+if (RE_URL) {
+  assertSafeForTesting({ projectRef: RE_STAGING.projectRef, url: RE_URL });
+}
 
 /** True when an RE staging URL + anon key are available (gate for integration tests). */
 export function hasREConfig(): boolean {
