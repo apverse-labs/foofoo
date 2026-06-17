@@ -17,6 +17,8 @@ export interface REGenerateWeeklyPlanInput {
 
 export interface RETodayViewInput {
   userId: string;
+  /** Target calendar date (YYYY-MM-DD); defaults to real-world today (IST) when omitted. */
+  date?: string;
 }
 
 export interface RETodayView {

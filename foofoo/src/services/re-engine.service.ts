@@ -24,10 +24,10 @@ async function getEngine(userId: string): Promise<MealPlanningREEngine> {
  * Return everything the home screen needs for today: day plan, dish candidates, add-ons.
  * Single round-trip from the component's perspective.
  */
-export async function getTodayView(userId: string): Promise<RETodayView> {
+export async function getTodayView(userId: string, date?: string): Promise<RETodayView> {
   try {
     const engine = await getEngine(userId);
-    return engine.getTodayView({ userId });
+    return engine.getTodayView({ userId, date });
   } catch (err: unknown) {
     Logger.error('RE_ENGINE_SERVICE', 'getTodayView failed', {
       error: err instanceof Error ? err.message : String(err), userId,

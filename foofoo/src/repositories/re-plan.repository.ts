@@ -56,6 +56,19 @@ export function getWeekStartMondayIST(now: Date = new Date()): string {
 }
 
 /**
+ * @summary Resolve the full weekday name (e.g. "Monday") for an IST calendar date.
+ *
+ * @description Used to make the Day View's content match the date the user has
+ *   navigated to, instead of always reading the real-world "today".
+ *
+ * @param {string} dateISO - YYYY-MM-DD calendar date.
+ * @returns {string} Full weekday name.
+ */
+export function dayNameFromDateIST(dateISO: string): string {
+  return new Date(`${dateISO}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long' });
+}
+
+/**
  * @summary Pick the primary class code for a slot, falling back to secondary.
  */
 function pickClass(primary: string | null, secondary: string | null): string | null {

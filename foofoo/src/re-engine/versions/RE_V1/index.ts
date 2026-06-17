@@ -1,7 +1,7 @@
 // DOC-23 / BUILD-08: RE_V1 engine — cold-start, class-first, rule-based planning.
 // Delegates to existing repositories; satisfies the MealPlanningREEngine interface.
 
-import { generateUserWeeklyPlan, fetchUserWeeklyPlan } from '../../../repositories/re-plan.repository';
+import { generateUserWeeklyPlan, fetchUserWeeklyPlan, dayNameFromDateIST } from '../../../repositories/re-plan.repository';
 import { fetchTodayAddons } from '../../../repositories/re-addon.repository';
 import { fetchTodayDishCandidates } from '../../../repositories/re-dish-expander.repository';
 import { recordFeedback as repoRecordFeedback } from '../../../repositories/re-feedback.repository';
@@ -32,14 +32,14 @@ export class REV1Engine implements MealPlanningREEngine {
     return fetchUserWeeklyPlan(userId);
   }
 
-  async getTodayView({ userId }: RETodayViewInput): Promise<RETodayView> {
+  async getTodayView({ userId, date }: RETodayViewInput): Promise<RETodayView> {
     const [plan, addonData, dishData] = await Promise.all([
       fetchUserWeeklyPlan(userId),
-      fetchTodayAddons(userId),
-      fetchTodayDishCandidates(userId),
+      fetchTodayAddons(userId, date),
+      fetchTodayDishCandidates(userId, date),
     ]);
 
-    const name = todayName();
+    const name = date ? dayNameFromDateIST(date) : todayName();
     const dayPlan = plan?.days.find((d) => d.dayOfWeek === name) ?? plan?.days[0] ?? null;
 
     return {

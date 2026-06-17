@@ -135,7 +135,7 @@ export default function HomeScreen() {
                 <ActivityIndicator color={COLORS.primary} />
               </View>
             ) : isREUser && userId ? (
-              <REHomeView userId={userId} />
+              <REHomeView userId={userId} planDate={planDate} />
             ) : error ? (
               <ErrorState message={error} onRetry={() => loadPlan(false)} />
             ) : plan ? (

@@ -1,6 +1,6 @@
 import { supabaseRE } from '../services/supabase-re';
 import { Logger } from '../utils/systemLogger';
-import { getWeekStartMondayIST } from './re-plan.repository';
+import { getWeekStartMondayIST, dayNameFromDateIST } from './re-plan.repository';
 import type {
   REAddonComponent,
   REDayAddonPlan,
@@ -243,17 +243,20 @@ export async function fetchUserAddonPlan(
  *   7-day addon plan when only today is needed.
  *
  * @param {string} userId - Supabase auth UID.
+ * @param {string} [dateISO] - Target calendar date (YYYY-MM-DD); defaults to real-world today (IST).
  * @returns {Promise<RESlotAddons>} Always resolves (returns empty slot addons on error).
  *
  * @calledBy REPlanToday component.
  */
-export async function fetchTodayAddons(userId: string): Promise<RESlotAddons> {
+export async function fetchTodayAddons(userId: string, dateISO?: string): Promise<RESlotAddons> {
   try {
     const ws = getWeekStartMondayIST();
-    const today = new Date().toLocaleDateString('en-GB', {
-      weekday: 'long',
-      timeZone: 'Asia/Kolkata',
-    });
+    const today = dateISO
+      ? dayNameFromDateIST(dateISO)
+      : new Date().toLocaleDateString('en-GB', {
+        weekday: 'long',
+        timeZone: 'Asia/Kolkata',
+      });
 
     const { data, error } = await supabaseRE
       .from('re_user_addon_plans')

@@ -38,13 +38,13 @@ interface SwapState {
 /**
  * @summary Full RE day view: 4 meal slot cards + member add-ons + feedback + swap sheet.
  *
- * @param {{ userId: string }} props
+ * @param {{ userId: string, planDate?: string }} props
  *
  * @calledBy app/(tabs)/index.tsx — for RE users in Day View.
  */
-export default function REHomeView({ userId }: { userId: string }) {
+export default function REHomeView({ userId, planDate }: { userId: string; planDate?: string }) {
   const c = getREPalette('light');
-  const { data, isLoading, error, refetch } = useTodayView(userId);
+  const { data, isLoading, error, refetch } = useTodayView(userId, planDate);
   const { mutate: submitFeedback } = useSubmitFeedback(userId);
   const [swap, setSwap] = useState<SwapState>({ visible: false, slot: null, classRef: null, candidates: [] });
 

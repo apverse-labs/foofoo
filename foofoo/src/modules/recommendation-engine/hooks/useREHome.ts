@@ -8,13 +8,13 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getTodayView, generateWeeklyPlan, submitFeedback } from '../../../services/re-engine.service';
 import type { REFeedbackSignal } from '../../../types';
 
-export const RE_HOME_KEY = (userId: string) => ['re', 'today', userId] as const;
+export const RE_HOME_KEY = (userId: string, date?: string) => ['re', 'today', userId, date ?? 'today'] as const;
 
-/** Today's class-first plan + dish candidates + add-ons via getTodayView. */
-export function useTodayView(userId: string) {
+/** Today's (or a selected date's) class-first plan + dish candidates + add-ons via getTodayView. */
+export function useTodayView(userId: string, date?: string) {
   return useQuery({
-    queryKey: RE_HOME_KEY(userId),
-    queryFn: () => getTodayView(userId),
+    queryKey: RE_HOME_KEY(userId, date),
+    queryFn: () => getTodayView(userId, date),
     enabled: !!userId,
     staleTime: 5 * 60 * 1000,
   });
@@ -25,7 +25,7 @@ export function useGenerateWeeklyPlan(userId: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (forceRegenerate?: boolean) => generateWeeklyPlan(userId, forceRegenerate ?? false),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: RE_HOME_KEY(userId) }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['re', 'today', userId] }); },
   });
 }
 
@@ -41,6 +41,6 @@ export function useSubmitFeedback(userId: string) {
   return useMutation({
     mutationFn: ({ dishOptionId, mealClassCode, signal }: FeedbackInput) =>
       submitFeedback(userId, dishOptionId, mealClassCode, signal),
-    onSuccess: () => { qc.invalidateQueries({ queryKey: RE_HOME_KEY(userId) }); },
+    onSuccess: () => { qc.invalidateQueries({ queryKey: ['re', 'today', userId] }); },
   });
 }

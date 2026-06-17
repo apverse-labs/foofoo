@@ -1,6 +1,6 @@
 import { supabaseRE } from '../services/supabase-re';
 import { Logger } from '../utils/systemLogger';
-import { getWeekStartMondayIST, deriveMealClassDisplayName } from './re-plan.repository';
+import { getWeekStartMondayIST, deriveMealClassDisplayName, dayNameFromDateIST } from './re-plan.repository';
 import {
   STATE_REGION_ARCHETYPE,
   REGION_ARCHETYPE_KEYWORDS,
@@ -423,15 +423,18 @@ export async function expandClassToDishes(
  *   Returns an empty-slot result if no plan exists for the user yet.
  *
  * @param {string} userId - Supabase auth UID.
+ * @param {string} [dateISO] - Target calendar date (YYYY-MM-DD); defaults to real-world today (IST).
  * @returns {Promise<REDayDishCandidates>}
  *
  * @calledBy REPlanToday component.
  */
-export async function fetchTodayDishCandidates(userId: string): Promise<REDayDishCandidates> {
-  const today = new Date().toLocaleDateString('en-GB', {
-    weekday: 'long',
-    timeZone: 'Asia/Kolkata',
-  });
+export async function fetchTodayDishCandidates(userId: string, dateISO?: string): Promise<REDayDishCandidates> {
+  const today = dateISO
+    ? dayNameFromDateIST(dateISO)
+    : new Date().toLocaleDateString('en-GB', {
+      weekday: 'long',
+      timeZone: 'Asia/Kolkata',
+    });
   const emptyResult: REDayDishCandidates = {
     dayOfWeek: today,
     breakfast: null,
@@ -491,7 +494,7 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
     ] as const;
 
     // Affinities loaded lazily — empty map if user has no history yet (cold start)
-    const todayISO = new Date().toISOString().slice(0, 10);
+    const todayISO = dateISO ?? new Date().toISOString().slice(0, 10);
     const slotClassCodes = SLOTS.map((s) => s.classCode).filter((c): c is string => !!c);
     const [affinityMap, recentDates, classAffinityMap, userDnaVector, familyAffinities] = await Promise.all([
       fetchDishAffinities(userId, []),
@@ -540,5 +543,69 @@ export async function fetchTodayDishCandidates(userId: string): Promise<REDayDis
     const message = err instanceof Error ? err.message : String(err);
     Logger.error('RE_DISH', 'fetchTodayDishCandidates failed', { error: message, userId });
     return emptyResult;
+  }
+}
+
+/**
+ * @summary Fetch ranked dish candidates for a single, arbitrary meal class (Week View swap).
+ *
+ * @description Unlike fetchTodayDishCandidates (which reads the class codes for "today"
+ *   from the user's plan), this expands a class code the caller already knows — the one
+ *   tapped in the weekly grid — using the same user-context scoring as the Day View.
+ *
+ * @param {string} userId - Supabase auth UID.
+ * @param {string} classCode - Meal class code to expand.
+ * @param {string} classDisplay - Human-readable class name for the result.
+ * @param {boolean} isWeekend - Whether the tapped day is a weekend.
+ * @returns {Promise<RESlotDishCandidates>}
+ *
+ * @calledBy REWeekView — swap sheet "Same style" tier.
+ */
+export async function fetchSwapCandidatesForClass(
+  userId: string,
+  classCode: string,
+  classDisplay: string,
+  isWeekend: boolean,
+): Promise<RESlotDishCandidates> {
+  try {
+    const [profileResult, dietRulesResult, householdResult, classMetaResult] = await Promise.all([
+      supabaseRE.from('profiles').select('food_pref').eq('id', userId).maybeSingle(),
+      supabaseRE.from('user_diet_rules').select('excluded_ingredients').eq('profile_id', userId).maybeSingle(),
+      supabaseRE.from('re_user_household_profiles').select('cohort_id, city_destination_group, cook_dependency').eq('profile_id', userId).maybeSingle(),
+      supabaseRE.from('re_meal_classes').select('meal_class_code, cook_complexity, food_dna_tags, class_family_code').eq('meal_class_code', classCode).maybeSingle(),
+    ]);
+
+    const foodPref = (profileResult.data as { food_pref: string | null } | null)?.food_pref ?? 'veg';
+    const excludedIngredients = (dietRulesResult.data as UserDietRulesRow | null)?.excluded_ingredients ?? [];
+    const household = householdResult.data as (UserHouseholdProfileRow & { cohort_id: string | null }) | null;
+    const cityDestGroup = household?.city_destination_group ?? '';
+    const cookDependency = household?.cook_dependency ?? '';
+    const regionArchetype = STATE_REGION_ARCHETYPE[parseStateIdFromCohort(household?.cohort_id ?? '')] ?? 'NORTH_WHEAT';
+    const meta = classMetaResult.data as MealClassMetaRow | null;
+
+    return await expandClassToDishes(
+      classCode,
+      classDisplay,
+      foodPref,
+      regionArchetype,
+      isWeekend,
+      {},
+      {},
+      new Date().toISOString().slice(0, 10),
+      0,
+      TOP_DISHES_PER_SLOT,
+      excludedIngredients,
+      cityDestGroup,
+      cookDependency,
+      meta?.cook_complexity ?? null,
+      meta?.food_dna_tags ?? null,
+      {},
+      0,
+      0,
+    );
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    Logger.error('RE_DISH', 'fetchSwapCandidatesForClass failed', { error: message, userId, classCode });
+    return { classCode, classDisplay, topDishes: [] };
   }
 }

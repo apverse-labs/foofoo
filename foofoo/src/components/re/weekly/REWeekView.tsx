@@ -11,6 +11,8 @@ import {
 } from 'react-native';
 import { supabaseRE } from '../../../services/supabase-re';
 import { getWeekStartMondayIST, deriveMealClassDisplayName } from '../../../repositories/re-plan.repository';
+import { getTodayIST } from '../../../repositories/plans.repository';
+import { fetchSwapCandidatesForClass } from '../../../repositories/re-dish-expander.repository';
 import { buildSwapTiers } from '../../../utils/re-weekly';
 import { SPACING, BORDER_RADIUS, RE_TYPE, getREPalette } from '../../../config/re-theme';
 import REWeekCell from './REWeekCell';
@@ -24,6 +26,7 @@ type SlotKey = typeof SLOT_KEYS[number];
 
 interface WeekRow {
   day: string;        // e.g. "Monday"
+  date: string;        // YYYY-MM-DD calendar date for this column
   weekdayWeekend: string;
   breakfast: string | null;
   lunch:     string | null;
@@ -41,6 +44,8 @@ interface SwapSheet {
   slot: SlotKey;
   classCode: string;
   classDisplay: string;
+  candidates: REDishCandidate[];
+  loadingCandidates: boolean;
 }
 
 const ORDERED_DAYS = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
@@ -82,10 +87,13 @@ export default function REWeekView({ userId }: { userId: string }) {
           breakfast_display?: string | null; lunch_display?: string | null;
           snack_display?: string | null; dinner_display?: string | null;
         };
-        const mapped: WeekRow[] = ORDERED_DAYS.map((day) => {
+        const mapped: WeekRow[] = ORDERED_DAYS.map((day, i) => {
           const r = (data as unknown as RawRow[]).find((d) => d.day_of_week === day);
+          const dateObj = new Date(`${ws}T00:00:00`);
+          dateObj.setDate(dateObj.getDate() + i);
           return {
             day,
+            date: dateObj.toISOString().slice(0, 10),
             weekdayWeekend: r?.weekday_weekend ?? 'Weekday',
             breakfast: r?.breakfast_class ?? null,
             lunch:     r?.lunch_class ?? null,
@@ -111,12 +119,17 @@ export default function REWeekView({ userId }: { userId: string }) {
 
   if (loading) return <ActivityIndicator style={styles.loader} color={c.primary} />;
 
-  function openSheet(day: string, slot: SlotKey, classCode: string, classDisplay: string) {
-    setSheet({ visible: true, day, slot, classCode, classDisplay });
+  function openSheet(day: string, date: string, slot: SlotKey, classCode: string, classDisplay: string, isWeekend: boolean) {
+    setSheet({ visible: true, day, slot, classCode, classDisplay, candidates: [], loadingCandidates: true });
+    fetchSwapCandidatesForClass(userId, classCode, classDisplay, isWeekend).then((result) => {
+      setSheet((s) => (s && s.day === day && s.slot === slot
+        ? { ...s, candidates: result.topDishes, loadingCandidates: false }
+        : s));
+    });
   }
 
   const sheetTiers = sheet ? buildSwapTiers(sheet.classCode) : [];
-  const emptyCandidates: Record<string, REDishCandidate[]> = { same: [], different: [], broader: [] };
+  const todayISO = getTodayIST();
 
   return (
     <View style={styles.root}>
@@ -125,14 +138,19 @@ export default function REWeekView({ userId }: { userId: string }) {
           {/* Header row */}
           <View style={styles.headerRow}>
             <View style={styles.slotLabel} />
-            {rows.map((r, i) => (
-              <View key={r.day} style={styles.dayHead}>
-                <Text style={[styles.dayShort, { color: c.textSecondary }]}>{DAY_LABELS[i]}</Text>
-                {r.weekdayWeekend === 'Weekend' && (
-                  <Text style={[styles.weekendDot, { color: c.accent }]}>●</Text>
-                )}
-              </View>
-            ))}
+            {rows.map((r, i) => {
+              const isToday = r.date === todayISO;
+              return (
+                <View key={r.day} style={styles.dayHead}>
+                  <Text style={[styles.dayShort, { color: isToday ? c.primary : c.textSecondary }]}>
+                    {DAY_LABELS[i]} {Number(r.date.slice(8, 10))}
+                  </Text>
+                  {r.weekdayWeekend === 'Weekend' && (
+                    <Text style={[styles.weekendDot, { color: c.accent }]}>●</Text>
+                  )}
+                </View>
+              );
+            })}
           </View>
 
           {/* Slot rows */}
@@ -148,15 +166,17 @@ export default function REWeekView({ userId }: { userId: string }) {
                 const displayKey = `${slot}Display` as `${SlotKey}Display`;
                 const display = r[displayKey];
                 const friendlyClass = display ?? (classCode ? deriveMealClassDisplayName(classCode) : '—');
+                const isWeekend = r.weekdayWeekend === 'Weekend';
                 return (
                   <REWeekCell
                     key={r.day + slot}
                     day={r.day}
                     slot={slot}
                     friendlyClass={friendlyClass}
-                    isWeekend={r.weekdayWeekend === 'Weekend'}
+                    isToday={r.date === todayISO}
+                    isWeekend={isWeekend}
                     locked={false}
-                    onPress={() => classCode && openSheet(r.day, slot, classCode, friendlyClass)}
+                    onPress={() => classCode && openSheet(r.day, r.date, slot, classCode, friendlyClass, isWeekend)}
                   />
                 );
               })}
@@ -171,7 +191,7 @@ export default function REWeekView({ userId }: { userId: string }) {
           onClose={() => setSheet(null)}
           slotLabel={`${sheet.day} ${sheet.slot}`}
           tiers={sheetTiers}
-          candidatesByTier={emptyCandidates}
+          candidatesByTier={{ same: sheet.candidates, different: [], broader: [] }}
           onSelectDish={() => setSheet(null)}
         />
       )}
