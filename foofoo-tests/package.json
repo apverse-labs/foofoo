@@ -26,6 +26,7 @@
     "test:personas:re": "jest --testPathPattern='integration/re-persona-journey'",
     "test:security:re": "jest --testPathPattern='integration/re-(rls-security|dpdp-compliance)'",
     "test:re": "jest --testPathPattern='unit/re-|integration/re-'",
+    "test:edge:re": "jest --testPathPattern='integration/re-edge-functions'",
     "run:personas:re": "ts-node --project tsconfig.json personas/re-persona-runner.ts",
     "report:re": "ts-node --project tsconfig.json reports/re-report-generator.ts"
   },

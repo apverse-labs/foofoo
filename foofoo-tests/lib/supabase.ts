@@ -1,14 +1,24 @@
 import { createClient, SupabaseClient } from "@supabase/supabase-js";
+import { RE_STAGING, assertSafeForTesting } from "../config/targets";
 
-const supabaseUrl = process.env.SUPABASE_URL ?? "";
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY ?? "";
+// This client historically pointed at a dedicated MVP project, but that
+// project (ufgfznpqixplcbhmsqqw) is now DEP-PRODUCTION (see SYSTEM_STATE.md) —
+// running these tests against it would create/delete real user data.
+// foofoo-staging carries the full CKPT-001 schema (DEP-STAGING ledger entry),
+// so it is the safe default; SUPABASE_URL/ANON_KEY/SERVICE_ROLE_KEY env vars
+// still override for local use but are gated by assertSafeForTesting below.
+const supabaseUrl = process.env.SUPABASE_URL || RE_STAGING.url;
+const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || RE_STAGING.anonKey;
 // Service role key is optional — if absent, admin calls will fail at runtime,
 // not at module load time, so contract-only tests can still import this module.
-const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "placeholder-key-not-set";
+const supabaseServiceKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || RE_STAGING.serviceKey || "placeholder-key-not-set";
 
 if (!supabaseUrl) {
-  throw new Error("Missing env var: SUPABASE_URL");
+  throw new Error("Missing env var: SUPABASE_URL (and no SUPABASE_STAGING_URL fallback configured)");
 }
+
+assertSafeForTesting({ projectRef: "", url: supabaseUrl });
 
 /** Anon-key client — respects Row Level Security */
 export const supabase: SupabaseClient = createClient(supabaseUrl, supabaseAnonKey);

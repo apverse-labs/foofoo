@@ -1,14 +1,24 @@
 /**
  * targets.ts
  *
- * QA target selection. The RE test suite can run against either the RE staging
- * Supabase project (default) or the MVP production project. QA_TARGET selects
- * which; everything else (gates, runner, reports) reads ACTIVE_TARGET from here.
+ * Single source of truth for which Supabase project the test suite talks to.
+ * Per SYSTEM_STATE.md, `ufgfznpqixplcbhmsqqw` (legacy "MVP" ref) is
+ * DEP-PRODUCTION — live user data — and `kwypxyqxojauhiehuirz` (foofoo-staging)
+ * is DEP-STAGING, which carries the full CKPT-001 schema *plus* the RE tables
+ * (BUILD-01..10). Staging is therefore a safe superset for every suite,
+ * legacy and RE alike, and is the only sanctioned default test target.
  *
- * Run: imported by personas/re-persona-runner.ts, integration/re-*.test.ts
+ * lib/supabase.ts and lib/supabase-re.ts both resolve through getTarget() so
+ * there is exactly one place that decides which project a test can reach.
+ *
+ * Run: imported by lib/supabase.ts, lib/supabase-re.ts, personas/re-persona-runner.ts,
+ *      integration/re-*.test.ts
  */
 
 export type QATarget = 're-staging' | 'mvp-prod';
+
+/** DEP-PRODUCTION project ref — never a sanctioned test target. */
+export const PRODUCTION_PROJECT_REF = 'ufgfznpqixplcbhmsqqw';
 
 /** RE staging Supabase env (anon-key only by default; service key optional). */
 export const RE_STAGING = {
@@ -31,12 +41,16 @@ export const RE_STAGING = {
   region: 'ap-south-1',
 } as const;
 
-/** MVP production Supabase env (the original app project). */
+/**
+ * MVP production Supabase env. Documented for completeness only — getTarget()
+ * refuses to hand this back unless ALLOW_PRODUCTION_TARGET=true is set
+ * explicitly, since it is DEP-PRODUCTION.
+ */
 export const MVP_PROD = {
   url: process.env.SUPABASE_URL || '',
   anonKey: process.env.SUPABASE_ANON_KEY || '',
   serviceKey: process.env.SUPABASE_SERVICE_ROLE_KEY || '',
-  projectRef: 'ufgfznpqixplcbhmsqqw',
+  projectRef: PRODUCTION_PROJECT_REF,
   region: 'ap-south-1',
 } as const;
 
@@ -57,10 +71,32 @@ export interface TargetConfig {
   region: string;
 }
 
+function refFromUrl(url: string): string {
+  return url.match(/https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1] ?? '';
+}
+
+/**
+ * Hard safety gate: throws if the resolved config points at DEP-PRODUCTION,
+ * unless explicitly overridden. Called by every code path that hands out a
+ * Supabase client to a test.
+ */
+export function assertSafeForTesting(cfg: { projectRef: string; url: string }): void {
+  const isProd =
+    cfg.projectRef === PRODUCTION_PROJECT_REF || refFromUrl(cfg.url) === PRODUCTION_PROJECT_REF;
+  if (isProd && process.env.ALLOW_PRODUCTION_TARGET !== 'true') {
+    throw new Error(
+      `[targets] Refusing to run tests against the PRODUCTION Supabase project ` +
+        `(${PRODUCTION_PROJECT_REF}). foofoo-staging (${RE_STAGING.projectRef}) carries the ` +
+        `full schema and is the only sanctioned test target. Set ` +
+        `ALLOW_PRODUCTION_TARGET=true if you really intend this (not recommended).`,
+    );
+  }
+}
+
 /** Resolve the full config object for the active (or explicitly requested) target. */
 export function getTarget(target: QATarget = ACTIVE_TARGET): TargetConfig {
   const src = target === 'mvp-prod' ? MVP_PROD : RE_STAGING;
-  return {
+  const cfg: TargetConfig = {
     name: target,
     url: src.url,
     anonKey: src.anonKey,
@@ -68,4 +104,6 @@ export function getTarget(target: QATarget = ACTIVE_TARGET): TargetConfig {
     projectRef: src.projectRef,
     region: src.region,
   };
+  assertSafeForTesting(cfg);
+  return cfg;
 }
