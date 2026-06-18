@@ -63,7 +63,7 @@ Inject above `<!-- SESSIONS_INJECT -->`:
       </div></div>
       <div class="swim-body">
         {{REPEAT_FOR_EACH_PHONE_STEP:
-        <div class="swim-step">
+        <div class="swim-step" {{onclick="jumpDetail('s{{N}}','{{ITEM_ID}}')" — ONLY if this step maps to one specific item in the Detail view below; omit onclick if the step is purely conceptual (e.g. "user taps Allow")}}>
           <div class="step-num num-blue">{{STEP_N}}</div>
           <div class="step-content">
             <div class="step-title-row">
@@ -86,7 +86,7 @@ Inject above `<!-- SESSIONS_INJECT -->`:
         <div class="swim-label-sub">hooks / code</div>
       </div></div>
       <div class="swim-body" style="background:var(--purple-bg);border-color:var(--purple-border)">
-        {{REPEAT_FOR_EACH_LOGIC_STEP: same structure as phone lane, use num-purple}}
+        {{REPEAT_FOR_EACH_LOGIC_STEP: same structure as phone lane, use num-purple, same onclick rule}}
       </div>
     </div>
 
@@ -99,7 +99,7 @@ Inject above `<!-- SESSIONS_INJECT -->`:
         <div class="swim-label-sub">Supabase</div>
       </div></div>
       <div class="swim-body">
-        {{REPEAT_FOR_EACH_DB_STEP: same structure, use num-teal}}
+        {{REPEAT_FOR_EACH_DB_STEP: same structure, use num-teal, same onclick rule}}
       </div>
     </div>
 
@@ -113,7 +113,7 @@ Inject above `<!-- SESSIONS_INJECT -->`:
         <div class="swim-label-sub">edge functions</div>
       </div></div>
       <div class="swim-body">
-        {{REPEAT_FOR_EACH_SERVER_STEP: same structure, use num-amber}}
+        {{REPEAT_FOR_EACH_SERVER_STEP: same structure, use num-amber, same onclick rule}}
       </div>
     </div>
 
@@ -130,7 +130,7 @@ Inject above `<!-- SESSIONS_INJECT -->`:
 
     {{REPEAT_FOR_EACH_TOUCHED_ITEM:
     <div class="detail-item">
-      <div class="detail-row" onclick="toggleDetail('s{{N}}-{{ITEM_ID}}')">
+      <div class="detail-row" id="row-s{{N}}-{{ITEM_ID}}" onclick="toggleDetail('s{{N}}-{{ITEM_ID}}')">
         <div class="detail-left">
           <span class="tag {{TAG_CLASS}}">{{TAG_LABEL}}</span>
           <span class="detail-name {{plain_if_not_code}}">{{FILENAME_OR_ITEM_NAME}}</span>
@@ -138,36 +138,6 @@ Inject above `<!-- SESSIONS_INJECT -->`:
         <span class="detail-chevron" id="chev-s{{N}}-{{ITEM_ID}}">▾</span>
       </div>
       <div class="detail-drawer" id="draw-s{{N}}-{{ITEM_ID}}">
-
-        <!-- ═══ SEQUENCE STRIP — always first inside every drawer ═══
-             Shows every step in the session flow.
-             Steps this item covers = seq-active (highlighted, solid number)
-             Steps before it = seq-done (readable, hollow number)
-             Steps after it = seq-done (readable, hollow number)
-             Future/unbuilt steps = greyed out (opacity .4)
-             The "View in swim lane ↗" link jumps to swim lane AND highlights the step.
-
-             Color the seq-num to match its lane:
-               seq-num-blue   = Phone lane steps
-               seq-num-purple = App logic lane steps
-               seq-num-teal   = Database lane steps
-               seq-num-amber  = Server lane steps
-               seq-num-gray   = Future/unbuilt steps
-        -->
-        <div class="seq-strip">
-          <span class="seq-strip-label">Session flow</span>
-          {{REPEAT_FOR_EACH_SESSION_STEP:
-          <div class="seq-node">
-            <div class="seq-step {{seq-active OR seq-done OR style='opacity:.4'}}"
-                 onclick="gotoSwimStep('s{{N}}','{{ITEM_ID}}',{{STEP_NUM}})">
-              <span class="seq-num {{seq-num-COLOR}}">{{STEP_NUM}}</span>
-              {{3_WORD_MAX_LABEL}}
-            </div>
-            {{ADD: <span class="seq-arr">›</span>  — except after the last step}}
-          </div>
-          }}
-          <a class="seq-jump" onclick="jumpSwim('s{{N}}',{{FIRST_ACTIVE_STEP_NUM}})">View in swim lane ↗</a>
-        </div>
 
         <div class="dd-label">What this does</div>
         <div class="dd-text">{{2_3_SENTENCES_PLAIN_ENGLISH_NO_JARGON}}</div>

@@ -101,6 +101,10 @@ what changed in the app. NOT technical. NOT a list. One sentence.
 - Every step gets a tag (New / Modified / DB / Config)
 - Steps that aren't built yet (future sessions) go in the relevant lane greyed out
 - Write step descriptions in plain English — no file names, no jargon in the description
+- If a step corresponds to exactly one item in the Detail Drill-down, add
+  `onclick="jumpDetail('s{{N}}','{{ITEM_ID}}')"` on that `.swim-step` so clicking it
+  jumps to and expands the matching detail row (F13). Leave purely conceptual steps
+  (e.g. "user taps Allow") without an onclick.
 
 ### Detail drill-down
 For every item in the touched register, write:
@@ -108,6 +112,11 @@ For every item in the touched register, write:
 2. **Flow through it** — the sequence of events as simple nodes joined by arrows
 3. **Key line of code** — one highlighted line with a plain English explanation of what it does
 4. **Why this way** — the decision. Why this approach and not another? This is the validation layer for the PM.
+
+Each `.detail-row` must carry `id="row-s{{N}}-{{ITEM_ID}}"` — `jumpDetail()` scrolls to
+this id when a swim-step links here. Do not add a "sequence strip" inside the drawer —
+that was an earlier design idea that never shipped; the drawer goes straight from the
+detail-row into the four `dd-label` sections above.
 
 ### Architecture map update
 - Add new nodes in the correct layer (Phone / Database / Server / Services)
@@ -122,11 +131,24 @@ For every item in the touched register, write:
 ### Files register
 - Append every touched file with: path, type tag, session number, one-line description
 - Never remove entries — register is append-only
+- Update the `<span class="nav-badge">` count on the "Files register" sidebar nav-item
+  to the new total row count
 
 ### Decisions log
 - Extract every "why" from the session — decisions that aren't obvious
 - Format: Question → Answer (see reference template)
 - 3–8 decisions per session is normal
+
+### Default open page
+- The session you just documented becomes the page that's open when the file loads:
+  remove `style="display:none"` from its `page-s{{N}}` div and add `active` to its
+  sidebar `nav-item`.
+  Add `style="display:none"` to whichever page was previously the default (the
+  prior latest session, or `page-arch-full` if this is session 1), and remove
+  `active` from that page's nav-item.
+- This means the file always opens on the most recent work, not on the architecture
+  overview — the architecture/timeline/files/decisions pages are reference material
+  reached via the sidebar, not the landing page.
 
 ---
 

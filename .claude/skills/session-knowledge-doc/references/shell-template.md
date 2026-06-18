@@ -307,7 +307,7 @@ function switchView(session,view){
   if(vp)vp.classList.add('active');
   if(event&&event.target)event.target.classList.add('active');
 }
-// Jump from swim lane step → detail drawer
+// Jump from swim lane step → detail drawer (F13)
 function jumpDetail(session,id){
   switchView(session,'detail',null);
   setTimeout(()=>{
@@ -316,27 +316,6 @@ function jumpDetail(session,id){
     const rw=document.getElementById('row-'+session+'-'+id);
     if(rw)rw.scrollIntoView({behavior:'smooth',block:'start'});
   },60);
-}
-// Jump from detail sequence strip → swim lane, highlight the step
-function jumpSwim(session,stepNum){
-  switchView(session,'swim',null);
-  setTimeout(()=>{
-    const steps=document.querySelectorAll('#'+session+'-swim .swim-step');
-    steps.forEach(s=>s.classList.remove('hl-step'));
-    steps.forEach(s=>{
-      const sn=s.querySelector('.sn');
-      if(sn&&sn.textContent.trim()==stepNum){
-        s.classList.add('hl-step');
-        s.scrollIntoView({behavior:'smooth',block:'center'});
-        setTimeout(()=>s.classList.remove('hl-step'),2000);
-      }
-    });
-  },60);
-}
-// Sequence strip step click: navigate to page, then highlight swim lane step
-function gotoSwimStep(session,id,stepNum){
-  showPage(session);
-  jumpSwim(session,stepNum);
 }
 function toggleDetail(id){
   const dr=document.getElementById('draw-'+id);

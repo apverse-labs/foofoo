@@ -104,21 +104,9 @@
   .dd-why{padding:8px 12px;border-left:3px solid var(--teal-border);background:var(--teal-bg);border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin-top:5px}
   .dd-why-q{font-size:11px;font-weight:600;color:var(--teal);margin-bottom:3px}
   .dd-why-a{font-size:12px;color:var(--text2);line-height:1.5}
-
-  .seq-strip{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border)}
-  .seq-strip-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-right:8px}
-  .seq-node{display:flex;align-items:center}
-  .seq-step{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);cursor:pointer;padding:2px 4px;border-radius:4px}
-  .seq-step:hover{background:var(--surface)}
-  .seq-num{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0}
-  .seq-num-blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
-  .seq-num-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
-  .seq-num-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
-  .seq-num-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
-  .seq-num-gray{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
-  .seq-arr{font-size:11px;color:var(--text3);margin:0 3px}
-  .seq-jump{font-size:11px;color:var(--blue);cursor:pointer;margin-left:8px;white-space:nowrap}
-  .hl-step{outline:2px solid var(--blue-border);border-radius:6px}
+  .swim-step{cursor:default}
+  .swim-step[onclick]{cursor:pointer}
+  .swim-step[onclick]:hover{background:rgba(0,0,0,.03);border-radius:6px}
 
   .arch-section{margin-bottom:20px}
   .arch-section-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px;padding-bottom:6px;border-bottom:1px solid var(--border)}
@@ -179,7 +167,7 @@
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Overview</div>
-    <div class="nav-item active" onclick="showPage('arch-full')">
+    <div class="nav-item" onclick="showPage('arch-full')">
       <span class="nav-icon">🗺</span> App architecture
     </div>
     <div class="nav-item" onclick="showPage('timeline-full')">
@@ -191,7 +179,7 @@
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Sessions</div>
-    <div class="nav-item" onclick="showPage('s1')">
+    <div class="nav-item active" onclick="showPage('s1')">
       <span class="nav-icon">🧩</span> S1 · Meal Engine + Compliance
       <span class="nav-badge">Jun 18</span>
     </div>
@@ -204,12 +192,15 @@
     <div class="sidebar-section-label">Reference</div>
     <div class="nav-item" onclick="showPage('files')">
       <span class="nav-icon">📁</span> Files register
+      <span class="nav-badge">11</span>
     </div>
     <div class="nav-item" onclick="showPage('db')">
       <span class="nav-icon">🗄</span> Database schema
+      <span class="nav-badge">42+ tables</span>
     </div>
     <div class="nav-item" onclick="showPage('decisions')">
       <span class="nav-icon">💡</span> Key decisions
+      <span class="nav-badge">6</span>
     </div>
   </div>
 </nav>
@@ -217,7 +208,7 @@
 <main id="main">
 
   <!-- ── Architecture page ── -->
-  <div id="page-arch-full" class="page-content">
+  <div id="page-arch-full" class="page-content" style="display:none">
     <div class="page-header">
       <div class="page-title">App architecture</div>
       <div class="page-subtitle">FooFoo — Indian-market meal-decision assistant (Expo/React Native + Supabase). All components across all sessions. Teal = new this session · Amber = modified.</div>
@@ -389,7 +380,7 @@
   </div>
 
   <!-- ── Session pages injected here ── -->
-  <div id="page-s1" class="page-content" style="display:none">
+  <div id="page-s1" class="page-content">
 
     <div class="page-header">
       <div class="page-title">S1 · Meal Engine foundation + compliance cleanup</div>
@@ -424,7 +415,7 @@
           <div class="swim-label-sub">user sees</div>
         </div></div>
         <div class="swim-body">
-          <div class="swim-step">
+          <div class="swim-step" onclick="jumpDetail('s1','quiz')">
             <div class="step-num num-blue">1</div>
             <div class="step-content">
               <div class="step-title-row"><span class="step-title">9-step "build your household profile" quiz</span><span class="tag tag-new">New</span></div>
@@ -449,7 +440,7 @@
           <div class="swim-label-sub">hooks / code</div>
         </div></div>
         <div class="swim-body" style="background:var(--purple-bg);border-color:var(--purple-border)">
-          <div class="swim-step">
+          <div class="swim-step" onclick="jumpDetail('s1','copy')">
             <div class="step-num num-purple">3</div>
             <div class="step-content">
               <div class="step-title-row"><span class="step-title">Onboarding screen text now comes from a config file</span><span class="tag tag-mod">Modified</span></div>
@@ -481,14 +472,14 @@
           <div class="swim-label-sub">Supabase</div>
         </div></div>
         <div class="swim-body">
-          <div class="swim-step">
+          <div class="swim-step" onclick="jumpDetail('s1','tables')">
             <div class="step-num num-teal">6</div>
             <div class="step-content">
               <div class="step-title-row"><span class="step-title">New persona/segment/state planner tables</span><span class="tag tag-db">DB</span></div>
               <div class="step-desc">Replaced the old Excel-shaped lookup tables with ones keyed directly to a household's persona, region, and segment.</div>
             </div>
           </div>
-          <div class="swim-step">
+          <div class="swim-step" onclick="jumpDetail('s1','tables')">
             <div class="step-num num-teal">7</div>
             <div class="step-content">
               <div class="step-title-row"><span class="step-title">Old tables archived, not deleted</span><span class="tag tag-db">DB</span></div>
@@ -513,21 +504,21 @@
           <div class="swim-label-sub">edge functions</div>
         </div></div>
         <div class="swim-body">
-          <div class="swim-step">
+          <div class="swim-step" onclick="jumpDetail('s1','security')">
             <div class="step-num num-amber">9</div>
             <div class="step-content">
               <div class="step-title-row"><span class="step-title">Locked down 8 batch-job functions</span><span class="tag tag-mod">Modified</span></div>
               <div class="step-desc">Anyone with the URL could previously trigger these; now they require a secret server key.</div>
             </div>
           </div>
-          <div class="swim-step">
+          <div class="swim-step" onclick="jumpDetail('s1','security')">
             <div class="step-num num-amber">10</div>
             <div class="step-content">
               <div class="step-title-row"><span class="step-title">Consistent error responses everywhere</span><span class="tag tag-mod">Modified</span></div>
               <div class="step-desc">All 14 server functions now fail in the same predictable way, which is what makes automated testing possible.</div>
             </div>
           </div>
-          <div class="swim-step">
+          <div class="swim-step" onclick="jumpDetail('s1','security')">
             <div class="step-num num-amber">11</div>
             <div class="step-content">
               <div class="step-title-row"><span class="step-title">30 automated checks added</span><span class="tag tag-new">New</span></div>
@@ -548,7 +539,7 @@
     <div id="s1-detail" class="view-pane">
 
       <div class="detail-item">
-        <div class="detail-row" onclick="toggleDetail('s1-quiz')">
+        <div class="detail-row" id="row-s1-quiz" onclick="toggleDetail('s1-quiz')">
           <div class="detail-left">
             <span class="tag tag-new">New</span>
             <span class="detail-name plain">9-step household quiz</span>
@@ -556,13 +547,6 @@
           <span class="detail-chevron" id="chev-s1-quiz">▾</span>
         </div>
         <div class="detail-drawer" id="draw-s1-quiz">
-          <div class="seq-strip">
-            <span class="seq-strip-label">Session flow</span>
-            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','quiz',1)"><span class="seq-num seq-num-blue">1</span>Quiz</div><span class="seq-arr">›</span></div>
-            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','quiz',2)"><span class="seq-num seq-num-blue">2</span>Reveal</div><span class="seq-arr">›</span></div>
-            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','quiz',4)"><span class="seq-num seq-num-purple">4</span>Match</div></div>
-            <a class="seq-jump" onclick="jumpSwim('s1',1)">View in swim lane ↗</a>
-          </div>
           <div class="dd-label">What this does</div>
           <div class="dd-text">A new household answers 9 questions — diet type, family size, region, cooking time available, and so on. Their answers decide which of the 41 "personas" they're matched to, which in turn decides what meal suggestions they get.</div>
           <div class="dd-label">Flow through it</div>
@@ -581,7 +565,7 @@
       </div>
 
       <div class="detail-item">
-        <div class="detail-row" onclick="toggleDetail('s1-copy')">
+        <div class="detail-row" id="row-s1-copy" onclick="toggleDetail('s1-copy')">
           <div class="detail-left">
             <span class="tag tag-mod">Modified</span>
             <span class="detail-name">re-onboarding-content.ts</span>
@@ -589,11 +573,6 @@
           <span class="detail-chevron" id="chev-s1-copy">▾</span>
         </div>
         <div class="detail-drawer" id="draw-s1-copy">
-          <div class="seq-strip">
-            <span class="seq-strip-label">Session flow</span>
-            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','copy',3)"><span class="seq-num seq-num-purple">3</span>Copy config</div></div>
-            <a class="seq-jump" onclick="jumpSwim('s1',3)">View in swim lane ↗</a>
-          </div>
           <div class="dd-label">What this does</div>
           <div class="dd-text">Holds every word of text shown across the 9 onboarding screens. Previously this text lived in the database and was fetched fresh on every screen; now it ships with the app itself.</div>
           <div class="dd-label">Flow through it</div>
@@ -612,7 +591,7 @@
       </div>
 
       <div class="detail-item">
-        <div class="detail-row" onclick="toggleDetail('s1-tables')">
+        <div class="detail-row" id="row-s1-tables" onclick="toggleDetail('s1-tables')">
           <div class="detail-left">
             <span class="tag tag-db">DB</span>
             <span class="detail-name plain">Persona / segment / state planner tables</span>
@@ -620,12 +599,6 @@
           <span class="detail-chevron" id="chev-s1-tables">▾</span>
         </div>
         <div class="detail-drawer" id="draw-s1-tables">
-          <div class="seq-strip">
-            <span class="seq-strip-label">Session flow</span>
-            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','tables',6)"><span class="seq-num seq-num-teal">6</span>New tables</div><span class="seq-arr">›</span></div>
-            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','tables',7)"><span class="seq-num seq-num-teal">7</span>Archive old</div></div>
-            <a class="seq-jump" onclick="jumpSwim('s1',6)">View in swim lane ↗</a>
-          </div>
           <div class="dd-label">What this does</div>
           <div class="dd-text">Three new tables — <code>re_persona_slot_plan</code>, <code>re_segment_addon_rule</code>, <code>re_state_class_affinity</code> — replace the old lookup tables that were shaped exactly like the original Excel spreadsheet the meal-planning rules came from. The new tables are organised by persona, segment, and state instead, which is how the app actually needs to look things up.</div>
           <div class="dd-label">Flow through it</div>
@@ -648,7 +621,7 @@
       </div>
 
       <div class="detail-item">
-        <div class="detail-row" onclick="toggleDetail('s1-security')">
+        <div class="detail-row" id="row-s1-security" onclick="toggleDetail('s1-security')">
           <div class="detail-left">
             <span class="tag tag-mod">Modified</span>
             <span class="detail-name plain">Server function security + error fixes</span>
@@ -656,13 +629,6 @@
           <span class="detail-chevron" id="chev-s1-security">▾</span>
         </div>
         <div class="detail-drawer" id="draw-s1-security">
-          <div class="seq-strip">
-            <span class="seq-strip-label">Session flow</span>
-            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','security',9)"><span class="seq-num seq-num-amber">9</span>Lock down</div><span class="seq-arr">›</span></div>
-            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','security',10)"><span class="seq-num seq-num-amber">10</span>Errors</div><span class="seq-arr">›</span></div>
-            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','security',11)"><span class="seq-num seq-num-amber">11</span>Tests</div></div>
-            <a class="seq-jump" onclick="jumpSwim('s1',9)">View in swim lane ↗</a>
-          </div>
           <div class="dd-label">What this does</div>
           <div class="dd-text">A full audit of all 14 server functions found 26 gaps — the most serious being 8 batch-job functions (the ones that regenerate every user's meal plan, send notifications, etc.) that had no security check at all. Anyone who guessed the URL could trigger them. All 26 gaps were fixed and deployed.</div>
           <div class="dd-label">Flow through it</div>
@@ -682,7 +648,7 @@
       </div>
 
       <div class="detail-item">
-        <div class="detail-row" onclick="toggleDetail('s1-playstore')">
+        <div class="detail-row" id="row-s1-playstore" onclick="toggleDetail('s1-playstore')">
           <div class="detail-left">
             <span class="tag tag-cfg">Config</span>
             <span class="detail-name plain">Play Store readiness</span>
@@ -690,10 +656,6 @@
           <span class="detail-chevron" id="chev-s1-playstore">▾</span>
         </div>
         <div class="detail-drawer" id="draw-s1-playstore">
-          <div class="seq-strip">
-            <span class="seq-strip-label">Session flow</span>
-            <div class="seq-node"><div class="seq-step" style="opacity:.4"><span class="seq-num seq-num-gray">·</span>Config-only, not in swim lane</div></div>
-          </div>
           <div class="dd-label">What this does</div>
           <div class="dd-text">A set of fixes required before FooFoo can be submitted to the Google Play Store: the build format Google now requires, switching push notifications to "live" mode, and pointing the app at a privacy policy URL.</div>
           <div class="dd-label">Flow through it</div>
@@ -753,27 +715,6 @@ function jumpDetail(session,id){
     const rw=document.getElementById('row-'+session+'-'+id);
     if(rw)rw.scrollIntoView({behavior:'smooth',block:'start'});
   },60);
-}
-// Jump from detail sequence strip → swim lane, highlight the step
-function jumpSwim(session,stepNum){
-  switchView(session,'swim',null);
-  setTimeout(()=>{
-    const steps=document.querySelectorAll('#'+session+'-swim .swim-step');
-    steps.forEach(s=>s.classList.remove('hl-step'));
-    steps.forEach(s=>{
-      const sn=s.querySelector('.step-num');
-      if(sn&&sn.textContent.trim()==stepNum){
-        s.classList.add('hl-step');
-        s.scrollIntoView({behavior:'smooth',block:'center'});
-        setTimeout(()=>s.classList.remove('hl-step'),2000);
-      }
-    });
-  },60);
-}
-// Sequence strip step click: navigate to page, then highlight swim lane step
-function gotoSwimStep(session,id,stepNum){
-  showPage(session);
-  jumpSwim(session,stepNum);
 }
 function toggleDetail(id){
   const dr=document.getElementById('draw-'+id);
