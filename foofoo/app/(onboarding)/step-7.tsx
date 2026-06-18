@@ -11,6 +11,7 @@ import {
   completeOnboarding, saveNotificationSettings,
 } from '../../src/repositories/profiles.repository';
 import { recordConsent } from '../../src/repositories/meal-prefs.repository';
+import { generateWeeklyPlan } from '../../src/services/re-engine.service';
 import { COLORS, SPACING, BORDER_RADIUS } from '../../src/config/constants';
 import { UserJourneyLogger } from '../../src/utils/userJourneyLogger';
 import { Logger } from '../../src/utils/systemLogger';
@@ -90,6 +91,14 @@ export default function OnboardingStep7() {
       ]);
       Logger.info('STEP7', 'onboarding_step_complete', { step: 7, user_id: userId });
       Logger.info('STEP7', 'onboarding_complete', { user_id: userId });
+
+      try {
+        await generateWeeklyPlan(userId, true);
+      } catch (planErr: any) {
+        // Non-fatal: Home screen's empty state offers a "Get started" retry CTA.
+        Logger.error('STEP7', 'initial weekly plan generation failed', { message: planErr?.message, user_id: userId });
+      }
+
       await UserJourneyLogger.logOnboardingStep(userId, 7, 'Role & Notifications', {
         'Role': role === 'cook' ? 'I cook (decides what to make)' : 'I get told what to cook (suggests to someone else)',
         'Notifications': notifGranted ? `Enabled — daily reminder at ${time}` : 'Not granted (can enable in Settings)',
