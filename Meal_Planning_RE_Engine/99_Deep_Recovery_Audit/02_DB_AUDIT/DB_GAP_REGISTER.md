@@ -10,3 +10,8 @@
 
 ## Verdict
 **No BLOCKER or HIGH DB gaps.** Seed parity is exact (counts + ID sets + integrity). The three entries are: one LOW follow-up verification (DOC-12 cell-diff), one expected-empty lifecycle note, and one known forward build (Food DNA tagging) already in the PACK backlog.
+
+## Cross-reference (added 2026-06-17)
+- `foofoo-tests/reports/md/re-schema-registry.md` — root-level mirror of `SYSTEM_STATE.md`'s RE schema entries (SCHEMA-RE-001 through SCHEMA-RE-016); use that doc for migration-by-migration apply status, this register for source-vs-DB parity gaps.
+- `foofoo-tests/reports/md/rls-audit.md` § "apverse-labs-re Scope" — root RLS audit explicitly excludes the `re_*` tables covered by this DB audit; SCHEMA-RE-006 (RLS policy fix for 16 RE tables) is tracked in `SYSTEM_STATE.md`, not in either RLS doc tree directly.
+- `foofoo-tests/reports/md/dependency-audit.md` § "apverse-labs-re Scope" — no RE-specific dependency surface exists yet since `00_Implementation` has no shipped source.

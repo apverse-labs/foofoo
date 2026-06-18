@@ -233,6 +233,33 @@ _(See file written to `foofoo-tests/.env.example`)_
 
 ---
 
+## 2026-06-17 Status Re-check
+
+All 5 "hardcoded — must move" findings (HC-01 through HC-05) were verified against current source and are **already remediated** (work landed in an earlier session, per `hygiene-complete.md` PR #20 "Hardcoded secrets removed — 4 files"):
+- **HC-01** (`PROJECT_REF` in `deploy-edge-functions.yml`): now reads `PROJECT_REF: ${{ secrets.SUPABASE_PROJECT_REF }}` — fixed.
+- **HC-02** (Supabase URL in `20260522065137_sprint5_schedule_5am_cron.sql`): the literal URL is still present in the migration body (pg_cron cannot read env vars at schedule time — this is structurally unavoidable per the original fix recommendation), but is now preceded by an explicit warning comment documenting the hardcode and the project ref it targets. Accepted as-is per the doc's own fix guidance.
+- **HC-03** (OneSignal App ID in `app.json`): still present in `app.json:62` (`extra.oneSignalAppId`) — this is correct and intentional per the doc's own fix note ("Keep it in app.json — required by plugin"); not a violation.
+- **HC-04** (Cloudinary cloud name): still inline in `src/utils/cloudinary.ts:21` and `sync-cloudinary-images/index.ts:34`, but the Edge Function copy now reads `Deno.env.get('CLOUDINARY_CLOUD_NAME') ?? 'dzlqsobol'` (env-var-first with public fallback) — this is the documented public-config exception (cloud name appears in every CDN URL; doc explicitly says "No security risk... Document as APP_CONFIG"). Left untouched per this session's guardrail of not touching constants that are genuinely public client-side config.
+- **HC-05** (founder PII fallback email in `daily-analytics-email/index.ts`): hardcoded fallback has been removed; the function now reads only `Deno.env.get('FOUNDER_EMAILS')` with an explanatory comment ("FOUNDER_EMAILS must be set in Supabase Vault — no hardcoded fallback") and skips sending if unset. Fixed.
+
+`foofoo/.env.example` and `foofoo-tests/.env.example` both now exist (Task 4 deliverables, previously "_(See file written to ...)_" placeholders) — confirmed present on disk.
+
+No new hardcoded-secret patterns were found in this session's review; no further action taken here.
+
+---
+
+## apverse-labs-re (Meal_Planning_RE_Engine) Scope
+
+**Coverage:** This audit's "Files Scanned" appendix lists only `foofoo/` and `foofoo-tests/` paths — `Meal_Planning_RE_Engine/` was not in scope and has its own separate Supabase project (`foofoo-staging`, ref `kwypxyqxojauhiehuirz`) with its own secrets surface (e.g. `EXPO_PUBLIC_SUPABASE_URL` pointing at staging when `re_engine_version` routing is active — see root `SYSTEM_STATE.md` DEP-STAGING entry). None of the 19 findings above were checked against RE module files.
+
+**Not yet covered for RE:**
+- No scan has been run over `Meal_Planning_RE_Engine/00_Implementation/` source (currently mostly unbuilt scaffold — see dependency-audit.md note above) or the RE technical docs folder for hardcoded staging project refs, API keys, or service-role usage patterns.
+- The staging-vs-production environment-mismatch guardrail (`foofoo/scripts/verify-env-match.js`, added 2026-06-16 per `SYSTEM_STATE.md`) is a related but distinct control — it guards against branch/env drift, not hardcoded secrets, and isn't tracked by this doc.
+
+**Cross-reference:** No RE-specific secrets/env audit exists yet in `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/`. The closest related artifact is `02_DB_AUDIT/SUPABASE_SCHEMA_SNAPSHOT.md` (schema-level only, not a secrets scan). Recommend a future RE-scoped secrets audit be added under `99_Deep_Recovery_Audit/03_CODE_AUDIT/` if/when `00_Implementation` gains real source.
+
+---
+
 ## Appendix: Files Scanned
 
 | File | Scanned |

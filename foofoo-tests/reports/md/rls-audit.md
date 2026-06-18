@@ -214,3 +214,28 @@ All 3 logical changes were applied to the live dev DB (`ufgfznpqixplcbhmsqqw`) b
 ## Policies Added: 44
 ## Policies Dropped: 25
 ## Tests Passing: 11 / 11
+
+---
+
+## 2026-06-17 PENDING H7 / L1 Status Re-check
+
+Both items remain **OPEN** (⬜ in `foofoo/PENDING.md`) — no migration or dashboard change found in the repo for either:
+
+- **H7 — Enable leaked password protection** (Supabase Dashboard → Auth → Sign In → Password protection). This is a dashboard-only toggle, cannot be set via SQL migration, and no record of it having been enabled was found in any migration file or `SYSTEM_STATE.md` entry. Status: still requires manual action — not resolved this session (manual/dashboard scope, outside this session's guardrails).
+- **L1 — Move `pg_trgm` extension out of `public` schema**. Searched `foofoo/supabase/migrations/` for any `ALTER EXTENSION pg_trgm SET SCHEMA` or `CREATE SCHEMA extensions` statement — none found. No migration has been proposed for this in the repo yet, consistent with PENDING.md's "Schedule for Sprint 8" framing. Per this session's instruction not to write speculative migrations, no new migration was authored — status documented as-is: still deferred, still safe in current form per the original audit's own risk assessment.
+
+No new RLS migration was found or applied this session for these two items.
+
+---
+
+## apverse-labs-re (Meal_Planning_RE_Engine) Scope
+
+**Coverage:** This audit's table-by-table policy matrix (44 tables) covers only the production project `ufgfznpqixplcbhmsqqw` as of 2026-05-25 — it predates the RE module's table set entirely. The `re_*` tables live on the separate **foofoo-staging** project (`kwypxyqxojauhiehuirz`, per `SYSTEM_STATE.md` DEP-STAGING) and were never in scope here.
+
+**What's already known about RE table RLS (from `SYSTEM_STATE.md`, not this doc):** Schema Registry entry `SCHEMA-RE-006` (migration `20260614_007_re_reference_table_rls_select.sql`) fixed a "total read blackout" bug — 16 RE reference/seed tables had RLS enabled with zero policies. All 24 RE tables on staging now have exactly 1 policy each. This is the RE module's own RLS fix, independent of and not cross-linked to this root `rls-audit.md` until now.
+
+**Not yet covered for RE:**
+- No advisor-style audit (duplicate policies, EXECUTE grants, search_path checks — the 5 finding categories in this doc) has been run against the RE module's 24 tables on staging.
+- RE tables have not yet been promoted to the production project, so they're also absent from `DEP-PRODUCTION`'s RLS posture — when RE does promote, a parity check against this doc's 5 finding categories is recommended before go-live.
+
+**Cross-reference:** `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/02_DB_AUDIT/SUPABASE_SCHEMA_SNAPSHOT.md` and `DB_GAP_REGISTER.md` (DB-level snapshot + gap register for the RE module's staging schema — RLS-policy-count detail lives in `SYSTEM_STATE.md` SCHEMA-RE-006 rather than in the 99_Deep_Recovery_Audit tree itself).

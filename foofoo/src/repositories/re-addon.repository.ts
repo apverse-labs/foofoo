@@ -12,16 +12,6 @@ const ENGINE_VERSION = 'classfirst_v1';
 
 // ── Constants ────────────────────────────────────────────────────────────────
 
-const SHORT_TO_FULL_DAY: Record<string, string> = {
-  Mon: 'Monday',
-  Tue: 'Tuesday',
-  Wed: 'Wednesday',
-  Thu: 'Thursday',
-  Fri: 'Friday',
-  Sat: 'Saturday',
-  Sun: 'Sunday',
-};
-
 const EMPTY_SLOT_ADDONS: RESlotAddons = {
   breakfast: [],
   lunch: [],
@@ -31,14 +21,15 @@ const EMPTY_SLOT_ADDONS: RESlotAddons = {
 
 // ── Internal DB types ─────────────────────────────────────────────────────────
 
-interface HouseholdAddonPlanRow {
-  day_of_week: string;
-  meal_slot: string;
-  target_member_segment: string;
+interface SegmentAddonRuleRow {
+  member_segment: string;
+  slot_group: string;
   addon_class_code: string;
-  addon_class_name: string;
-  attached_to_main_class_code: string | null;
 }
+
+const FULL_DAY_NAMES = [
+  'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday',
+] as const;
 
 interface UserAddonPlanRow {
   day_of_week: string;
@@ -50,13 +41,6 @@ interface UserAddonPlanRow {
 }
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-/**
- * @summary Convert a 3-letter day code from re_household_addon_plans to full name.
- */
-export function expandDayCode(shortCode: string): string {
-  return SHORT_TO_FULL_DAY[shortCode] ?? shortCode;
-}
 
 /**
  * @summary Normalise a meal_slot value from seed data to the check-constraint set.
@@ -101,57 +85,64 @@ export async function generateUserAddonPlan(userId: string): Promise<void> {
   try {
     const { data: profile, error: profErr } = await supabaseRE
       .from('re_user_household_profiles')
-      .select('persona_id')
+      .select('persona_id, member_segments')
       .eq('profile_id', userId)
       .maybeSingle();
     if (profErr) throw profErr;
 
     const personaId = (profile as { persona_id: string | null } | null)?.persona_id ?? null;
-    if (!personaId) {
-      Logger.warn('RE_ADDON', 'generateUserAddonPlan: no persona_id, skipping', { userId });
+    const memberSegmentsRaw = (profile as { member_segments: unknown } | null)?.member_segments;
+    const userSegments = Array.isArray(memberSegmentsRaw)
+      ? [...new Set(
+        (memberSegmentsRaw as Array<{ member_segment?: string }>)
+          .map((m) => m?.member_segment)
+          .filter((s): s is string => !!s),
+      )]
+      : [];
+
+    if (userSegments.length === 0) {
+      Logger.info('RE_ADDON', 'generateUserAddonPlan: no member_segments, skipping', { userId, personaId });
       return;
     }
 
-    const { data: addonRows, error: addonErr } = await supabaseRE
-      .from('re_household_addon_plans')
-      .select(
-        'day_of_week, meal_slot, target_member_segment, '
-        + 'addon_class_code, addon_class_name, attached_to_main_class_code',
-      )
-      .eq('persona_id', personaId);
-    if (addonErr) throw addonErr;
+    const { data: ruleRows, error: ruleErr } = await supabaseRE
+      .from('re_segment_addon_rule')
+      .select('member_segment, slot_group, addon_class_code')
+      .in('member_segment', userSegments);
+    if (ruleErr) throw ruleErr;
 
-    const rows = (addonRows ?? []) as unknown as HouseholdAddonPlanRow[];
-    if (rows.length === 0) {
-      Logger.info('RE_ADDON', 'generateUserAddonPlan: no addon rows for persona', { userId, personaId });
+    const rules = (ruleRows ?? []) as unknown as SegmentAddonRuleRow[];
+    if (rules.length === 0) {
+      Logger.info('RE_ADDON', 'generateUserAddonPlan: no addon rules for segments', { userId, userSegments });
       return;
     }
 
     const weekStart = getWeekStartMondayIST();
 
     const seen = new Set<string>();
-    const upsertRows = rows.flatMap((r) => {
-      const fullDay = expandDayCode(r.day_of_week);
-      const slot = normaliseMealSlot(r.meal_slot);
+    const upsertRows = rules.flatMap((rule) => {
+      const slot = normaliseMealSlot(rule.slot_group);
       if (!slot) return [];
-      const key = `${fullDay}|${slot}|${r.target_member_segment}|${r.addon_class_code}`;
-      if (seen.has(key)) return [];
-      seen.add(key);
-      return [{
-        profile_id: userId,
-        plan_week_start: weekStart,
-        day_of_week: fullDay,
-        meal_slot: slot,
-        target_member_segment: r.target_member_segment,
-        addon_class_code: r.addon_class_code,
-        addon_class_name: r.addon_class_name,
-        attached_to_primary_class: r.attached_to_main_class_code ?? null,
-        engine_version: ENGINE_VERSION,
-      }];
+      return FULL_DAY_NAMES.flatMap((fullDay) => {
+        const key = `${fullDay}|${slot}|${rule.member_segment}|${rule.addon_class_code}`;
+        if (seen.has(key)) return [];
+        seen.add(key);
+        return [{
+          profile_id: userId,
+          plan_week_start: weekStart,
+          day_of_week: fullDay,
+          meal_slot: slot,
+          target_member_segment: rule.member_segment,
+          addon_class_code: rule.addon_class_code,
+          addon_class_name: null,
+          attached_to_primary_class: null,
+          engine_version: ENGINE_VERSION,
+        }];
+      });
     });
 
     if (upsertRows.length === 0) {
-      Logger.warn('RE_ADDON', 'generateUserAddonPlan: all rows filtered out', { userId, personaId });
+      Logger.warn('RE_ADDON', 'generateUserAddonPlan: all rows filtered out', { userId, personaId, userSegments });
       return;
     }
 

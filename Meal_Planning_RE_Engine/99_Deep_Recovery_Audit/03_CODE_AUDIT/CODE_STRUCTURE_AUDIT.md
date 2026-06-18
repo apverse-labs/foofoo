@@ -31,3 +31,8 @@
 ## Observations
 - Folder structure differs from the *aspirational* layout in module `CLAUDE.md` (which puts engine under `00_Implementation/versions/…`); the **actual** engine lives under `foofoo/src/re-engine/` (correct for app integration). Documented divergence, not a defect.
 - All builds present and wired; no missing build module.
+
+## Cross-reference (added 2026-06-17)
+- `foofoo-tests/reports/md/hygiene-audit.md` § "2026-06-17 Safe-fix pass" logged 5 unambiguous unused-import/dead-code fixes against root-level files. One of them — removal of a dead `pickClass()` function from `repositories/re-plan.repository.ts` — touched the BUILD-04 file listed in the Repositories table above. That doc's RE-scope section originally mischaracterised this file as "RE-adjacent app integration, not RE-internal"; it has been corrected (2026-06-17) to reflect this audit's mapping that `re-plan.repository.ts` and the other `repositories/re-*.repository.ts` / `foofoo/src/re-engine/**` files ARE the canonical (if divergently-located) RE module implementation.
+- `foofoo-tests/reports/md/sync-audit.md` § RE-scope section — disambiguates this codebase (the standalone `Meal_Planning_RE_Engine` module surface mapped above) from the app-side legacy RE (`dishes`/`cuisines_master` + `generate-daily-plan` scoring), which is a different system entirely.
+- `foofoo-tests/reports/md/re-schema-registry.md` and `re-qa-status.md` — operational/CI counterparts to this static code-structure mapping.

@@ -68,12 +68,6 @@ export function dayNameFromDateIST(dateISO: string): string {
   return new Date(`${dateISO}T12:00:00`).toLocaleDateString('en-US', { weekday: 'long' });
 }
 
-/**
- * @summary Pick the primary class code for a slot, falling back to secondary.
- */
-function pickClass(primary: string | null, secondary: string | null): string | null {
-  return primary ?? secondary ?? null;
-}
 
 // ── City-overlay blending (DOC-09 / DOC-13) ────────────────────────────────────
 
@@ -192,6 +186,83 @@ interface WeeklyClassPlanRow {
   scheduled_nonveg_slot: string | null;
 }
 
+interface PersonaSlotPlanRow {
+  day_of_week: string;
+  day_type: 'Weekday' | 'Weekend';
+  slot_group: 'Breakfast' | 'Lunch' | 'Snack' | 'Dinner';
+  primary_class: string | null;
+  secondary_class: string | null;
+  tertiary_class: string | null;
+}
+
+interface StateClassAffinityRow {
+  slot_group: 'Breakfast' | 'Lunch' | 'Snack' | 'Dinner';
+  day_type: 'Weekday' | 'Weekend' | 'Both';
+  meal_class_code: string;
+  priority_rank: number;
+}
+
+const SLOT_GROUP_TO_FIELD = {
+  Breakfast: 'breakfast',
+  Lunch: 'lunch',
+  Snack: 'snack',
+  Dinner: 'dinner',
+} as const;
+
+/**
+ * @summary Reshape persona slot-plan rows + state class affinity into the
+ *   WeeklyClassPlanRow[] shape the existing overlay/variety/upsert pipeline expects.
+ *
+ * @description Persona plan is authoritative. For each slot×day, if a state's
+ *   top-priority class for that slot is among the persona's own candidate classes
+ *   (primary/secondary/tertiary), it is promoted to primary — a re-rank by state
+ *   preference, never an injection of a class outside the persona's catalog.
+ */
+function buildRowsFromPersonaSlotPlan(
+  slotRows: PersonaSlotPlanRow[],
+  stateClasses: StateClassAffinityRow[],
+): WeeklyClassPlanRow[] {
+  const byDay = new Map<string, WeeklyClassPlanRow>();
+  const affinityBySlot = new Map<string, StateClassAffinityRow[]>();
+  for (const sc of stateClasses) {
+    const list = affinityBySlot.get(sc.slot_group) ?? [];
+    list.push(sc);
+    affinityBySlot.set(sc.slot_group, list);
+  }
+  for (const list of affinityBySlot.values()) list.sort((a, b) => a.priority_rank - b.priority_rank);
+
+  for (const row of slotRows) {
+    if (!byDay.has(row.day_of_week)) {
+      byDay.set(row.day_of_week, {
+        day_of_week: row.day_of_week,
+        weekday_weekend: row.day_type,
+        breakfast_primary_class: null,
+        breakfast_secondary_class: null,
+        lunch_primary_class: null,
+        lunch_secondary_class: null,
+        snack_primary_class: null,
+        snack_secondary_class: null,
+        dinner_primary_class: null,
+        dinner_secondary_class: null,
+        scheduled_nonveg_slot: null,
+      });
+    }
+    const out = byDay.get(row.day_of_week)!;
+    const available = [row.primary_class, row.secondary_class, row.tertiary_class].filter(Boolean) as string[];
+    const affinityForSlot = (affinityBySlot.get(row.slot_group) ?? [])
+      .filter((a) => a.day_type === row.day_type || a.day_type === 'Both');
+    const preferred = affinityForSlot.find((a) => available.includes(a.meal_class_code))?.meal_class_code
+      ?? row.primary_class;
+
+    const field = SLOT_GROUP_TO_FIELD[row.slot_group];
+    (out as unknown as Record<string, string | null>)[`${field}_primary_class`] = preferred;
+    (out as unknown as Record<string, string | null>)[`${field}_secondary_class`] =
+      preferred === row.primary_class ? row.secondary_class : row.primary_class;
+  }
+
+  return [...byDay.values()];
+}
+
 /** Mutable working row used during plan construction before upsert. */
 interface CandidateRow {
   day_of_week: string;
@@ -245,20 +316,22 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
   try {
     const { data: profile, error: profErr } = await supabaseRE
       .from('re_user_household_profiles')
-      .select('profile_id, cohort_id, city_destination_group, weekday_time_pressure')
+      .select('profile_id, cohort_id, persona_id, city_destination_group, weekday_time_pressure')
       .eq('profile_id', userId)
       .maybeSingle();
     if (profErr) throw profErr;
 
     const profileRow = profile as {
       cohort_id: string | null;
+      persona_id: string | null;
       city_destination_group: string | null;
       weekday_time_pressure: string | null;
     } | null;
 
     const cohortId = profileRow?.cohort_id ?? null;
-    if (!cohortId) {
-      Logger.warn('RE_PLAN', 'generateUserWeeklyPlan: no cohort_id, skipping', { userId });
+    const personaId = profileRow?.persona_id ?? null;
+    if (!personaId) {
+      Logger.warn('RE_PLAN', 'generateUserWeeklyPlan: no persona_id, skipping', { userId });
       return;
     }
 
@@ -268,30 +341,36 @@ export async function generateUserWeeklyPlan(userId: string): Promise<void> {
     const cityGroup = profileRow?.city_destination_group ?? null;
     const cityOverlayApplied = !!cityGroup && cityGroup !== 'HOME_STATE_TIER1' && cityGroup !== 'HOME_STATE_TIER2';
 
-    const { data: planRows, error: planErr } = await supabaseRE
-      .from('re_weekly_class_plans')
-      .select(
-        'day_of_week, weekday_weekend, '
-        + 'breakfast_primary_class, breakfast_secondary_class, '
-        + 'lunch_primary_class, lunch_secondary_class, '
-        + 'snack_primary_class, snack_secondary_class, '
-        + 'dinner_primary_class, dinner_secondary_class, '
-        + 'scheduled_nonveg_slot',
-      )
-      .eq('cohort_id', cohortId);
-    if (planErr) throw planErr;
+    const { data: slotRows, error: slotErr } = await supabaseRE
+      .from('re_persona_slot_plan')
+      .select('day_of_week, day_type, slot_group, primary_class, secondary_class, tertiary_class')
+      .eq('persona_id', personaId);
+    if (slotErr) throw slotErr;
 
-    const rows = (planRows ?? []) as unknown as WeeklyClassPlanRow[];
-    if (rows.length === 0) {
-      Logger.warn('RE_PLAN', 'generateUserWeeklyPlan: no weekly class rows for cohort', { userId, cohortId });
+    const personaSlotRows = (slotRows ?? []) as unknown as PersonaSlotPlanRow[];
+    if (personaSlotRows.length === 0) {
+      Logger.warn('RE_PLAN', 'generateUserWeeklyPlan: no slot-plan rows for persona', { userId, personaId });
       return;
     }
+
+    const stateId = cohortId ? cohortId.split('_')[0] : null;
+    let stateClasses: StateClassAffinityRow[] = [];
+    if (stateId) {
+      const { data: stateClassRows } = await supabaseRE
+        .from('re_state_class_affinity')
+        .select('slot_group, day_type, meal_class_code, priority_rank')
+        .eq('state_id', stateId)
+        .order('priority_rank', { ascending: true });
+      stateClasses = (stateClassRows ?? []) as unknown as StateClassAffinityRow[];
+    }
+
+    const rows = buildRowsFromPersonaSlotPlan(personaSlotRows, stateClasses);
 
     // DOC-09 city-overlay blend: for migrated users, inject current-city lifestyle
     // classes into weekday lunch/dinner at the overlay's lifestyle weight, keeping
     // home-state classes dominant (breakfast/snack/weekend untouched). Deterministic.
     const overlayByDay = new Map<string, { ln?: string; dn?: string }>();
-    if (cityOverlayApplied) {
+    if (cityOverlayApplied && cohortId) {
       const stateId = cohortId.split('_')[0];
       const { data: stateRow } = await supabaseRE
         .from('re_states').select('state_ut').eq('state_id', stateId).maybeSingle();

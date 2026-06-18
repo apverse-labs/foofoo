@@ -6,7 +6,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { StatusBar } from 'expo-status-bar';
 import * as Linking from 'expo-linking';
 import * as Sentry from '@sentry/react-native';
-import { COLORS, APP_VERSION, TIMING, RE_FEATURE_FLAGS } from '../src/config/constants';
+import { APP_VERSION, TIMING, RE_FEATURE_FLAGS } from '../src/config/constants';
 import { supabase } from '../src/services/supabase';
 import { supabaseRE } from '../src/services/supabase-re';
 import { OneSignalService } from '../src/services/onesignal.service';

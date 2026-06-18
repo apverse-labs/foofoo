@@ -113,23 +113,6 @@ async function fetchStateId(homeStateName: string): Promise<string | null> {
   return (data as { state_id: string } | null)?.state_id ?? null;
 }
 
-/**
- * @summary Verify that a cohort_id exists in re_cohorts.
- * @returns true if found, false otherwise
- */
-async function verifyCohortExists(cohortId: string): Promise<boolean> {
-  const { data, error } = await supabaseRE
-    .from('re_cohorts')
-    .select('cohort_id')
-    .eq('cohort_id', cohortId)
-    .maybeSingle();
-  if (error) {
-    Logger.error('RE_COHORT', 'verifyCohortExists query failed', { error: error.message, cohortId });
-    return false;
-  }
-  return data !== null;
-}
-
 // ── Orchestrator ──────────────────────────────────────────────────────────────
 
 /**
@@ -174,12 +157,11 @@ export async function runCohortAssignment(userId: string): Promise<void> {
   const destinationGroupCode = resolveCityDestinationGroup(stateId, prodProfile.current_city);
   const cityTierCode = resolveCityTierCode(destinationGroupCode);
 
-  // 5. Build and verify cohort_id
+  // 5. Build cohort_id — persisted for audit/display only; persona_id is the
+  // authoritative key for plan/addon lookups, so no existence check against
+  // re_cohorts (an Excel-shaped table being phased out) is required.
   const cohortId = `${stateId}_${cityTierCode}_${reProfile.persona_id}`;
-  const cohortExists = await verifyCohortExists(cohortId);
-  if (!cohortExists) {
-    Logger.warn('RE_COHORT', `cohort_id not found, proceeding without: ${cohortId}`);
-  }
+  const cohortExists = true;
 
   // 6. Build overlay persona IDs
   const overlayPersonaIds = buildOverlayPersonaIds(
@@ -194,7 +176,6 @@ export async function runCohortAssignment(userId: string): Promise<void> {
   // Low (0.30-0.59): minimal onboarding, cold-start fallback
   const routingTrace: string[] = ['main_cohort', 'sub_cohort'];
   let confidence = 0.70; // base: sub-cohort selected
-  if (!cohortExists) confidence -= 0.10; // cohort_id not in matrix → lower
   if (overlayPersonaIds.includes(MIGRATION_OVERLAY_PERSONA_ID)) {
     confidence += 0.05;
     routingTrace.push('migration_overlay');

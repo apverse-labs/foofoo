@@ -131,6 +131,18 @@
 
 ---
 
+### Cross-reference — Meal_Planning_RE_Engine Deep Recovery Audit
+
+The R1–R4 data gaps above were found via persona validation testing against the **app-side legacy RE** (the `dishes`/`cuisines_master` tables and `generate-daily-plan` Edge Function scoring — see `foofoo-tests/reports/md/sync-audit.md`). They are **not** the same system as the standalone `Meal_Planning_RE_Engine/` module, which has its own independent data-gap tracking:
+
+- `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/05_REPAIR_PLAN/MASTER_REPAIR_PLAN.md` + `BUILD_01_REPAIR_PLAN.md`–`BUILD_10_REPAIR_PLAN.md` — the RE module's own repair plan, written but gated behind founder approval at Gate G6 (per `00_CONTROL/02_AUDIT_STATUS_TRACKER.md`, status: "⛔ HALT: founder approval to start repairs").
+- `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/06_REPAIR_LOGS/BUILD_02_REPAIR_LOG.md` and `BUILD_04_REPAIR_LOG.md` — repair work already executed/logged for those two builds (slightly ahead of the tracker's "halted, nothing started" framing — worth reconciling).
+- `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/02_DB_AUDIT/DB_GAP_REGISTER.md` — RE module's DB-level gap register (0 blockers, separate from the R1–R4 dish-data gaps above).
+
+If R1–R4 fixes (populating `meal_types`, vegan tagging, missing cuisine codes) are ever needed for the RE module's own dish-expansion logic (`class_dish_options` join), check whether the RE module's seed data (`Meal_Planning_RE_Engine/00_Implementation/seeds/`) has the equivalent gap before assuming R1–R4's fix actions transfer directly — the two systems use different table names and data sources (RE module derives from the canonical `Indian_Meal_Cohort_Persona_DB_v3.xlsx` workbook, not from manual `dishes` table tagging).
+
+---
+
 ## Reminder Schedule
 
 When starting a new sprint or session, check this file. Items to prioritise:

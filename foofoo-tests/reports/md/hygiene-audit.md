@@ -509,3 +509,33 @@ Also: `foofoo/supabase/functions/generate-daily-plans-batch/scoring.ts:242`
 | `supabase/functions/send-morning-notification/index.ts` | 207 | ✓ Reviewed |
 | `supabase/functions/sync-cloudinary-images/index.ts` | 180 | ✓ Reviewed |
 | `foofoo-tests/CONTEXT.md` | 51 | ✓ Updated (foofoo-app/ → foofoo/) |
+
+---
+
+## 2026-06-17 Safe-fix pass
+
+5 additional unambiguous unused-import / dead-code items were found and fixed via `tsc --noUnusedLocals` (not previously itemised by symbol name in this doc's DC/CS list, but same category as DC-02/DC-03):
+
+| File | Fix |
+|---|---|
+| `foofoo/app/(tabs)/search.tsx` | Removed unused `useRef` import (named import, never called) |
+| `foofoo/app/_layout.tsx` | Removed unused `COLORS` import from `src/config/constants` |
+| `foofoo/src/components/re/weekly/REDishCarousel.tsx` | Removed unused `View` import from `react-native` |
+| `foofoo/src/components/re/home/REMealCard.tsx` | Removed unused `BORDER_RADIUS` import from `config/re-theme` |
+| `foofoo/src/repositories/re-plan.repository.ts` | Removed dead `pickClass()` function (defined, never called anywhere in the file or imported elsewhere) |
+
+Verified post-fix: `foofoo/ tsc --noEmit` → 0 errors; `foofoo-tests/` unit suite → 417/417 passing. The bulk of `tsc --noUnusedLocals` output (~40 files) was `import React from 'react'` flagged unused under the new JSX transform — left untouched as a repo-wide convention rather than auto-stripped, since touching ~40 files for a cosmetic/non-functional import is outside "unambiguous, mechanical, low-risk" scope and risks masking a real future regression if the transform config ever changes.
+
+---
+
+## apverse-labs-re (Meal_Planning_RE_Engine) Scope
+
+**Coverage:** This audit's scope line lists `foofoo/src/`, `foofoo/app/`, `foofoo/supabase/functions/`, `foofoo-tests/` — `Meal_Planning_RE_Engine/` (the doc/audit-tree folder) is not included. `console.log` finding CS-13 (production Edge Function hot path) is specific to `generate-daily-plan`/`generate-daily-plans-batch` scoring code (app-side legacy RE), not RE-module code.
+
+**Correction (2026-06-17):** the `src/components/re/*` and `src/repositories/re-plan.repository.ts` files touched in the 2026-06-17 safe-fix pass above are **not** merely an "app-side integration layer" calling into the RE module from outside — per `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/03_CODE_AUDIT/CODE_STRUCTURE_AUDIT.md`'s own implementation-surface mapping, `foofoo/src/re-engine/**` and `foofoo/src/repositories/re-*.repository.ts` (including `re-plan.repository.ts`, mapped there as BUILD-04 "weekly class-first plan") **are** the actual `Meal_Planning_RE_Engine` module implementation — just located outside the module's own `00_Implementation/` folder, which that audit explicitly calls a "documented divergence, not a defect" from the module CLAUDE.md's aspirational layout. So the dead-code fix to `re-plan.repository.ts` in this pass was, in fact, a hygiene fix to RE-module-internal code, not RE-adjacent code.
+
+**Not yet covered for RE:**
+- No hygiene scan (dead code / duplicates / code smell) has been run over `Meal_Planning_RE_Engine/00_Implementation/` — that tree has its own structure audit instead (see cross-reference below), which checks architecture-pattern compliance rather than hygiene issues like unused imports or dead code.
+- The logger-utility convention recorded in this doc and `hygiene-complete.md` (`src/utils/systemLogger.ts` primary, `src/lib/logger.ts` lightweight companion) has not been verified as the intended pattern for any future RE module client-side code — the RE module's own `CLAUDE.md` doesn't currently specify a logging convention.
+
+**Cross-reference:** `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/03_CODE_AUDIT/CODE_STRUCTURE_AUDIT.md`, `CODE_TO_DOC_TRACEABILITY.md`, and `WRONG_PATTERN_SCAN.md` (17 clean / 3 partial / 0 wrong-architecture patterns — closest existing equivalent to a hygiene audit for the RE module, though it audits architecture-pattern conformance rather than dead-code/unused-import hygiene specifically).

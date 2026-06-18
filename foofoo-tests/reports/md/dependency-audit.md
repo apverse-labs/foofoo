@@ -1,7 +1,9 @@
 # FooFoo Dependency Audit
-**Date:** 2026-05-25  
+**Date:** 2026-05-25 (re-verified + `npm audit fix` applied 2026-06-17)  
 **Auditor:** Claude Code (claude-sonnet-4-6)  
 **Projects:** foofoo/ (Expo SDK 56.0.4, RN 0.85.3) · foofoo-tests/
+
+> **2026-06-17 update:** Re-ran `npm audit` in both projects before applying any fix. `foofoo/` had drifted to 1 low / 14 moderate / 2 high / 1 critical (18 total) — extra findings beyond the 13-moderate uuid baseline were `shell-quote` (critical, GHSA-w7jw-789q-3m8p), `tmp` (high, GHSA-ph9p-34f9-6g65), `ws` (high, GHSA-96hv-2xvq-fx4p), `js-yaml` (moderate, GHSA-h67p-54hq-rp68), `@babel/core` (low, GHSA-4x5r-pxfx-6jf8) — all transitive devDependency/build-tooling packages with **non-breaking** fixes available. Ran plain `npm audit fix` (no `--force`) in `foofoo/`: resolved the critical, both highs, the extra moderate, and the low, landing back exactly on the **13 moderate / 0 high / 0 critical uuid baseline**. `foofoo-tests/` had drifted to 1 low / 22 moderate / 1 high (24 total, vs the previous "0 vulnerabilities" baseline — newer `jest`/`detox`/`ts-jest` transitive chain). `npm audit fix` (no `--force`) resolved the high (`tmp`) and the low (`@babel/core`); the 22 moderate findings (`jest`, `@jest/*`, `detox`, `ts-jest`, `js-yaml` via ts-jest, `babel-jest`, etc.) all require a `isSemVerMajor: true` bump (e.g. `jest` 25→30, `detox` 19→24, `ts-jest` 29→latest) and were **not** applied per the no-major-bump guardrail — documented as deferred below. Verified after fix: `foofoo/` and `foofoo-tests/` both `tsc --noEmit` clean (0 errors); `foofoo-tests/` unit suite 417/417 passing (suite has grown since the 104/104 figure recorded elsewhere in this doc — that figure is from the 2026-05-25 run and is now stale).
 
 ---
 
@@ -239,3 +241,15 @@ These packages have no direct `import` statements in source code but are **corre
 - `expo-dev-client`: required for EAS dev client builds (no JS-level import needed)
 
 Removal would break EAS builds and PostHog device analytics.
+
+---
+
+## apverse-labs-re (Meal_Planning_RE_Engine) Scope
+
+**Coverage:** This audit's scope (`foofoo/` + `foofoo-tests/`) does not include `Meal_Planning_RE_Engine/`. The RE module has no separate `package.json` — `00_Implementation/__tests__/` (3 test files: `build01/seed_validation.test.ts`, `build02/re_onboarding.test.ts`, `build03/re_cohort_resolver.test.ts`) currently has no implementation source to depend on, so there is no RE-specific dependency surface to audit yet. The `uuid` CVE (GHSA-w5hq-g745-h8pq) findings above are about Expo/EAS build tooling shared by the whole repo, including any future RE code that ships through the same Expo build — so the deferred decision (wait for Expo SDK 57) applies equally to RE once it has shippable code.
+
+**Not yet covered for RE:**
+- No dependency audit has been run against RE-module-specific code once it exists, since `00_Implementation/versions/RE_V1..V4` are currently unbuilt per `Meal_Planning_RE_Engine/CLAUDE.md` ("Target — Do Not Build Yet").
+- RE's own DB schema dependencies (`re_*` tables on `foofoo-staging`, project `kwypxyqxojauhiehuirz`) are tracked separately — see `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/02_DB_AUDIT/DB_GAP_REGISTER.md` (0 blockers) rather than this doc.
+
+**Cross-reference:** `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/03_CODE_AUDIT/CODE_STRUCTURE_AUDIT.md` and `WRONG_PATTERN_SCAN.md` (code-structure findings for the RE module — 17 clean / 3 partial / 0 wrong-architecture patterns, no dependency-specific findings recorded there either).
