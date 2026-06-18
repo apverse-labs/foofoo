@@ -92,3 +92,25 @@ DB: foofoo-staging (kwypxyqxojauhiehuirz)
   Note: `user_prompt_summary`, `why_it_matters`, and `ask_next` had **no** live code
   references found in `foofoo/src/`, `foofoo/app/`, or `foofoo/supabase/` — only
   `subcohort_screen_copy` and `show_as_chip_text` are currently read by the running app.
+
+## Phase B — resolution (2026-06-19)
+
+Founder reviewed the 4-file escalation and chose: update code, then rename.
+
+- `foofoo/src/repositories/re-onboarding.repository.ts` — `fetchREMainCohorts` and
+  `fetchRESubcohorts` no longer select `subcohort_screen_copy` / `show_as_chip_text`
+  from the DB; they merge the value in from `RE_MAIN_COHORT_SCREEN_COPY` /
+  `RE_SUBCOHORT_CHIP_TEXT` (in `re-onboarding-content.ts`) keyed by
+  `main_cohort_id` / `sub_cohort_id`. The `REMainCohort`/`RESubcohort` TS shapes are
+  unchanged, so `re-step-3.tsx` and `types/index.ts` needed no edits.
+- `foofoo/supabase/functions/re-onboarding-start/index.ts` — same pattern, with a
+  small duplicated copy map inline (Deno edge functions can't import the RN app's
+  TS config file). No live caller of this function was found in the app, but it was
+  updated for consistency since the prompt named it as a 3+-file usage.
+- `npx tsc --noEmit` → 0 errors after the repository/edge-function changes.
+- SCHEMA-RE-020 migration (`20260619_004_rename_ui_copy_columns.sql`) applied to
+  foofoo-staging. **Note:** Postgres folds unquoted identifiers to lowercase, so the
+  5 renamed columns are actually `..._founderinfoonly` (lowercase), not
+  `..._FounderInfoOnly` as literally written in the prompt — verified via
+  `information_schema.columns` with `ILIKE '%founderinfoonly%'` (5 rows) and confirmed
+  the 5 old names are gone (0 rows). No data deleted.
