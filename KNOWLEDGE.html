@@ -111,8 +111,10 @@
   .arch-section{margin-bottom:20px}
   .arch-section-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px;padding-bottom:6px;border-bottom:1px solid var(--border)}
   .arch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:7px}
-  .arch-node{padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:border-color .12s,background .12s}
-  .arch-node:hover{border-color:var(--border2);background:var(--surface2)}
+  .arch-node{position:relative;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);cursor:default;transition:border-color .12s,background .12s}
+  .arch-node[onclick]{cursor:pointer}
+  .arch-node[onclick]:hover{border-color:var(--border2);background:var(--surface2)}
+  .arch-node[onclick]::after{content:"↗";position:absolute;top:8px;right:10px;color:var(--text3);font-size:11px}
   .arch-node.is-new{border-color:var(--teal-border);background:var(--teal-bg)}
   .arch-node.is-mod{border-color:var(--orange-border);background:var(--orange-bg)}
   .arch-node-name{font-size:12px;font-weight:600;font-family:'SF Mono','Fira Code',monospace;margin-bottom:2px}
@@ -173,14 +175,21 @@
     <div class="nav-item" onclick="showPage('timeline-full')">
       <span class="nav-icon">📅</span> Build timeline
     </div>
+    <div class="nav-item" onclick="showPage('flow')">
+      <span class="nav-icon">🔀</span> System flow
+    </div>
   </div>
 
   <hr class="sidebar-divider">
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Sessions</div>
-    <div class="nav-item active" onclick="showPage('s1')">
+    <div class="nav-item" onclick="showPage('s1')">
       <span class="nav-icon">🧩</span> S1 · Meal Engine + Compliance
+      <span class="nav-badge">Jun 18</span>
+    </div>
+    <div class="nav-item active" onclick="showPage('s2')">
+      <span class="nav-icon">🛠</span> S2 · Knowledge book overhaul
       <span class="nav-badge">Jun 18</span>
     </div>
     <!-- NAV_INJECT -->
@@ -192,11 +201,11 @@
     <div class="sidebar-section-label">Reference</div>
     <div class="nav-item" onclick="showPage('modules')">
       <span class="nav-icon">🧩</span> Modules
-      <span class="nav-badge">13</span>
+      <span class="nav-badge">31</span>
     </div>
     <div class="nav-item" onclick="showPage('files')">
       <span class="nav-icon">📁</span> Files register
-      <span class="nav-badge">11</span>
+      <span class="nav-badge">15</span>
     </div>
     <div class="nav-item" onclick="showPage('db')">
       <span class="nav-icon">🗄</span> Database schema
@@ -204,7 +213,7 @@
     </div>
     <div class="nav-item" onclick="showPage('decisions')">
       <span class="nav-icon">💡</span> Key decisions
-      <span class="nav-badge">6</span>
+      <span class="nav-badge">9</span>
     </div>
   </div>
 </nav>
@@ -223,12 +232,18 @@
       <div class="legend-item"><div class="legend-dot" style="background:var(--surface);border:1px solid var(--border)"></div> Existing</div>
     </div>
     <div class="arch-section">
-      <div class="arch-section-title">📱 Phone — screens &amp; logic</div>
+      <div class="arch-section-title">📱 Phone — screens</div>
       <div class="arch-grid" id="arch-phone">
-        <div class="arch-node is-new"><div class="arch-node-name plain">RE Onboarding flow</div><div class="arch-node-desc">9-step quiz that builds a household's eating profile · S1</div></div>
-        <div class="arch-node"><div class="arch-node-name plain">Original onboarding flow</div><div class="arch-node-desc">7-step legacy signup quiz</div></div>
-        <div class="arch-node"><div class="arch-node-name plain">Auth screens</div><div class="arch-node-desc">Sign up, sign in, forgot password, email verification</div></div>
-        <div class="arch-node"><div class="arch-node-name plain">Dish detail screen</div><div class="arch-node-desc">Single dish view</div></div>
+        <div class="arch-node is-new" onclick="jumpModule('re-onboarding-screens')"><div class="arch-node-name plain">RE Onboarding flow</div><div class="arch-node-desc">9-step quiz that builds a household's eating profile · S1</div></div>
+        <div class="arch-node" onclick="jumpModule('legacy-onboarding-screens')"><div class="arch-node-name plain">Original onboarding flow</div><div class="arch-node-desc">7-step legacy signup quiz</div></div>
+        <div class="arch-node" onclick="jumpModule('auth-screens')"><div class="arch-node-name plain">Auth screens</div><div class="arch-node-desc">Sign up, sign in, forgot password, email verification</div></div>
+        <div class="arch-node" onclick="jumpModule('dish-detail-screen')"><div class="arch-node-name plain">Dish detail screen</div><div class="arch-node-desc">Single dish view</div></div>
+        <!-- ARCH_PHONE_INJECT -->
+      </div>
+    </div>
+    <div class="arch-section">
+      <div class="arch-section-title">🧠 App Logic — repositories, hooks &amp; config</div>
+      <div class="arch-grid" id="arch-applogic">
         <div class="arch-node is-mod" onclick="jumpModule('re-onboarding-repo')"><div class="arch-node-name">re-onboarding.repository.ts</div><div class="arch-node-desc">Now reads UI copy from config, not DB · S1</div></div>
         <div class="arch-node is-mod" onclick="jumpModule('re-dish-expander')"><div class="arch-node-name">re-dish-expander.repository.ts</div><div class="arch-node-desc">Persona class-affinity priors wired in · S1</div></div>
         <div class="arch-node" onclick="jumpModule('re-cohort-resolver')"><div class="arch-node-name">re-cohort-resolver.repository.ts</div><div class="arch-node-desc">Assigns each household to a persona</div></div>
@@ -236,8 +251,8 @@
         <div class="arch-node" onclick="jumpModule('re-addon')"><div class="arch-node-name">re-addon.repository.ts</div><div class="arch-node-desc">Builds per-member add-on suggestions</div></div>
         <div class="arch-node" onclick="jumpModule('re-feedback')"><div class="arch-node-name">re-feedback.repository.ts</div><div class="arch-node-desc">Records likes/dislikes/never-again</div></div>
         <div class="arch-node is-new" onclick="jumpModule('re-onboarding-content')"><div class="arch-node-name">re-onboarding-content.ts</div><div class="arch-node-desc">Static config holding all onboarding screen copy · S1</div></div>
-        <div class="arch-node"><div class="arch-node-name">dishes / plans / week / grocery repositories</div><div class="arch-node-desc">Original MVP data access layer</div></div>
-        <!-- ARCH_PHONE_INJECT -->
+        <div class="arch-node" onclick="jumpModule('mvp-repositories')"><div class="arch-node-name">dishes / plans / week / grocery repositories</div><div class="arch-node-desc">Original MVP data access layer</div></div>
+        <!-- ARCH_APPLOGIC_INJECT -->
       </div>
     </div>
     <div class="arch-section">
@@ -247,14 +262,14 @@
         <div class="arch-node is-new" onclick="jumpModule('re-planner-tables')"><div class="arch-node-name">re_segment_addon_rule</div><div class="arch-node-desc">46 rows — add-on rules by household segment · S1</div></div>
         <div class="arch-node is-new" onclick="jumpModule('re-planner-tables')"><div class="arch-node-name">re_state_class_affinity</div><div class="arch-node-desc">890 rows — regional meal-class preference by state · S1</div></div>
         <div class="arch-node is-new" onclick="jumpModule('re-persona-class-affinity')"><div class="arch-node-name">re_persona_class_affinity</div><div class="arch-node-desc">426 rows — cold-start meal-class scoring per persona · S1</div></div>
-        <div class="arch-node"><div class="arch-node-name">re_user_weekly_plans</div><div class="arch-node-desc">Each household's locked-in 7-day plan</div></div>
-        <div class="arch-node"><div class="arch-node-name">re_user_addon_plans</div><div class="arch-node-desc">Per-member add-on plan</div></div>
-        <div class="arch-node"><div class="arch-node-name">re_user_feedback / re_user_dish_affinity / re_user_class_affinity</div><div class="arch-node-desc">Learns what each household actually likes over time</div></div>
-        <div class="arch-node is-mod"><div class="arch-node-name">re_weekly_class_plans_archive</div><div class="arch-node-desc">Old cohort-keyed table, archived not deleted · S1</div></div>
-        <div class="arch-node is-mod"><div class="arch-node-name">re_household_addon_plans_archive</div><div class="arch-node-desc">Old cohort-keyed table, archived not deleted · S1</div></div>
-        <div class="arch-node"><div class="arch-node-name">re_cohorts / re_personas / re_class_dish_options</div><div class="arch-node-desc">Reference data — 41 personas, 131 meal classes, 1,050 dish options</div></div>
-        <div class="arch-node"><div class="arch-node-name">user_consent</div><div class="arch-node-desc">Legal consent tracking (DPDP compliance)</div></div>
-        <div class="arch-node"><div class="arch-node-name">42-table MVP baseline</div><div class="arch-node-desc">dishes, planner, ingredients, user_feedback, etc.</div></div>
+        <div class="arch-node" onclick="jumpModule('re-user-weekly-plans')"><div class="arch-node-name">re_user_weekly_plans</div><div class="arch-node-desc">Each household's locked-in 7-day plan</div></div>
+        <div class="arch-node" onclick="jumpModule('re-user-addon-plans')"><div class="arch-node-name">re_user_addon_plans</div><div class="arch-node-desc">Per-member add-on plan</div></div>
+        <div class="arch-node" onclick="jumpModule('re-user-feedback-tables')"><div class="arch-node-name">re_user_feedback / re_user_dish_affinity / re_user_class_affinity</div><div class="arch-node-desc">Learns what each household actually likes over time</div></div>
+        <div class="arch-node is-mod" onclick="jumpModule('re-archived-tables')"><div class="arch-node-name">re_weekly_class_plans_archive</div><div class="arch-node-desc">Old cohort-keyed table, archived not deleted · S1</div></div>
+        <div class="arch-node is-mod" onclick="jumpModule('re-archived-tables')"><div class="arch-node-name">re_household_addon_plans_archive</div><div class="arch-node-desc">Old cohort-keyed table, archived not deleted · S1</div></div>
+        <div class="arch-node" onclick="jumpModule('re-reference-tables')"><div class="arch-node-name">re_cohorts / re_personas / re_class_dish_options</div><div class="arch-node-desc">Reference data — 41 personas, 131 meal classes, 1,050 dish options</div></div>
+        <div class="arch-node" onclick="jumpModule('user-consent-table')"><div class="arch-node-name">user_consent</div><div class="arch-node-desc">Legal consent tracking (DPDP compliance)</div></div>
+        <div class="arch-node" onclick="jumpModule('mvp-baseline-tables')"><div class="arch-node-name">42-table MVP baseline</div><div class="arch-node-desc">dishes, planner, ingredients, user_feedback, etc.</div></div>
         <!-- ARCH_DB_INJECT -->
       </div>
     </div>
@@ -265,24 +280,182 @@
         <div class="arch-node" onclick="jumpModule('re-personas-assign-fn')"><div class="arch-node-name">re-personas-assign</div><div class="arch-node-desc">Assigns a household to its persona</div></div>
         <div class="arch-node" onclick="jumpModule('re-plans-week-generate-fn')"><div class="arch-node-name">re-plans-week-generate</div><div class="arch-node-desc">Generates the weekly meal plan</div></div>
         <div class="arch-node" onclick="jumpModule('re-recommendations-rank-fn')"><div class="arch-node-name">re-recommendations-rank</div><div class="arch-node-desc">Ranks today's dish candidates for a household</div></div>
-        <div class="arch-node"><div class="arch-node-name">re-feedback-events</div><div class="arch-node-desc">Captures like/dislike/never-again events</div></div>
-        <div class="arch-node is-mod"><div class="arch-node-name">generate-daily-plan / regenerate-slot</div><div class="arch-node-desc">Auth guard fixed; standardized error codes</div></div>
-        <div class="arch-node is-mod"><div class="arch-node-name">delete-user-account / log-re-decision</div><div class="arch-node-desc">Error responses standardized to one format</div></div>
-        <div class="arch-node"><div class="arch-node-name">8 CRON / admin functions</div><div class="arch-node-desc">Batch jobs — now require a service-role key to run</div></div>
-        <div class="arch-node"><div class="arch-node-name">send-morning-notification</div><div class="arch-node-desc">Daily push reminder</div></div>
+        <div class="arch-node" onclick="jumpModule('re-feedback-events-fn')"><div class="arch-node-name">re-feedback-events</div><div class="arch-node-desc">Captures like/dislike/never-again events</div></div>
+        <div class="arch-node is-mod" onclick="jumpModule('generate-daily-plan-fns')"><div class="arch-node-name">generate-daily-plan / regenerate-slot</div><div class="arch-node-desc">Auth guard fixed; standardized error codes</div></div>
+        <div class="arch-node is-mod" onclick="jumpModule('delete-account-log-decision-fns')"><div class="arch-node-name">delete-user-account / log-re-decision</div><div class="arch-node-desc">Error responses standardized to one format</div></div>
+        <div class="arch-node" onclick="jumpModule('cron-admin-fns')"><div class="arch-node-name">8 CRON / admin functions</div><div class="arch-node-desc">Batch jobs — now require a service-role key to run</div></div>
+        <div class="arch-node" onclick="jumpModule('send-morning-notification-fn')"><div class="arch-node-name">send-morning-notification</div><div class="arch-node-desc">Daily push reminder</div></div>
         <!-- ARCH_SERVER_INJECT -->
       </div>
     </div>
     <div class="arch-section">
       <div class="arch-section-title">🔌 Services</div>
       <div class="arch-grid" id="arch-services">
-        <div class="arch-node"><div class="arch-node-name plain">OneSignal</div><div class="arch-node-desc">Push notifications, switched to production mode for Play Store</div></div>
-        <div class="arch-node"><div class="arch-node-name plain">PostHog</div><div class="arch-node-desc">Product analytics</div></div>
-        <div class="arch-node"><div class="arch-node-name plain">Supabase Vault</div><div class="arch-node-desc">Secrets storage — no secrets committed to git</div></div>
-        <div class="arch-node"><div class="arch-node-name plain">Google Play Store</div><div class="arch-node-desc">App-bundle build pipeline (EAS)</div></div>
+        <div class="arch-node" onclick="jumpModule('third-party-services')"><div class="arch-node-name plain">OneSignal</div><div class="arch-node-desc">Push notifications, switched to production mode for Play Store</div></div>
+        <div class="arch-node" onclick="jumpModule('third-party-services')"><div class="arch-node-name plain">PostHog</div><div class="arch-node-desc">Product analytics</div></div>
+        <div class="arch-node" onclick="jumpModule('third-party-services')"><div class="arch-node-name plain">Supabase Vault</div><div class="arch-node-desc">Secrets storage — no secrets committed to git</div></div>
+        <div class="arch-node" onclick="jumpModule('third-party-services')"><div class="arch-node-name plain">Google Play Store</div><div class="arch-node-desc">App-bundle build pipeline (EAS)</div></div>
         <!-- ARCH_SERVICES_INJECT -->
       </div>
     </div>
+  </div>
+
+  <!-- ── System flow page ── -->
+  <div id="page-flow" class="page-content" style="display:none">
+    <div class="page-header">
+      <div class="page-title">System flow</div>
+      <div class="page-subtitle">How a request actually travels through the app, step by step — click any step to see its full explanation.</div>
+    </div>
+
+    <div class="flow-block" style="margin-bottom:32px">
+      <div class="step-title" style="font-size:15px;margin-bottom:4px">Onboarding → persona assignment</div>
+      <div class="step-desc" style="margin-bottom:12px">How a brand-new household goes from "just signed up" to "matched to one of 41 personas" with a confidence score.</div>
+
+      <div class="swim-lane lane-blue">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Phone</div><div class="swim-label-sub">user sees</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step" onclick="jumpModule('re-onboarding-screens')">
+            <div class="step-num num-blue">1</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">Household opens the 9-step quiz</span></div><div class="step-desc">Answers location, diet, family, cooking habits across 9 screens.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ Each screen's question list is fetched from the server as the household progresses</div>
+      <div class="swim-lane lane-amber" style="margin-bottom:10px">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Server</div><div class="swim-label-sub">edge functions</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step" onclick="jumpModule('re-onboarding-fns')">
+            <div class="step-num num-amber">2</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re-onboarding-start / re-onboarding-answer serve each screen's content</span></div><div class="step-desc">Returns the cohort cards and routing questions for the current step.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ Every answer is saved as it's given</div>
+      <div class="swim-lane" style="margin-bottom:10px">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">App logic</div><div class="swim-label-sub">hooks / code</div></div></div>
+        <div class="swim-body" style="background:var(--purple-bg);border-color:var(--purple-border)">
+          <div class="swim-step" onclick="jumpModule('re-onboarding-repo')">
+            <div class="step-num num-purple">3</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re-onboarding.repository.ts saves each answer</span></div><div class="step-desc">Location, diet rules, household members, health needs — written to the household's profile.</div></div>
+          </div>
+          <div class="swim-step" onclick="jumpModule('re-cohort-resolver')">
+            <div class="step-num num-purple">4</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re-cohort-resolver.repository.ts works out the match</span></div><div class="step-desc">Combines home state, current city, health, and cook-dependency into a cohort + confidence score.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ The match is saved as this household's active persona</div>
+      <div class="swim-lane lane-amber">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Server</div><div class="swim-label-sub">edge functions</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step" onclick="jumpModule('re-personas-assign-fn')">
+            <div class="step-num num-amber">5</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re-personas-assign saves the persona match</span></div><div class="step-desc">Retires any previous assignment first, so there's never ambiguity about which one is current.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ The new persona immediately has starting taste data available</div>
+      <div class="swim-lane lane-teal">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Database</div><div class="swim-label-sub">Supabase</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step" onclick="jumpModule('re-persona-class-affinity')">
+            <div class="step-num num-teal">6</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re_persona_class_affinity provides cold-start scoring</span></div><div class="step-desc">The household gets sensible starting suggestions immediately, before the app has learned anything about them personally.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="flow-block" style="margin-bottom:32px">
+      <div class="step-title" style="font-size:15px;margin-bottom:4px">Daily plan generation</div>
+      <div class="step-desc" style="margin-bottom:12px">How "open the Home screen" turns into a ranked list of today's meal suggestions.</div>
+
+      <div class="swim-lane lane-blue">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Phone</div><div class="swim-label-sub">user sees</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step">
+            <div class="step-num num-blue">1</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">Household opens the Home screen</span></div><div class="step-desc">Triggers a request for today's plan.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ The server checks whether this week's plan already exists</div>
+      <div class="swim-lane lane-amber" style="margin-bottom:10px">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Server</div><div class="swim-label-sub">edge functions</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step" onclick="jumpModule('re-plans-week-generate-fn')">
+            <div class="step-num num-amber">2</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re-plans-week-generate checks/builds the week</span></div><div class="step-desc">Returns the cached plan if one exists for this week, otherwise triggers generation.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ If generation is needed, the plan-builder takes over</div>
+      <div class="swim-lane" style="margin-bottom:10px">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">App logic</div><div class="swim-label-sub">hooks / code</div></div></div>
+        <div class="swim-body" style="background:var(--purple-bg);border-color:var(--purple-border)">
+          <div class="swim-step" onclick="jumpModule('re-plan')">
+            <div class="step-num num-purple">3</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re-plan.repository.ts builds the 7-day class plan</span></div><div class="step-desc">Looks up which meal class fits each day/slot for this household's persona.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ Looked up from and saved to the database</div>
+      <div class="swim-lane lane-teal">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Database</div><div class="swim-label-sub">Supabase</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step" onclick="jumpModule('re-planner-tables')">
+            <div class="step-num num-teal">4</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re_persona_slot_plan is read for the persona's class mix</span></div><div class="step-desc">Which meal class belongs in each day/slot for this persona.</div></div>
+          </div>
+          <div class="swim-step" onclick="jumpModule('re-user-weekly-plans')">
+            <div class="step-num num-teal">5</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">The finished plan is saved to re_user_weekly_plans</span></div><div class="step-desc">So it's not rebuilt again until next week.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ The app asks for today's actual dish suggestions within each class</div>
+      <div class="swim-lane lane-amber">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Server</div><div class="swim-label-sub">edge functions</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step" onclick="jumpModule('re-recommendations-rank-fn')">
+            <div class="step-num num-amber">6</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re-recommendations-rank packages today's ranked dishes</span></div><div class="step-desc">A thin wrapper — the actual ranking happens in the dish-expander module.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ Every eligible dish gets scored against this household</div>
+      <div class="swim-lane" style="margin-bottom:10px">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">App logic</div><div class="swim-label-sub">hooks / code</div></div></div>
+        <div class="swim-body" style="background:var(--purple-bg);border-color:var(--purple-border)">
+          <div class="swim-step" onclick="jumpModule('re-dish-expander')">
+            <div class="step-num num-purple">7</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re-dish-expander.repository.ts scores and ranks dishes</span></div><div class="step-desc">Diet compatibility, region, city type, cooking ability, and learned taste — combined into one score per dish.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ Candidate dishes come from the reference table for that meal class</div>
+      <div class="swim-lane lane-teal">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Database</div><div class="swim-label-sub">Supabase</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step" onclick="jumpModule('re-reference-tables')">
+            <div class="step-num num-teal">8</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">re_class_dish_options provides the eligible dishes</span></div><div class="step-desc">Every dish variant that belongs to today's meal class.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ Ranked suggestions are returned to the screen</div>
+      <div class="swim-lane lane-blue">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Phone</div><div class="swim-label-sub">user sees</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step">
+            <div class="step-num num-blue">9</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">Household sees today's ranked suggestions</span></div><div class="step-desc">Best-matching dish shown first for each meal slot.</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- FLOWS_INJECT -->
   </div>
 
   <!-- ── Timeline page ── -->
@@ -305,6 +478,21 @@
           <span class="tl-chip" onclick="showPage('s1')">Knowledge book</span>
         </div>
         <div class="tl-note">First entry in the knowledge book — captures everything built so far: the core app, the Meal Planning Recommendation Engine, and the audits done to get ready for the Play Store. Next: finish the onboarding screens for the new engine and clear the remaining legal/compliance items.</div>
+      </div>
+    </div>
+    <div class="timeline-row">
+      <div class="tl-date">Jun 18<br>2026</div>
+      <div class="tl-spine"><div class="tl-dot" style="background:#0e7a5a"></div></div>
+      <div class="tl-content">
+        <span class="tl-badge" style="background:#e8f8f2;color:#0e7a5a">S2</span>
+        <div class="tl-title">Knowledge book overhaul</div>
+        <div class="tl-chips">
+          <span class="tl-chip" onclick="showPage('s2')">Module Reference</span>
+          <span class="tl-chip" onclick="showPage('s2')">System flow</span>
+          <span class="tl-chip" onclick="showPage('s2')">Architecture tile fix</span>
+          <span class="tl-chip" onclick="showPage('s2')">Dotfiles skill fix</span>
+        </div>
+        <div class="tl-note">Fixed the knowledge book's own broken navigation, added 31 module explanations sourced from real code comments, and a System Flow view. Next: get the dotfiles fix pushed once repo access is granted.</div>
       </div>
     </div>
     <!-- TIMELINE_INJECT -->
@@ -581,6 +769,360 @@
       </div>
     </div>
 
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-onboarding-screens" onclick="toggleDetail('mod-re-onboarding-screens')">
+        <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name plain">RE Onboarding screens (9 steps)</span></div>
+        <span class="detail-chevron" id="chev-mod-re-onboarding-screens">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-onboarding-screens">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The 9 screens a new household sees in order — starting with "Where's home?" — that capture diet, family, region and habits and feed the persona-matching engine.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>app/(re-onboarding)/re-step-1.tsx</code> through <code>re-step-9.tsx</code>, plus <code>re-step-8-reveal.tsx</code> — each one screen of the quiz, the reveal screen shows the matched persona.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is the front door of the entire Meal Planning Engine — every later suggestion depends on what gets captured here.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-legacy-onboarding-screens" onclick="toggleDetail('mod-legacy-onboarding-screens')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name plain">Original onboarding screens (7 steps)</span></div>
+        <span class="detail-chevron" id="chev-mod-legacy-onboarding-screens">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-legacy-onboarding-screens">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The original, pre-Meal-Engine signup quiz — collects name, username, and location on its first screen, then 6 more steps of preferences for the older MVP recommendation logic.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>app/(onboarding)/step-1.tsx</code> through <code>step-7.tsx</code> — name/username/location capture, then diet and household preferences.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Still the active path for users not yet on the new Meal Engine — kept running in parallel rather than ripped out, so existing users aren't disrupted mid-migration.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-auth-screens" onclick="toggleDetail('mod-auth-screens')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name plain">Auth screens</span></div>
+        <span class="detail-chevron" id="chev-mod-auth-screens">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-auth-screens">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Sign up, sign in, forgot password, and email verification — the screens that exist before a household has an account at all.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>app/(auth)/sign-up.tsx</code> — email/password signup with a password-strength indicator.<br>
+          <code>app/(auth)/sign-in.tsx</code>, <code>forgot-password.tsx</code>, <code>email-verification.tsx</code>, <code>auth-gate.tsx</code> — the rest of the auth flow.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Standard account access — this is the gate every other screen sits behind.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18 (consent-flow fixes from the compliance audit)</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-dish-detail-screen" onclick="toggleDetail('mod-dish-detail-screen')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name">app/dish/[id].tsx</span></div>
+        <span class="detail-chevron" id="chev-mod-dish-detail-screen">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-dish-detail-screen">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The full-detail page for one dish — its own header comment describes a hero image, a stats bar (cook time, calories, difficulty, spice), dietary badges, ingredient list, and a "similar dishes" rail at the bottom.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>app/dish/[id].tsx</code> — the screen itself, logs "tapped_detail" and "tapped_ingredients" events as the user scrolls.<br>
+          <code>dishes.repository.ts</code> — <code>getDishById()</code> fetches the dish with tags/ingredients/cuisine; <code>getSimilarDishes()</code> fills the bottom rail.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Gives a household enough detail to actually decide whether to cook a suggested dish, not just a name and photo.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-mvp-repositories" onclick="toggleDetail('mod-mvp-repositories')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name plain">Original MVP repositories</span></div>
+        <span class="detail-chevron" id="chev-mod-mvp-repositories">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-mvp-repositories">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The data-access layer for the pre-Meal-Engine app — dish lookups, the weekly planner, and the grocery list, all built before the RE Engine's persona-based approach existed.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>dishes.repository.ts</code>, <code>plans.repository.ts</code>, <code>week.repository.ts</code>, <code>grocery.repository.ts</code> — fetches and saves for the original recommendation logic.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Keeps the old app fully working for users not yet migrated, while the new RE Engine repositories are built alongside rather than replacing this in place.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-user-weekly-plans" onclick="toggleDetail('mod-re-user-weekly-plans')">
+        <div class="detail-left"><span class="tag tag-db">DB</span><span class="detail-name">re_user_weekly_plans</span></div>
+        <span class="detail-chevron" id="chev-mod-re-user-weekly-plans">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-user-weekly-plans">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Stores one row per household per day of the week, with the meal class assigned to breakfast/lunch/snack/dinner — this is the actual saved weekly plan a household sees.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re_user_weekly_plans</code> — keyed to (household, week start, day); stores both the raw class code and a ready-to-display name for each meal slot. Unique per household/week/day so a plan can't be duplicated.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is what makes the plan screen show the same thing all week instead of re-rolling on every visit.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-user-addon-plans" onclick="toggleDetail('mod-re-user-addon-plans')">
+        <div class="detail-left"><span class="tag tag-db">DB</span><span class="detail-name">re_user_addon_plans</span></div>
+        <span class="detail-chevron" id="chev-mod-re-user-addon-plans">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-user-addon-plans">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Stores the per-person add-on suggestions (e.g. a special side dish for an elderly or diabetic family member) layered on top of the main weekly plan.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re_user_addon_plans</code> — keyed to (household, week, day, meal slot, which family member segment it's for); stores which add-on class applies and what it's attached to.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Lets one household get genuinely different suggestions for an infant vs. an elderly member, without needing a separate plan per person.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-user-feedback-tables" onclick="toggleDetail('mod-re-user-feedback-tables')">
+        <div class="detail-left"><span class="tag tag-db">DB</span><span class="detail-name plain">re_user_feedback / dish &amp; class affinity</span></div>
+        <span class="detail-chevron" id="chev-mod-re-user-feedback-tables">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-user-feedback-tables">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Three tables that together form the taste-learning memory: a raw log of every action a household takes, and two running scoreboards (per-dish and per-meal-class) that get updated from that log.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re_user_feedback</code> — append-only event log: every view/accept/lock/swipe-past/never-again action, with a pre-computed weight.<br>
+          <code>re_user_dish_affinity</code> — one row per household+dish: running score, lock/accept/reject counts, an "is_never" hard-exclude flag, and a cooldown date for "not today."<br>
+          <code>re_user_class_affinity</code> — one row per household+meal-class: running score plus how often this household accepts vs. rejects complex recipes in that class.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is the actual memory behind "the app gets better the more you use it" — without it, every suggestion would be as generic as a brand-new user's first day, forever.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-archived-tables" onclick="toggleDetail('mod-re-archived-tables')">
+        <div class="detail-left"><span class="tag tag-db">DB</span><span class="detail-name plain">Archived planner tables</span></div>
+        <span class="detail-chevron" id="chev-mod-re-archived-tables">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-archived-tables">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The two original cohort-keyed planner tables, renamed to "_archive" rather than deleted once the new persona/segment/state tables fully replaced them.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re_weekly_class_plans_archive</code> (20,664 rows), <code>re_household_addon_plans_archive</code> (7,992 rows) — read-only history, no application code reads from these anymore.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">A safety net — if anything downstream turns out to still depend on the old shape, the data is still there to recover from, rather than gone.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-reference-tables" onclick="toggleDetail('mod-re-reference-tables')">
+        <div class="detail-left"><span class="tag tag-db">DB</span><span class="detail-name plain">Persona &amp; dish reference data</span></div>
+        <span class="detail-chevron" id="chev-mod-re-reference-tables">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-reference-tables">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The seed/reference data the whole engine is built on — every persona's profile, every meal class's eligible dishes, and the cohort-to-persona mapping.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re_cohorts</code> (2,953 rows) — geography + demographic combination → meal-class mix and persona.<br>
+          <code>re_personas</code> (41 rows) — each persona's age band, household stage, cooking dependency, and boost classes per meal slot.<br>
+          <code>re_class_dish_options</code> (1,050 rows) — every dish variant mapped to the meal class it belongs to, with diet type and region relevance.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is the actual domain knowledge — the "science" the founder's team built — encoded as data instead of code, so it can be corrected or extended without a software release.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-user-consent-table" onclick="toggleDetail('mod-user-consent-table')">
+        <div class="detail-left"><span class="tag tag-db">DB</span><span class="detail-name">user_consent</span></div>
+        <span class="detail-chevron" id="chev-mod-user-consent-table">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-user-consent-table">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Tracks what each user has consented to, for India's DPDP data-protection law — when they consented, which version of the consent text, and separate marketing/analytics consent flags.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>user_consent</code> — one row per user: <code>data_consent_at</code>, <code>data_consent_version</code>, <code>marketing_consent</code>, <code>analytics_consent</code>.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is what lets FooFoo prove, if ever asked, exactly what a user agreed to and when — required for legal compliance, not optional.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-mvp-baseline-tables" onclick="toggleDetail('mod-mvp-baseline-tables')">
+        <div class="detail-left"><span class="tag tag-db">DB</span><span class="detail-name plain">42-table MVP baseline</span></div>
+        <span class="detail-chevron" id="chev-mod-mvp-baseline-tables">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-mvp-baseline-tables">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The original production database schema before the Meal Engine existed — dishes, the planner, ingredients, tags, recipes, and supporting tables for the first version of FooFoo.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          42 tables including <code>dishes</code>, <code>planner</code>, <code>ingredients</code>, <code>user_feedback</code>, <code>recipes</code>, <code>tags</code> — see <code>SYSTEM_STATE.md</code> for the full schema registry.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Still the live schema for any user on the original recommendation path — this is the foundation the RE Engine tables sit alongside.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18 (replicated to the staging database, which was missing it)</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-feedback-events-fn" onclick="toggleDetail('mod-re-feedback-events-fn')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name">re-feedback-events</span></div>
+        <span class="detail-chevron" id="chev-mod-re-feedback-events-fn">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-feedback-events-fn">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The server endpoint that receives a household's swipe/lock/accept/never-again action and updates every relevant affinity table.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re-feedback-events</code> — receives the action plus context (dish, meal class, optional taste tags), saves the event, and updates the dish/class affinity scores.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">The server-side half of the taste-learning loop — every swipe a household makes in the app arrives here.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18 (part of the 26-gap edge-function audit)</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-generate-daily-plan-fns" onclick="toggleDetail('mod-generate-daily-plan-fns')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name plain">generate-daily-plan / regenerate-slot</span></div>
+        <span class="detail-chevron" id="chev-mod-generate-daily-plan-fns">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-generate-daily-plan-fns">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The original (pre-RE-Engine) plan generation functions. <code>generate-daily-plan</code> builds or returns today's plan when the Home screen opens; <code>regenerate-slot</code> rebuilds just one meal slot when a user taps "not today" or "never," without disturbing the rest of the day's locked slots.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>generate-daily-plan</code> — hard-filters by diet/allergens/never-list, then scores by cuisine, meal-item, weather, and day-of-week boosts.<br>
+          <code>regenerate-slot</code> — same scoring, scoped to one slot, excluding the just-dismissed dish.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is the original recommendation engine that's still live for non-RE users. The fix this session: a missing-login error used to come back as a generic server crash instead of "please log in" — now it returns the correct error before any logic runs.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-delete-account-log-decision-fns" onclick="toggleDetail('mod-delete-account-log-decision-fns')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name plain">delete-user-account / log-re-decision</span></div>
+        <span class="detail-chevron" id="chev-mod-delete-account-log-decision-fns">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-delete-account-log-decision-fns">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text"><code>delete-user-account</code> permanently removes a user from the authentication system once all their data tables are cleared — checked so only the account owner's own request can trigger it. <code>log-re-decision</code> writes a full record of why each meal was scored the way it was, for later debugging/tuning.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>delete-user-account</code> — admin-only hard-delete from Supabase Auth, cascades to the user's profile.<br>
+          <code>log-re-decision</code> — writes the scoring breakdown to <code>recommendation_debug_log</code>; sampled at 100% in development, 5% in production.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Account deletion is a legal requirement (DPDP "right to erasure"); the decision log is what lets the team explain or fix a bad recommendation after the fact instead of guessing.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18 (both got standardised error responses in the audit)</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-cron-admin-fns" onclick="toggleDetail('mod-cron-admin-fns')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name plain">8 CRON / admin functions</span></div>
+        <span class="detail-chevron" id="chev-mod-cron-admin-fns">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-cron-admin-fns">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Scheduled batch jobs that run without a user ever opening the app — the main one, <code>generate-daily-plans-batch</code>, runs at 5:00 AM IST and builds tomorrow's plan for every onboarded user, skipping anyone who already has a complete plan.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>generate-daily-plans-batch</code> — representative example: iterates every onboarded profile, ensures a plan exists for "tomorrow," logs but never aborts on a single user's failure.<br>
+          7 other CRON/admin functions follow the same pattern for their own batch jobs.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is the fix that mattered most in the security audit: these 8 functions previously had no check at all — anyone who found the URL could trigger a full batch run for every user. They now require a server-only secret key.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-send-morning-notification-fn" onclick="toggleDetail('mod-send-morning-notification-fn')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name">send-morning-notification</span></div>
+        <span class="detail-chevron" id="chev-mod-send-morning-notification-fn">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-send-morning-notification-fn">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Sends each user a personalised "here's your breakfast today" push notification via OneSignal, 15 minutes after the overnight batch job finishes building everyone's plan.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>send-morning-notification</code> — runs at 5:15 AM IST; for every user with notifications on, fetches today's breakfast dish, sends via OneSignal, and records the send so it's never sent twice. Never sends between 10pm–6am regardless of trigger timing.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">The quiet-hours guard and the send-log exist specifically to stop the app from being the kind that pings users at an inconsiderate hour or sends the same notification twice.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-third-party-services" onclick="toggleDetail('mod-third-party-services')">
+        <div class="detail-left"><span class="tag tag-cfg">Config</span><span class="detail-name plain">Third-party services</span></div>
+        <span class="detail-chevron" id="chev-mod-third-party-services">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-third-party-services">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The external services FooFoo depends on, outside its own Supabase backend.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>OneSignal</code> — push notification delivery; switched from development to production credentials this session for the Play Store build.<br>
+          <code>PostHog</code> — product analytics (screen views, taps).<br>
+          <code>Supabase Vault</code> — where API keys and secrets actually live, never committed to git.<br>
+          <code>Google Play Store</code> — the EAS build pipeline that produces the app-bundle Google requires for submission.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">None of these are "nice to have" — wrong OneSignal credentials means no notifications reach real phones, and the wrong build format means Google rejects the app outright.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
     <!-- MODULES_INJECT -->
   </div>
 
@@ -604,6 +1146,10 @@
         <tr><td class="fr-file">foofoo/app.json</td><td><span class="tag tag-cfg">Config</span></td><td class="fr-session">S1</td><td class="fr-desc">Turned on production push-notification credentials and added the required privacy policy link</td></tr>
         <tr><td class="fr-file">.claude/skills/session-knowledge-doc/</td><td><span class="tag tag-new">New</span></td><td class="fr-session">S1</td><td class="fr-desc">The tool that writes and maintains this knowledge book</td></tr>
         <tr><td class="fr-file">KNOWLEDGE.html</td><td><span class="tag tag-new">New</span></td><td class="fr-session">S1</td><td class="fr-desc">This file — created to track the project going forward</td></tr>
+        <tr><td class="fr-file">KNOWLEDGE.html</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S2</td><td class="fr-desc">Added Modules page, System Flow page, fixed architecture tile click affordance, added S2 session entry</td></tr>
+        <tr><td class="fr-file">.claude/skills/session-knowledge-doc/SKILL.md</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S2</td><td class="fr-desc">Added Module Reference + System Flow instructions, self-documentation rule, 5-layer architecture guidance</td></tr>
+        <tr><td class="fr-file">.claude/skills/session-knowledge-doc/references/shell-template.md</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S2</td><td class="fr-desc">Split Phone/App Logic architecture layers, added Modules + System Flow pages, fixed tile cursor/hover CSS</td></tr>
+        <tr><td class="fr-file">.claude/skills/session-knowledge-doc/references/session-block-template.md</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S2</td><td class="fr-desc">Added Module Reference entry template and System Flow diagram template</td></tr>
         <!-- FILES_INJECT -->
       </tbody>
     </table>
@@ -654,11 +1200,26 @@
       <div class="decision-a">Google Play stopped accepting the old "APK" build format in 2021. The build pipeline now produces the "app bundle" format Google requires.</div>
       <div class="decision-meta">S1 · Jun 18</div>
     </div>
+    <div class="decision-item">
+      <div class="decision-q">Why fix the dotfiles skill templates, not just this one project's KNOWLEDGE.html?</div>
+      <div class="decision-a">The bugs (broken click affordance, missing module detail, no flow view) came from the shared skill template every project clones from the dotfiles repo. Patching only this file would mean the next project — or the next session here — hits the same bugs again.</div>
+      <div class="decision-meta">S2 · Jun 18</div>
+    </div>
+    <div class="decision-item">
+      <div class="decision-q">Why does the Module Reference content come from reading the actual code, not a description written from memory?</div>
+      <div class="decision-a">A description written without checking the source risks being wrong or stale. Reading each file's header comment and exported functions before writing about it means the explanation reflects what the code actually does today.</div>
+      <div class="decision-meta">S2 · Jun 18</div>
+    </div>
+    <div class="decision-item">
+      <div class="decision-q">Why split "Phone" and "App Logic" into two separate architecture layers instead of one?</div>
+      <div class="decision-a">Screens and repositories were both bundled under "Phone," which hid the middle layer of the app entirely — exactly the gap that was flagged. Splitting them makes the actual code structure visible, not just the UI.</div>
+      <div class="decision-meta">S2 · Jun 18</div>
+    </div>
     <!-- DECISIONS_INJECT -->
   </div>
 
   <!-- ── Session pages injected here ── -->
-  <div id="page-s1" class="page-content">
+  <div id="page-s1" class="page-content" style="display:none">
 
     <div class="page-header">
       <div class="page-title">S1 · Meal Engine foundation + compliance cleanup</div>
@@ -959,6 +1520,157 @@
     </div><!-- /detail -->
 
   </div><!-- /page-s1 -->
+
+  <div id="page-s2" class="page-content">
+
+    <div class="page-header">
+      <div class="page-title">S2 · Knowledge book overhaul</div>
+      <div class="page-subtitle">Fixed the knowledge book itself — architecture tiles now actually explain what they are, sourced from the real code, plus a new view showing how a request travels front-end to back-end.</div>
+    </div>
+
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-title">What was built this session</div>
+        <div class="session-card-meta">2026-06-18<br>4 things touched</div>
+      </div>
+      <div class="session-card-desc">The first version of this knowledge book had architecture tiles that looked clickable but mostly weren't, and gave no detail beyond a filename. This session: every tile now opens a real explanation pulled from the code's own comments, added a new "System flow" view showing how a screen tap actually travels through the app to the database and back, and fixed the underlying tool (not just this one file) so future sessions build this correctly without being asked.</div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n" style="color:#1a56db">0</div><div class="stat-l">Screens</div></div>
+        <div class="stat"><div class="stat-n" style="color:#5145b8">4</div><div class="stat-l">Code files</div></div>
+        <div class="stat"><div class="stat-n" style="color:#0e7a5a">0</div><div class="stat-l">DB changes</div></div>
+        <div class="stat"><div class="stat-n" style="color:#92500a">0</div><div class="stat-l">Server fns</div></div>
+      </div>
+    </div>
+
+    <div class="view-tabs">
+      <div class="view-tab active" onclick="switchView('s2','swim')">Swim lane flow</div>
+      <div class="view-tab" onclick="switchView('s2','detail')">Detail drill-down</div>
+    </div>
+
+    <!-- ══ SWIM LANE VIEW ══ -->
+    <div id="s2-swim" class="view-pane active">
+      <div class="swim-lane lane-blue">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Knowledge book</div><div class="swim-label-sub">what you see</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step" onclick="jumpDetail('s2','arch-fix')">
+            <div class="step-num num-blue">1</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">Architecture tiles now visibly distinguish clickable from not</span><span class="tag tag-mod">Modified</span></div><div class="step-desc">Only tiles with a real explanation behind them show a pointer cursor and a ↗ arrow.</div></div>
+          </div>
+          <div class="swim-step" onclick="jumpDetail('s2','modules-page')">
+            <div class="step-num num-blue">2</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">New "Modules" page — 31 entries</span><span class="tag tag-new">New</span></div><div class="step-desc">Every architecture tile now opens a real plain-English explanation.</div></div>
+          </div>
+          <div class="swim-step" onclick="jumpDetail('s2','flow-page')">
+            <div class="step-num num-blue">3</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">New "System flow" page</span><span class="tag tag-new">New</span></div><div class="step-desc">Two diagrams showing exactly how onboarding and daily-plan generation travel through the app.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ The fixes were made at the source, not just patched onto this one file</div>
+      <div class="swim-lane" style="margin-bottom:10px">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Skill logic</div><div class="swim-label-sub">dotfiles tooling</div></div></div>
+        <div class="swim-body" style="background:var(--purple-bg);border-color:var(--purple-border)">
+          <div class="swim-step" onclick="jumpDetail('s2','skill-fix')">
+            <div class="step-num num-purple">4</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">The skill's own instructions and templates corrected</span><span class="tag tag-mod">Modified</span></div><div class="step-desc">So the next project — or the next session on this one — builds this correctly the first time.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="next-box">
+        <div class="next-label">Next session</div>
+        <div class="next-text">Get the dotfiles fix actually pushed to <code>apverse-labs/dotfiles</code> once repo access is granted (still blocked on a 403 as of this session). Keep extending Module Reference coverage as new files get touched.</div>
+      </div>
+    </div><!-- /swim -->
+
+    <!-- ══ DETAIL DRILL-DOWN VIEW ══ -->
+    <div id="s2-detail" class="view-pane">
+      <div class="detail-item">
+        <div class="detail-row" id="row-s2-arch-fix" onclick="toggleDetail('s2-arch-fix')">
+          <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name plain">Architecture tile click affordance</span></div>
+          <span class="detail-chevron" id="chev-s2-arch-fix">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s2-arch-fix">
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">Every architecture tile previously had the same hover/cursor styling whether or not clicking it did anything — most tiles had no destination at all, so clicking felt broken. Now only tiles with a real module entry behind them look clickable.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow"><span class="dd-node">Tile has onclick</span><span class="dd-arrow">→</span><span class="dd-node">cursor:pointer + ↗ icon</span><span class="dd-arrow">→</span><span class="dd-node">No onclick = plain, non-interactive tile</span></div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">.arch-node[onclick]{cursor:pointer}</span>  ← Styling now follows whether the tile actually does something, not a blanket rule on every tile</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why did this go unnoticed at first?</div>
+            <div class="dd-why-a">The base style gave every tile a pointer cursor regardless of whether it had an onclick handler — so an unwired tile was visually indistinguishable from a wired one until you actually clicked it.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-row" id="row-s2-modules-page" onclick="toggleDetail('s2-modules-page')">
+          <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name plain">Modules page (31 entries)</span></div>
+          <span class="detail-chevron" id="chev-s2-modules-page">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s2-modules-page">
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">A new reference page, one entry per code file/database table, explaining what it does, what's inside it, and how it helps the app — sourced from the actual header comments and exported function names in the code, not invented.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow"><span class="dd-node">Read file's header comment / JSDoc</span><span class="dd-arrow">→</span><span class="dd-node">Translate to plain English</span><span class="dd-arrow">→</span><span class="dd-node">Wire matching architecture tile to it</span></div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">function jumpModule(id){ showPage('modules'); ... }</span>  ← Clicking any wired architecture tile lands here and auto-expands the right entry</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why pull from code comments instead of just describing the filename?</div>
+            <div class="dd-why-a">A filename tells you nothing about purpose. Reading the actual header comment/JSDoc means the explanation reflects what the original developer intended, not a guess.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-row" id="row-s2-flow-page" onclick="toggleDetail('s2-flow-page')">
+          <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name plain">System flow page (2 diagrams)</span></div>
+          <span class="detail-chevron" id="chev-s2-flow-page">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s2-flow-page">
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">Shows the actual front-end-to-back-end sequence for "onboarding → persona assignment" and "daily plan generation" — which screen calls which server function, which then calls which repository, which then reads/writes which table.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow"><span class="dd-node">Reused the swim-lane visual style</span><span class="dd-arrow">→</span><span class="dd-node">Scoped to one feature instead of one session</span><span class="dd-arrow">→</span><span class="dd-node">Same jumpModule() click-through as the architecture page</span></div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">.flow-block</span>  ← Same markup as a session's swim lane, just living on its own permanent page rather than scoped to one session</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why reuse the swim-lane markup instead of building a new diagram type?</div>
+            <div class="dd-why-a">It already exists, is already styled, and a PM who's seen one session's swim lane already knows how to read it — no new visual language to learn.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-row" id="row-s2-skill-fix" onclick="toggleDetail('s2-skill-fix')">
+          <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name plain">session-knowledge-doc skill (dotfiles)</span></div>
+          <span class="detail-chevron" id="chev-s2-skill-fix">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s2-skill-fix">
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">The instructions and HTML templates that tell Claude how to build this knowledge book — fixed at the source (in <code>~/.claude/skills/</code>, synced from a separate "dotfiles" repo) rather than only in this one project's copy, so every project that clones the dotfiles repo gets the fix.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow"><span class="dd-node">SKILL.md instructions updated</span><span class="dd-arrow">→</span><span class="dd-node">shell-template.md / session-block-template.md updated</span><span class="dd-arrow">→</span><span class="dd-node">Synced into this project's local .claude/skills/ copy</span></div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">"This includes changes to the knowledge book and skill themselves."</span>  ← New rule added so this kind of self-referential fix gets documented automatically next time, without the user having to ask</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why wasn't this caught and documented automatically the first time?</div>
+            <div class="dd-why-a">The skill's "document every session" rule didn't explicitly say it applied to edits to the skill/knowledge-book tooling itself — it read as being about app code only. That ambiguity is now closed.</div>
+          </div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why couldn't the dotfiles fix be pushed during this session?</div>
+            <div class="dd-why-a">This Codespace's GitHub token only has write access to <code>apverse-labs/foofoo</code> (the repo it was created from), not <code>apverse-labs/dotfiles</code>. The fix is committed locally and waiting on a repo-access change.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="next-box">
+        <div class="next-label">Next session</div>
+        <div class="next-text">Push the pending dotfiles commits once repo access is granted. Continue adding Module Reference entries as new files get touched, so the "every tile wired" goal stays true.</div>
+      </div>
+    </div><!-- /detail -->
+
+  </div><!-- /page-s2 -->
 
   <!-- SESSIONS_INJECT -->
 

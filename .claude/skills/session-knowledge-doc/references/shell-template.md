@@ -115,8 +115,10 @@ All `<!-- *_INJECT -->` comments MUST be preserved — they are how future sessi
   .arch-section{margin-bottom:20px}
   .arch-section-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px;padding-bottom:6px;border-bottom:1px solid var(--border)}
   .arch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:7px}
-  .arch-node{padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:border-color .12s,background .12s}
-  .arch-node:hover{border-color:var(--border2);background:var(--surface2)}
+  .arch-node{position:relative;padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);cursor:default;transition:border-color .12s,background .12s}
+  .arch-node[onclick]{cursor:pointer}
+  .arch-node[onclick]:hover{border-color:var(--border2);background:var(--surface2)}
+  .arch-node[onclick]::after{content:"↗";position:absolute;top:8px;right:10px;color:var(--text3);font-size:11px}
   .arch-node.is-new{border-color:var(--teal-border);background:var(--teal-bg)}
   .arch-node.is-mod{border-color:var(--orange-border);background:var(--orange-bg)}
   .arch-node-name{font-size:12px;font-weight:600;font-family:'SF Mono','Fira Code',monospace;margin-bottom:2px}
@@ -177,6 +179,9 @@ All `<!-- *_INJECT -->` comments MUST be preserved — they are how future sessi
     <div class="nav-item" onclick="showPage('timeline-full')">
       <span class="nav-icon">📅</span> Build timeline
     </div>
+    <div class="nav-item" onclick="showPage('flow')">
+      <span class="nav-icon">🔀</span> System flow
+    </div>
   </div>
 
   <hr class="sidebar-divider">
@@ -219,9 +224,15 @@ All `<!-- *_INJECT -->` comments MUST be preserved — they are how future sessi
       <div class="legend-item"><div class="legend-dot" style="background:var(--surface);border:1px solid var(--border)"></div> Existing</div>
     </div>
     <div class="arch-section">
-      <div class="arch-section-title">📱 Phone — screens &amp; logic</div>
+      <div class="arch-section-title">📱 Phone — screens</div>
       <div class="arch-grid" id="arch-phone">
         <!-- ARCH_PHONE_INJECT -->
+      </div>
+    </div>
+    <div class="arch-section">
+      <div class="arch-section-title">🧠 App Logic — repositories, hooks &amp; config</div>
+      <div class="arch-grid" id="arch-applogic">
+        <!-- ARCH_APPLOGIC_INJECT -->
       </div>
     </div>
     <div class="arch-section">
@@ -242,6 +253,15 @@ All `<!-- *_INJECT -->` comments MUST be preserved — they are how future sessi
         <!-- ARCH_SERVICES_INJECT -->
       </div>
     </div>
+  </div>
+
+  <!-- ── System flow page ── -->
+  <div id="page-flow" class="page-content" style="display:none">
+    <div class="page-header">
+      <div class="page-title">System flow</div>
+      <div class="page-subtitle">How a request actually travels through the app, step by step — click any step to see its full explanation.</div>
+    </div>
+    <!-- FLOWS_INJECT -->
   </div>
 
   <!-- ── Timeline page ── -->

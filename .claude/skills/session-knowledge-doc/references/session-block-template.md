@@ -176,8 +176,9 @@ Inject above `<!-- SESSIONS_INJECT -->`:
 ---
 
 ## Architecture map node additions
-Inject into the correct layer section above `<!-- ARCH_PHONE_INJECT -->` /
-`ARCH_DB_INJECT` / `ARCH_SERVER_INJECT` / `ARCH_SERVICES_INJECT` (whichever layer fits):
+Inject into the correct layer section above `<!-- ARCH_PHONE_INJECT -->` (screens only) /
+`ARCH_APPLOGIC_INJECT` (repositories, hooks, config — the middle layer) / `ARCH_DB_INJECT` /
+`ARCH_SERVER_INJECT` / `ARCH_SERVICES_INJECT` (whichever layer fits):
 
 ```html
 <div class="arch-node {{is-new OR is-mod OR blank}}" onclick="jumpModule('{{MODULE_ID}}')">
@@ -225,6 +226,62 @@ adding a duplicate.
   </div>
 </div>
 ```
+
+---
+
+## System flow diagram
+One per major feature flow (not per session) — append above `<!-- FLOWS_INJECT -->` in
+`page-flow` the first time this flow is documented; update an existing flow's steps in
+place if a later session changes how it works, rather than adding a second diagram for
+the same feature. Reuses the same swim-lane markup as a session page, just without the
+view-tabs/detail-drilldown wrapper around it — this is a flow, not a session.
+
+```html
+<div class="flow-block" style="margin-bottom:32px">
+  <div class="step-title" style="font-size:15px;margin-bottom:4px">{{FLOW_TITLE}}</div>
+  <div class="step-desc" style="margin-bottom:12px">{{ONE_SENTENCE_WHAT_THIS_FLOW_ACHIEVES}}</div>
+
+  <div class="swim-lane lane-blue">
+    <div class="swim-label"><div class="swim-label-inner">
+      <div class="swim-label-title">Phone</div><div class="swim-label-sub">user sees</div>
+    </div></div>
+    <div class="swim-body">
+      {{REPEAT_FOR_EACH_PHONE_STEP: same .swim-step structure as a session swim lane,
+        onclick="jumpModule('{{MODULE_ID}}')" if that step has a Module Reference entry}}
+    </div>
+  </div>
+  <div class="swim-arrow">↕ {{TRANSITION}}</div>
+  <div class="swim-lane" style="margin-bottom:10px">
+    <div class="swim-label"><div class="swim-label-inner">
+      <div class="swim-label-title">App logic</div><div class="swim-label-sub">hooks / code</div>
+    </div></div>
+    <div class="swim-body" style="background:var(--purple-bg);border-color:var(--purple-border)">
+      {{REPEAT_FOR_EACH_LOGIC_STEP}}
+    </div>
+  </div>
+  <div class="swim-arrow">↕ {{TRANSITION}}</div>
+  <div class="swim-lane lane-teal">
+    <div class="swim-label"><div class="swim-label-inner">
+      <div class="swim-label-title">Database</div><div class="swim-label-sub">Supabase</div>
+    </div></div>
+    <div class="swim-body">
+      {{REPEAT_FOR_EACH_DB_STEP}}
+    </div>
+  </div>
+  <div class="swim-arrow">↕ {{TRANSITION}}</div>
+  <div class="swim-lane lane-amber">
+    <div class="swim-label"><div class="swim-label-inner">
+      <div class="swim-label-title">Server</div><div class="swim-label-sub">edge functions</div>
+    </div></div>
+    <div class="swim-body">
+      {{REPEAT_FOR_EACH_SERVER_STEP}}
+    </div>
+  </div>
+</div>
+```
+
+Number steps in real call order — if the flow starts on the server (e.g. a cron job),
+its first step can be numbered 1 even though the Server lane is drawn last.
 
 ---
 

@@ -25,6 +25,13 @@ If code was written, a file was changed, a DB column was added, a config was tou
 a decision was made — it goes in the knowledge book. Every session. No exceptions.
 This is the non-technical PM's only reliable window into what is being built.
 
+**This includes changes to the knowledge book and skill themselves.** If you edited
+`KNOWLEDGE.html` directly, or edited any file under `.claude/skills/session-knowledge-doc/`
+(this skill's own templates), that is still "code/files touched" — log it as its own
+session before ending your turn, the same as an app feature. Don't wait for the user to
+notice it's missing and ask. The fact that the change was to the documentation tool
+itself doesn't exempt it from being documented.
+
 ---
 
 ## Step 1 — Find or create the knowledge book
@@ -135,13 +142,21 @@ that was an earlier design idea that never shipped; the drawer goes straight fro
 detail-row into the four `dd-label` sections above.
 
 ### Architecture map update
-- Add new nodes in the correct layer (Phone / Database / Server / Services)
+- 5 layers, each its own `arch-grid`/injection point: **Phone** (screens only — what
+  the user actually sees), **App Logic** (repositories, hooks, config, utilities — the
+  "middle layer" between screens and the server/DB), **Database** (tables), **Server**
+  (edge functions/APIs), **Services** (third-party integrations). Screens and
+  repositories are NOT the same layer — don't lump them into one "Phone" bucket.
 - Mark `is-new` for created this session, `is-mod` for modified
 - Do NOT remove old nodes — the map is cumulative
-- If you wrote a Module Reference entry for this node (see Step 4a), add
-  `onclick="jumpModule('{{MODULE_ID}}')"` to the `.arch-node` div so clicking the tile
-  opens that module's full explanation (F24). Nodes without a module entry yet stay
-  non-clickable rather than linking to nothing.
+- **Every node should end up with a Module Reference entry eventually** — when you add
+  or touch a node, write its module entry (Step 4a) in the same pass rather than leaving
+  it as a dead tile. A tile with no `onclick` looks identical to a clickable one (same
+  hover/cursor styling otherwise), so an undocumented tile is a silent UX bug, not a
+  harmless gap — treat "every tile is wired" as the target state, not an optional extra.
+- Add `onclick="jumpModule('{{MODULE_ID}}')"` to the `.arch-node` div once its module
+  entry exists (F24). Multiple tiles may point at the same module id when they're one
+  cohesive unit (e.g. 3 tables from one migration).
 
 ### Step 4a — Module Reference (what each piece of code/DB is *for*)
 This is the layer that explains *why* a file or table exists, not just that it changed.
@@ -169,6 +184,24 @@ block:
   touched it, rather than creating a duplicate entry.
 - Update the `<span class="nav-badge">` count on the "Modules" sidebar nav-item to the
   new total module count.
+
+### Step 4b — System Flow (front-end → back-end sequence diagrams)
+A separate page, cumulative like Modules, showing how a major user-facing flow actually
+travels through the layers — e.g. "Onboarding → persona assignment" or "Daily plan
+generation." This is what answers "what calls what" for a non-coder.
+
+- One flow diagram per major feature flow, not one per session — only add a new flow
+  diagram when a session introduces a flow that doesn't have one yet, or update an
+  existing flow's diagram if this session changed the sequence of an existing flow.
+- Reuse the swim-lane markup (`.swim-lane`/`.swim-step`, same 4 lanes: Phone, App Logic,
+  Database, Server) — a flow diagram looks exactly like a session's swim lane view, just
+  scoped to one feature instead of one session, and living on its own page so it doesn't
+  get buried under session history.
+- Number steps in actual chronological/call order, even if that means the Server lane
+  has step 1 (e.g. a flow that starts with a cron job calling into the server first).
+- Every step that has a Module Reference entry gets `onclick="jumpModule('{{MODULE_ID}}')"`
+  — this is what makes the flow diagram a clickable map instead of a static picture.
+- Append above `<!-- FLOWS_INJECT -->` in `page-flow`.
 
 ### Timeline row
 - Append one row to the timeline
@@ -203,7 +236,7 @@ block:
 
 ```bash
 # Verify injection points exist
-grep -n "SESSIONS_INJECT\|NAV_INJECT\|ARCH_.*_INJECT\|TIMELINE_INJECT\|FILES_INJECT\|MODULES_INJECT\|DECISIONS_INJECT" KNOWLEDGE.html
+grep -n "SESSIONS_INJECT\|NAV_INJECT\|ARCH_.*_INJECT\|TIMELINE_INJECT\|FILES_INJECT\|MODULES_INJECT\|FLOWS_INJECT\|DECISIONS_INJECT" KNOWLEDGE.html
 ```
 
 Replace each injection comment with new content + the comment (so it stays injectable
@@ -218,9 +251,10 @@ becomes:
 <!-- SESSIONS_INJECT -->
 ```
 
-Do the same for NAV_INJECT, ARCH_PHONE_INJECT / ARCH_DB_INJECT / ARCH_SERVER_INJECT /
-ARCH_SERVICES_INJECT (update nodes), TIMELINE_INJECT (append row), FILES_INJECT (append
-rows), MODULES_INJECT (append module entries), DECISIONS_INJECT (append items).
+Do the same for NAV_INJECT, ARCH_PHONE_INJECT / ARCH_APPLOGIC_INJECT / ARCH_DB_INJECT /
+ARCH_SERVER_INJECT / ARCH_SERVICES_INJECT (update nodes), TIMELINE_INJECT (append row),
+FILES_INJECT (append rows), MODULES_INJECT (append module entries), FLOWS_INJECT (append
+flow diagrams), DECISIONS_INJECT (append items).
 
 ---
 
