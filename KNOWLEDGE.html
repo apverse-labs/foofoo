@@ -1,0 +1,790 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FooFoo — Build Knowledge</title>
+<style>
+  :root {
+    --bg:#f7f6f3; --surface:#ffffff; --surface2:#f2f1ee;
+    --border:#e4e2dc; --border2:#d0cec7;
+    --text:#1a1917; --text2:#6b6860; --text3:#9e9b94;
+    --blue:#1a56db; --blue-bg:#eff4ff; --blue-border:#c3d4fa;
+    --teal:#0e7a5a; --teal-bg:#e8f8f2; --teal-border:#a3dfc9;
+    --purple:#5145b8; --purple-bg:#f0effe; --purple-border:#c8c4f4;
+    --amber:#92500a; --amber-bg:#fef8ec; --amber-border:#f5d68a;
+    --green:#166534; --green-bg:#f0fdf4; --green-border:#86efac;
+    --orange:#9a3412; --orange-bg:#fff7ed; --orange-border:#fdba74;
+    --sidebar-w:220px; --radius:8px; --radius-sm:5px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--bg);color:var(--text);font-size:14px;display:flex;min-height:100vh}
+
+  #sidebar{width:var(--sidebar-w);flex-shrink:0;background:var(--surface);border-right:1px solid var(--border);display:flex;flex-direction:column;position:sticky;top:0;height:100vh;overflow-y:auto}
+  .sidebar-logo{padding:18px 16px 14px;border-bottom:1px solid var(--border)}
+  .sidebar-logo .app-name{font-size:15px;font-weight:600}
+  .sidebar-logo .app-sub{font-size:11px;color:var(--text3);margin-top:2px}
+  .sidebar-section{padding:10px 10px 4px}
+  .sidebar-section-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);padding:0 6px;margin-bottom:4px}
+  .nav-item{display:flex;align-items:center;gap:8px;padding:7px 10px;border-radius:var(--radius-sm);cursor:pointer;color:var(--text2);font-size:13px;transition:background .12s,color .12s;user-select:none}
+  .nav-item:hover{background:var(--surface2);color:var(--text)}
+  .nav-item.active{background:var(--blue-bg);color:var(--blue);font-weight:500}
+  .nav-item .nav-icon{font-size:14px;flex-shrink:0}
+  .nav-item .nav-badge{margin-left:auto;font-size:10px;padding:1px 6px;border-radius:10px;background:var(--surface2);color:var(--text3)}
+  .nav-item.active .nav-badge{background:var(--blue-border);color:var(--blue)}
+  .sidebar-divider{border:none;border-top:1px solid var(--border);margin:6px 10px}
+
+  #main{flex:1;overflow-y:auto;padding:28px 32px;max-width:860px}
+  .page-header{margin-bottom:24px}
+  .page-title{font-size:22px;font-weight:600;margin-bottom:4px}
+  .page-subtitle{font-size:13px;color:var(--text2);line-height:1.6}
+
+  .session-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:18px 20px;margin-bottom:20px}
+  .session-card-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px}
+  .session-card-title{font-size:16px;font-weight:600}
+  .session-card-meta{font-size:11px;color:var(--text3);text-align:right;line-height:1.7}
+  .session-card-desc{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:14px}
+  .stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+  .stat{background:var(--surface2);border-radius:var(--radius-sm);padding:10px 12px;text-align:center}
+  .stat-n{font-size:20px;font-weight:600}
+  .stat-l{font-size:11px;color:var(--text3);margin-top:2px}
+
+  .view-tabs{display:flex;gap:2px;margin-bottom:20px;border-bottom:1px solid var(--border)}
+  .view-tab{padding:8px 16px;font-size:13px;font-weight:500;color:var(--text2);cursor:pointer;border-bottom:2px solid transparent;margin-bottom:-1px;transition:color .12s,border-color .12s;user-select:none;white-space:nowrap}
+  .view-tab:hover{color:var(--text)}
+  .view-tab.active{color:var(--blue);border-bottom-color:var(--blue)}
+  .view-pane{display:none}.view-pane.active{display:block}
+
+  .swim-lane{display:flex;margin-bottom:10px}
+  .swim-label{width:100px;flex-shrink:0;display:flex;align-items:flex-start;justify-content:flex-end;padding:14px 12px 12px 0}
+  .swim-label-inner{text-align:right}
+  .swim-label-title{font-size:11px;font-weight:600;color:var(--text2)}
+  .swim-label-sub{font-size:10px;color:var(--text3);margin-top:1px}
+  .swim-body{flex:1;border-radius:var(--radius);border:1px solid var(--border);padding:10px 12px;display:flex;flex-direction:column;gap:6px}
+  .lane-blue .swim-body{background:var(--blue-bg);border-color:var(--blue-border)}
+  .lane-teal .swim-body{background:var(--teal-bg);border-color:var(--teal-border)}
+  .lane-amber .swim-body{background:var(--amber-bg);border-color:var(--amber-border)}
+  .swim-step{display:flex;align-items:flex-start;gap:8px;padding:2px 0}
+  .step-num{width:20px;height:20px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:600;flex-shrink:0;margin-top:1px}
+  .num-blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
+  .num-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+  .num-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
+  .num-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+  .step-content{flex:1}
+  .step-title-row{display:flex;align-items:center;gap:6px;margin-bottom:2px}
+  .step-title{font-size:13px;font-weight:500}
+  .step-desc{font-size:12px;color:var(--text2);line-height:1.5}
+  .swim-arrow{text-align:center;font-size:11px;color:var(--text3);padding:4px 0;padding-left:112px}
+
+  .tag{font-size:10px;padding:2px 7px;border-radius:10px;font-weight:500;flex-shrink:0}
+  .tag-new{background:var(--green-bg);color:var(--green);border:1px solid var(--green-border)}
+  .tag-mod{background:var(--orange-bg);color:var(--orange);border:1px solid var(--orange-border)}
+  .tag-db{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+  .tag-cfg{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
+
+  .detail-item{margin-bottom:8px}
+  .detail-row{display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);cursor:pointer;transition:border-color .12s,border-radius .12s;user-select:none}
+  .detail-row:hover{border-color:var(--border2)}
+  .detail-row.open{border-color:var(--blue-border);border-radius:var(--radius-sm) var(--radius-sm) 0 0}
+  .detail-left{display:flex;align-items:center;gap:8px}
+  .detail-name{font-size:13px;font-weight:500;font-family:'SF Mono','Fira Code',monospace}
+  .detail-name.plain{font-family:inherit}
+  .detail-chevron{font-size:12px;color:var(--text3);transition:transform .15s}
+  .detail-chevron.open{transform:rotate(180deg)}
+  .detail-drawer{display:none;background:var(--surface2);border:1px solid var(--blue-border);border-top:none;border-radius:0 0 var(--radius-sm) var(--radius-sm);padding:12px 14px;margin-bottom:8px}
+  .detail-drawer.open{display:block}
+  .dd-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-bottom:4px;margin-top:12px}
+  .dd-label:first-child{margin-top:0}
+  .dd-text{font-size:13px;color:var(--text2);line-height:1.6}
+  .dd-flow{display:flex;align-items:center;gap:5px;flex-wrap:wrap;margin-top:5px}
+  .dd-node{font-size:11px;padding:3px 9px;border-radius:var(--radius-sm);background:var(--surface);border:1px solid var(--border);color:var(--text2);white-space:nowrap}
+  .dd-arrow{font-size:11px;color:var(--text3)}
+  .dd-code{font-family:'SF Mono','Fira Code',monospace;font-size:12px;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:8px 10px;color:var(--text2);line-height:1.8;margin-top:5px}
+  .dd-hl{color:#92400e;font-weight:600;background:#fef3c7;padding:1px 3px;border-radius:3px}
+  .dd-why{padding:8px 12px;border-left:3px solid var(--teal-border);background:var(--teal-bg);border-radius:0 var(--radius-sm) var(--radius-sm) 0;margin-top:5px}
+  .dd-why-q{font-size:11px;font-weight:600;color:var(--teal);margin-bottom:3px}
+  .dd-why-a{font-size:12px;color:var(--text2);line-height:1.5}
+
+  .seq-strip{display:flex;align-items:center;gap:0;flex-wrap:wrap;margin-bottom:10px;padding-bottom:10px;border-bottom:1px dashed var(--border)}
+  .seq-strip-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin-right:8px}
+  .seq-node{display:flex;align-items:center}
+  .seq-step{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text2);cursor:pointer;padding:2px 4px;border-radius:4px}
+  .seq-step:hover{background:var(--surface)}
+  .seq-num{width:16px;height:16px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;flex-shrink:0}
+  .seq-num-blue{background:var(--blue-bg);color:var(--blue);border:1px solid var(--blue-border)}
+  .seq-num-purple{background:var(--purple-bg);color:var(--purple);border:1px solid var(--purple-border)}
+  .seq-num-teal{background:var(--teal-bg);color:var(--teal);border:1px solid var(--teal-border)}
+  .seq-num-amber{background:var(--amber-bg);color:var(--amber);border:1px solid var(--amber-border)}
+  .seq-num-gray{background:var(--surface2);color:var(--text3);border:1px solid var(--border)}
+  .seq-arr{font-size:11px;color:var(--text3);margin:0 3px}
+  .seq-jump{font-size:11px;color:var(--blue);cursor:pointer;margin-left:8px;white-space:nowrap}
+  .hl-step{outline:2px solid var(--blue-border);border-radius:6px}
+
+  .arch-section{margin-bottom:20px}
+  .arch-section-title{font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px;display:flex;align-items:center;gap:6px;padding-bottom:6px;border-bottom:1px solid var(--border)}
+  .arch-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(148px,1fr));gap:7px}
+  .arch-node{padding:10px 12px;border-radius:var(--radius-sm);border:1px solid var(--border);background:var(--surface);cursor:pointer;transition:border-color .12s,background .12s}
+  .arch-node:hover{border-color:var(--border2);background:var(--surface2)}
+  .arch-node.is-new{border-color:var(--teal-border);background:var(--teal-bg)}
+  .arch-node.is-mod{border-color:var(--orange-border);background:var(--orange-bg)}
+  .arch-node-name{font-size:12px;font-weight:600;font-family:'SF Mono','Fira Code',monospace;margin-bottom:2px}
+  .arch-node-name.plain{font-family:inherit}
+  .arch-node-desc{font-size:11px;color:var(--text3);line-height:1.4}
+  .arch-legend{display:flex;gap:12px;margin-bottom:12px}
+  .legend-item{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--text3)}
+  .legend-dot{width:10px;height:10px;border-radius:2px}
+
+  .timeline-row{display:flex;gap:0}
+  .tl-date{width:80px;flex-shrink:0;padding:12px 14px 0 0;text-align:right;font-size:11px;color:var(--text3);line-height:1.5}
+  .tl-spine{width:1px;background:var(--border);flex-shrink:0;position:relative}
+  .tl-dot{position:absolute;top:16px;left:-5px;width:11px;height:11px;border-radius:50%;border:2px solid var(--bg)}
+  .tl-content{flex:1;padding:8px 0 24px 18px}
+  .tl-badge{font-size:11px;font-weight:600;padding:2px 8px;border-radius:10px;display:inline-block;margin-bottom:5px}
+  .tl-title{font-size:14px;font-weight:600;margin-bottom:5px}
+  .tl-chips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:5px}
+  .tl-chip{font-size:11px;padding:2px 8px;border-radius:10px;background:var(--surface);border:1px solid var(--border);color:var(--text2);cursor:pointer;transition:border-color .1s}
+  .tl-chip:hover{border-color:var(--blue-border);color:var(--blue)}
+  .tl-note{font-size:12px;color:var(--text2);line-height:1.5}
+
+  .next-box{margin-top:20px;padding:12px 16px;border:1px dashed var(--border2);border-radius:var(--radius);background:var(--surface)}
+  .next-label{font-size:10px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--text3);margin-bottom:4px}
+  .next-text{font-size:13px;color:var(--text2);line-height:1.6}
+
+  .files-table{width:100%;border-collapse:collapse;font-size:13px}
+  .files-table th{text-align:left;font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);padding:6px 10px;border-bottom:1px solid var(--border)}
+  .files-table td{padding:8px 10px;border-bottom:1px solid var(--border);vertical-align:top}
+  .fr-file{font-family:'SF Mono','Fira Code',monospace;font-size:12px}
+  .fr-session{color:var(--text3);font-size:12px;white-space:nowrap}
+  .fr-desc{color:var(--text2);font-size:12px}
+
+  .decision-item{padding:12px 14px;border:1px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;background:var(--surface)}
+  .decision-q{font-size:13px;font-weight:500;margin-bottom:4px}
+  .decision-a{font-size:13px;color:var(--text2);line-height:1.6;margin-bottom:6px}
+  .decision-meta{font-size:11px;color:var(--text3)}
+
+  .empty-pane{text-align:center;padding:48px 24px;color:var(--text3)}
+  .empty-pane h3{font-size:15px;font-weight:600;color:var(--text2);margin-bottom:6px}
+  .empty-pane p{font-size:13px;line-height:1.6}
+
+  @media(max-width:640px){#sidebar{display:none}#main{padding:20px 16px}.stat-row{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+
+<nav id="sidebar">
+  <div class="sidebar-logo">
+    <div class="app-name">FooFoo</div>
+    <div class="app-sub">Build knowledge base</div>
+  </div>
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Overview</div>
+    <div class="nav-item active" onclick="showPage('arch-full')">
+      <span class="nav-icon">🗺</span> App architecture
+    </div>
+    <div class="nav-item" onclick="showPage('timeline-full')">
+      <span class="nav-icon">📅</span> Build timeline
+    </div>
+  </div>
+
+  <hr class="sidebar-divider">
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Sessions</div>
+    <div class="nav-item" onclick="showPage('s1')">
+      <span class="nav-icon">🧩</span> S1 · Meal Engine + Compliance
+      <span class="nav-badge">Jun 18</span>
+    </div>
+    <!-- NAV_INJECT -->
+  </div>
+
+  <hr class="sidebar-divider">
+
+  <div class="sidebar-section">
+    <div class="sidebar-section-label">Reference</div>
+    <div class="nav-item" onclick="showPage('files')">
+      <span class="nav-icon">📁</span> Files register
+    </div>
+    <div class="nav-item" onclick="showPage('db')">
+      <span class="nav-icon">🗄</span> Database schema
+    </div>
+    <div class="nav-item" onclick="showPage('decisions')">
+      <span class="nav-icon">💡</span> Key decisions
+    </div>
+  </div>
+</nav>
+
+<main id="main">
+
+  <!-- ── Architecture page ── -->
+  <div id="page-arch-full" class="page-content">
+    <div class="page-header">
+      <div class="page-title">App architecture</div>
+      <div class="page-subtitle">FooFoo — Indian-market meal-decision assistant (Expo/React Native + Supabase). All components across all sessions. Teal = new this session · Amber = modified.</div>
+    </div>
+    <div class="arch-legend">
+      <div class="legend-item"><div class="legend-dot" style="background:var(--teal-bg);border:1px solid var(--teal-border)"></div> New this session</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--orange-bg);border:1px solid var(--orange-border)"></div> Modified</div>
+      <div class="legend-item"><div class="legend-dot" style="background:var(--surface);border:1px solid var(--border)"></div> Existing</div>
+    </div>
+    <div class="arch-section">
+      <div class="arch-section-title">📱 Phone — screens &amp; logic</div>
+      <div class="arch-grid" id="arch-phone">
+        <div class="arch-node is-new"><div class="arch-node-name plain">RE Onboarding flow</div><div class="arch-node-desc">9-step quiz that builds a household's eating profile · S1</div></div>
+        <div class="arch-node"><div class="arch-node-name plain">Original onboarding flow</div><div class="arch-node-desc">7-step legacy signup quiz</div></div>
+        <div class="arch-node"><div class="arch-node-name plain">Auth screens</div><div class="arch-node-desc">Sign up, sign in, forgot password, email verification</div></div>
+        <div class="arch-node"><div class="arch-node-name plain">Dish detail screen</div><div class="arch-node-desc">Single dish view</div></div>
+        <div class="arch-node is-mod"><div class="arch-node-name">re-onboarding.repository.ts</div><div class="arch-node-desc">Now reads UI copy from config, not DB · S1</div></div>
+        <div class="arch-node is-mod"><div class="arch-node-name">re-dish-expander.repository.ts</div><div class="arch-node-desc">Persona class-affinity priors wired in · S1</div></div>
+        <div class="arch-node"><div class="arch-node-name">re-cohort-resolver.repository.ts</div><div class="arch-node-desc">Assigns each household to a persona</div></div>
+        <div class="arch-node"><div class="arch-node-name">re-plan.repository.ts</div><div class="arch-node-desc">Builds the weekly meal plan</div></div>
+        <div class="arch-node"><div class="arch-node-name">re-addon.repository.ts</div><div class="arch-node-desc">Builds per-member add-on suggestions</div></div>
+        <div class="arch-node"><div class="arch-node-name">re-feedback.repository.ts</div><div class="arch-node-desc">Records likes/dislikes/never-again</div></div>
+        <div class="arch-node is-new"><div class="arch-node-name">re-onboarding-content.ts</div><div class="arch-node-desc">Static config holding all onboarding screen copy · S1</div></div>
+        <div class="arch-node"><div class="arch-node-name">dishes / plans / week / grocery repositories</div><div class="arch-node-desc">Original MVP data access layer</div></div>
+        <!-- ARCH_PHONE_INJECT -->
+      </div>
+    </div>
+    <div class="arch-section">
+      <div class="arch-section-title">🗄 Database — tables</div>
+      <div class="arch-grid" id="arch-db">
+        <div class="arch-node is-new"><div class="arch-node-name">re_persona_slot_plan</div><div class="arch-node-desc">1,148 rows — which meal classes fit each persona · S1</div></div>
+        <div class="arch-node is-new"><div class="arch-node-name">re_segment_addon_rule</div><div class="arch-node-desc">46 rows — add-on rules by household segment · S1</div></div>
+        <div class="arch-node is-new"><div class="arch-node-name">re_state_class_affinity</div><div class="arch-node-desc">890 rows — regional meal-class preference by state · S1</div></div>
+        <div class="arch-node is-new"><div class="arch-node-name">re_persona_class_affinity</div><div class="arch-node-desc">426 rows — cold-start meal-class scoring per persona · S1</div></div>
+        <div class="arch-node"><div class="arch-node-name">re_user_weekly_plans</div><div class="arch-node-desc">Each household's locked-in 7-day plan</div></div>
+        <div class="arch-node"><div class="arch-node-name">re_user_addon_plans</div><div class="arch-node-desc">Per-member add-on plan</div></div>
+        <div class="arch-node"><div class="arch-node-name">re_user_feedback / re_user_dish_affinity / re_user_class_affinity</div><div class="arch-node-desc">Learns what each household actually likes over time</div></div>
+        <div class="arch-node is-mod"><div class="arch-node-name">re_weekly_class_plans_archive</div><div class="arch-node-desc">Old cohort-keyed table, archived not deleted · S1</div></div>
+        <div class="arch-node is-mod"><div class="arch-node-name">re_household_addon_plans_archive</div><div class="arch-node-desc">Old cohort-keyed table, archived not deleted · S1</div></div>
+        <div class="arch-node"><div class="arch-node-name">re_cohorts / re_personas / re_class_dish_options</div><div class="arch-node-desc">Reference data — 41 personas, 131 meal classes, 1,050 dish options</div></div>
+        <div class="arch-node"><div class="arch-node-name">user_consent</div><div class="arch-node-desc">Legal consent tracking (DPDP compliance)</div></div>
+        <div class="arch-node"><div class="arch-node-name">42-table MVP baseline</div><div class="arch-node-desc">dishes, planner, ingredients, user_feedback, etc.</div></div>
+        <!-- ARCH_DB_INJECT -->
+      </div>
+    </div>
+    <div class="arch-section">
+      <div class="arch-section-title">☁️ Server — functions</div>
+      <div class="arch-grid" id="arch-server">
+        <div class="arch-node"><div class="arch-node-name">re-onboarding-start / re-onboarding-answer</div><div class="arch-node-desc">Drives the 9-step quiz</div></div>
+        <div class="arch-node"><div class="arch-node-name">re-personas-assign</div><div class="arch-node-desc">Assigns a household to its persona</div></div>
+        <div class="arch-node"><div class="arch-node-name">re-plans-week-generate</div><div class="arch-node-desc">Generates the weekly meal plan</div></div>
+        <div class="arch-node"><div class="arch-node-name">re-recommendations-rank</div><div class="arch-node-desc">Ranks today's dish candidates for a household</div></div>
+        <div class="arch-node"><div class="arch-node-name">re-feedback-events</div><div class="arch-node-desc">Captures like/dislike/never-again events</div></div>
+        <div class="arch-node is-mod"><div class="arch-node-name">generate-daily-plan / regenerate-slot</div><div class="arch-node-desc">Auth guard fixed; standardized error codes</div></div>
+        <div class="arch-node is-mod"><div class="arch-node-name">delete-user-account / log-re-decision</div><div class="arch-node-desc">Error responses standardized to one format</div></div>
+        <div class="arch-node"><div class="arch-node-name">8 CRON / admin functions</div><div class="arch-node-desc">Batch jobs — now require a service-role key to run</div></div>
+        <div class="arch-node"><div class="arch-node-name">send-morning-notification</div><div class="arch-node-desc">Daily push reminder</div></div>
+        <!-- ARCH_SERVER_INJECT -->
+      </div>
+    </div>
+    <div class="arch-section">
+      <div class="arch-section-title">🔌 Services</div>
+      <div class="arch-grid" id="arch-services">
+        <div class="arch-node"><div class="arch-node-name plain">OneSignal</div><div class="arch-node-desc">Push notifications, switched to production mode for Play Store</div></div>
+        <div class="arch-node"><div class="arch-node-name plain">PostHog</div><div class="arch-node-desc">Product analytics</div></div>
+        <div class="arch-node"><div class="arch-node-name plain">Supabase Vault</div><div class="arch-node-desc">Secrets storage — no secrets committed to git</div></div>
+        <div class="arch-node"><div class="arch-node-name plain">Google Play Store</div><div class="arch-node-desc">App-bundle build pipeline (EAS)</div></div>
+        <!-- ARCH_SERVICES_INJECT -->
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Timeline page ── -->
+  <div id="page-timeline-full" class="page-content" style="display:none">
+    <div class="page-header">
+      <div class="page-title">Build timeline</div>
+      <div class="page-subtitle">Every session in order. Click any chip to open that session's full doc.</div>
+    </div>
+    <div class="timeline-row">
+      <div class="tl-date">Jun 18<br>2026</div>
+      <div class="tl-spine"><div class="tl-dot" style="background:#1a56db"></div></div>
+      <div class="tl-content">
+        <span class="tl-badge" style="background:#eff4ff;color:#1a56db">S1</span>
+        <div class="tl-title">Meal Engine foundation + compliance cleanup</div>
+        <div class="tl-chips">
+          <span class="tl-chip" onclick="showPage('s1')">RE onboarding</span>
+          <span class="tl-chip" onclick="showPage('s1')">Persona engine</span>
+          <span class="tl-chip" onclick="showPage('s1')">Edge function audit</span>
+          <span class="tl-chip" onclick="showPage('s1')">Play Store prep</span>
+          <span class="tl-chip" onclick="showPage('s1')">Knowledge book</span>
+        </div>
+        <div class="tl-note">First entry in the knowledge book — captures everything built so far: the core app, the Meal Planning Recommendation Engine, and the audits done to get ready for the Play Store. Next: finish the onboarding screens for the new engine and clear the remaining legal/compliance items.</div>
+      </div>
+    </div>
+    <!-- TIMELINE_INJECT -->
+  </div>
+
+  <!-- ── Files register ── -->
+  <div id="page-files" class="page-content" style="display:none">
+    <div class="page-header">
+      <div class="page-title">Files register</div>
+      <div class="page-subtitle">Every file Claude has created or modified, with the session it was introduced.</div>
+    </div>
+    <table class="files-table">
+      <thead><tr><th>File</th><th>Type</th><th>Session</th><th>Description</th></tr></thead>
+      <tbody>
+        <tr><td class="fr-file">foofoo/src/repositories/re-onboarding.repository.ts</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S1</td><td class="fr-desc">Reads onboarding screen copy from a config file instead of the database</td></tr>
+        <tr><td class="fr-file">foofoo/src/config/re-onboarding-content.ts</td><td><span class="tag tag-new">New</span></td><td class="fr-session">S1</td><td class="fr-desc">All onboarding screen wording, kept in one place</td></tr>
+        <tr><td class="fr-file">foofoo/src/repositories/re-dish-expander.repository.ts</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S1</td><td class="fr-desc">Uses persona-level taste priors to avoid a blank "no suggestions yet" screen for new users</td></tr>
+        <tr><td class="fr-file">foofoo/supabase/migrations/20260618_001_normalized_planner_tables.sql</td><td><span class="tag tag-db">DB</span></td><td class="fr-session">S1</td><td class="fr-desc">New persona/segment/state lookup tables for the meal planner</td></tr>
+        <tr><td class="fr-file">foofoo/supabase/migrations/20260619_002_re_persona_class_affinity.sql</td><td><span class="tag tag-db">DB</span></td><td class="fr-session">S1</td><td class="fr-desc">Table that gives every persona a starting set of meal preferences</td></tr>
+        <tr><td class="fr-file">foofoo/supabase/migrations/20260619_004_rename_ui_copy_columns.sql</td><td><span class="tag tag-db">DB</span></td><td class="fr-session">S1</td><td class="fr-desc">Renamed internal planning-only columns so they're clearly marked "not for the app"</td></tr>
+        <tr><td class="fr-file">foofoo-tests/integration/edge-functions.test.ts</td><td><span class="tag tag-new">New</span></td><td class="fr-session">S1</td><td class="fr-desc">30 automated checks that every server function responds correctly and securely</td></tr>
+        <tr><td class="fr-file">foofoo/eas.json</td><td><span class="tag tag-cfg">Config</span></td><td class="fr-session">S1</td><td class="fr-desc">Switched the store build format to what Google Play actually accepts</td></tr>
+        <tr><td class="fr-file">foofoo/app.json</td><td><span class="tag tag-cfg">Config</span></td><td class="fr-session">S1</td><td class="fr-desc">Turned on production push-notification credentials and added the required privacy policy link</td></tr>
+        <tr><td class="fr-file">.claude/skills/session-knowledge-doc/</td><td><span class="tag tag-new">New</span></td><td class="fr-session">S1</td><td class="fr-desc">The tool that writes and maintains this knowledge book</td></tr>
+        <tr><td class="fr-file">KNOWLEDGE.html</td><td><span class="tag tag-new">New</span></td><td class="fr-session">S1</td><td class="fr-desc">This file — created to track the project going forward</td></tr>
+        <!-- FILES_INJECT -->
+      </tbody>
+    </table>
+  </div>
+
+  <!-- ── DB schema ── -->
+  <div id="page-db" class="page-content" style="display:none">
+    <div class="page-header">
+      <div class="page-title">Database schema</div>
+      <div class="page-subtitle">Current state of all tables and columns. Updated whenever a migration runs.</div>
+    </div>
+    <div class="empty-pane"><h3>Updated each session</h3><p>Claude updates this whenever a migration is added. Full detail lives in <code>SYSTEM_STATE.md</code> in the project root.</p></div>
+  </div>
+
+  <!-- ── Decisions log ── -->
+  <div id="page-decisions" class="page-content" style="display:none">
+    <div class="page-header">
+      <div class="page-title">Key decisions log</div>
+      <div class="page-subtitle">Every significant architectural decision made, and why.</div>
+    </div>
+    <div class="decision-item">
+      <div class="decision-q">Why replace the old cohort-keyed lookup tables with persona/segment/state tables?</div>
+      <div class="decision-a">The old tables were shaped like the original Excel workbook and required re-deriving a household's "cohort" on every read. The new tables are keyed directly by persona, so the app can look up a household's plan in one step instead of several.</div>
+      <div class="decision-meta">S1 · Jun 18</div>
+    </div>
+    <div class="decision-item">
+      <div class="decision-q">Why archive the old planner tables instead of deleting them?</div>
+      <div class="decision-a">They were fully replaced and confirmed unused by the app, but renaming them to "_archive" instead of deleting keeps a safety net and an audit trail in case anything was missed. The founder explicitly approved this one-time exception to the "never delete data" rule.</div>
+      <div class="decision-meta">S1 · Jun 18</div>
+    </div>
+    <div class="decision-item">
+      <div class="decision-q">Why move onboarding screen text out of the database and into a code config file?</div>
+      <div class="decision-a">The wording for the 9-step onboarding quiz was being read from the database on every screen load. Moving it to a static file means the app loads faster and the text can be reviewed/changed without touching the database.</div>
+      <div class="decision-meta">S1 · Jun 18</div>
+    </div>
+    <div class="decision-item">
+      <div class="decision-q">Why did 5 database columns get renamed to end in "FounderInfoOnly"?</div>
+      <div class="decision-a">Those columns hold internal planning notes that were never meant to be shown in the app, but their old names didn't make that obvious. The new name makes it impossible to accidentally wire them into a screen.</div>
+      <div class="decision-meta">S1 · Jun 18</div>
+    </div>
+    <div class="decision-item">
+      <div class="decision-q">Why did 8 server functions get a new security check?</div>
+      <div class="decision-a">Those functions trigger batch jobs (like regenerating every user's meal plan) and had no protection — anyone who found the URL could call them. They now require a secret key that only the server itself has.</div>
+      <div class="decision-meta">S1 · Jun 18</div>
+    </div>
+    <div class="decision-item">
+      <div class="decision-q">Why did the Play Store build format change?</div>
+      <div class="decision-a">Google Play stopped accepting the old "APK" build format in 2021. The build pipeline now produces the "app bundle" format Google requires.</div>
+      <div class="decision-meta">S1 · Jun 18</div>
+    </div>
+    <!-- DECISIONS_INJECT -->
+  </div>
+
+  <!-- ── Session pages injected here ── -->
+  <div id="page-s1" class="page-content" style="display:none">
+
+    <div class="page-header">
+      <div class="page-title">S1 · Meal Engine foundation + compliance cleanup</div>
+      <div class="page-subtitle">This is the first entry in the knowledge book, written after the fact to capture everything built up to today: the core FooFoo app, the new Meal Planning Recommendation Engine, and the legal/store-readiness cleanup needed before launch.</div>
+    </div>
+
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-title">What was built this session</div>
+        <div class="session-card-meta">2026-06-18<br>~24 things touched</div>
+      </div>
+      <div class="session-card-desc">FooFoo helps Indian households decide what to eat. This session's work covers two threads: (1) the Meal Planning Recommendation Engine — a system that assigns every household a "persona" based on a 9-step quiz and then builds a personalised weekly meal plan and daily suggestions from that — and (2) a round of security, legal-compliance, and Play Store readiness fixes on the core app.</div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n" style="color:#1a56db">9</div><div class="stat-l">Screens</div></div>
+        <div class="stat"><div class="stat-n" style="color:#5145b8">19</div><div class="stat-l">Code files</div></div>
+        <div class="stat"><div class="stat-n" style="color:#0e7a5a">20</div><div class="stat-l">DB changes</div></div>
+        <div class="stat"><div class="stat-n" style="color:#92500a">21</div><div class="stat-l">Server fns</div></div>
+      </div>
+    </div>
+
+    <div class="view-tabs">
+      <div class="view-tab active" onclick="switchView('s1','swim')">Swim lane flow</div>
+      <div class="view-tab" onclick="switchView('s1','detail')">Detail drill-down</div>
+    </div>
+
+    <!-- ══ SWIM LANE VIEW ══ -->
+    <div id="s1-swim" class="view-pane active">
+
+      <div class="swim-lane lane-blue">
+        <div class="swim-label"><div class="swim-label-inner">
+          <div class="swim-label-title">Phone</div>
+          <div class="swim-label-sub">user sees</div>
+        </div></div>
+        <div class="swim-body">
+          <div class="swim-step">
+            <div class="step-num num-blue">1</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">9-step "build your household profile" quiz</span><span class="tag tag-new">New</span></div>
+              <div class="step-desc">A new user answers questions about diet, family, region, and habits.</div>
+            </div>
+          </div>
+          <div class="swim-step">
+            <div class="step-num num-blue">2</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">"Reveal" screen</span></div>
+              <div class="step-desc">Shows the household which persona they've been matched to.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="swim-arrow">↕ Quiz answers are sent to the server</div>
+
+      <div class="swim-lane" style="margin-bottom:10px">
+        <div class="swim-label"><div class="swim-label-inner">
+          <div class="swim-label-title">App logic</div>
+          <div class="swim-label-sub">hooks / code</div>
+        </div></div>
+        <div class="swim-body" style="background:var(--purple-bg);border-color:var(--purple-border)">
+          <div class="swim-step">
+            <div class="step-num num-purple">3</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">Onboarding screen text now comes from a config file</span><span class="tag tag-mod">Modified</span></div>
+              <div class="step-desc">Quiz wording used to be fetched from the database every time; now it's bundled with the app for speed and easier editing.</div>
+            </div>
+          </div>
+          <div class="swim-step">
+            <div class="step-num num-purple">4</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">Persona matching</span></div>
+              <div class="step-desc">Household answers are matched against 41 known personas.</div>
+            </div>
+          </div>
+          <div class="swim-step">
+            <div class="step-num num-purple">5</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">Cold-start taste priors</span><span class="tag tag-mod">Modified</span></div>
+              <div class="step-desc">Brand-new households get sensible starting meal suggestions based on their persona, instead of an empty screen.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="swim-arrow">↕ Plan and persona data is saved</div>
+
+      <div class="swim-lane lane-teal">
+        <div class="swim-label"><div class="swim-label-inner">
+          <div class="swim-label-title">Database</div>
+          <div class="swim-label-sub">Supabase</div>
+        </div></div>
+        <div class="swim-body">
+          <div class="swim-step">
+            <div class="step-num num-teal">6</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">New persona/segment/state planner tables</span><span class="tag tag-db">DB</span></div>
+              <div class="step-desc">Replaced the old Excel-shaped lookup tables with ones keyed directly to a household's persona, region, and segment.</div>
+            </div>
+          </div>
+          <div class="swim-step">
+            <div class="step-num num-teal">7</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">Old tables archived, not deleted</span><span class="tag tag-db">DB</span></div>
+              <div class="step-desc">The replaced tables were renamed to "_archive" rather than removed, as a safety net.</div>
+            </div>
+          </div>
+          <div class="swim-step">
+            <div class="step-num num-teal">8</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">Internal-only columns clearly marked</span><span class="tag tag-db">DB</span></div>
+              <div class="step-desc">5 columns renamed so it's obvious they're for internal planning only, never shown to users.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="swim-arrow">↕ Server functions enforce security and consistent errors</div>
+
+      <div class="swim-lane lane-amber">
+        <div class="swim-label"><div class="swim-label-inner">
+          <div class="swim-label-title">Server</div>
+          <div class="swim-label-sub">edge functions</div>
+        </div></div>
+        <div class="swim-body">
+          <div class="swim-step">
+            <div class="step-num num-amber">9</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">Locked down 8 batch-job functions</span><span class="tag tag-mod">Modified</span></div>
+              <div class="step-desc">Anyone with the URL could previously trigger these; now they require a secret server key.</div>
+            </div>
+          </div>
+          <div class="swim-step">
+            <div class="step-num num-amber">10</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">Consistent error responses everywhere</span><span class="tag tag-mod">Modified</span></div>
+              <div class="step-desc">All 14 server functions now fail in the same predictable way, which is what makes automated testing possible.</div>
+            </div>
+          </div>
+          <div class="swim-step">
+            <div class="step-num num-amber">11</div>
+            <div class="step-content">
+              <div class="step-title-row"><span class="step-title">30 automated checks added</span><span class="tag tag-new">New</span></div>
+              <div class="step-desc">Every server function is now tested automatically — all 30 checks pass.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="next-box">
+        <div class="next-label">Next session</div>
+        <div class="next-text">Finish the remaining onboarding screens, resolve the 6 high-priority DPDP legal/consent gaps (granular consent, data export button, grievance officer contact), and deploy a real privacy policy page before Play Store submission.</div>
+      </div>
+
+    </div><!-- /swim -->
+
+    <!-- ══ DETAIL DRILL-DOWN VIEW ══ -->
+    <div id="s1-detail" class="view-pane">
+
+      <div class="detail-item">
+        <div class="detail-row" onclick="toggleDetail('s1-quiz')">
+          <div class="detail-left">
+            <span class="tag tag-new">New</span>
+            <span class="detail-name plain">9-step household quiz</span>
+          </div>
+          <span class="detail-chevron" id="chev-s1-quiz">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s1-quiz">
+          <div class="seq-strip">
+            <span class="seq-strip-label">Session flow</span>
+            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','quiz',1)"><span class="seq-num seq-num-blue">1</span>Quiz</div><span class="seq-arr">›</span></div>
+            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','quiz',2)"><span class="seq-num seq-num-blue">2</span>Reveal</div><span class="seq-arr">›</span></div>
+            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','quiz',4)"><span class="seq-num seq-num-purple">4</span>Match</div></div>
+            <a class="seq-jump" onclick="jumpSwim('s1',1)">View in swim lane ↗</a>
+          </div>
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">A new household answers 9 questions — diet type, family size, region, cooking time available, and so on. Their answers decide which of the 41 "personas" they're matched to, which in turn decides what meal suggestions they get.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow">
+            <span class="dd-node">User answers quiz</span><span class="dd-arrow">→</span>
+            <span class="dd-node">Server scores against personas</span><span class="dd-arrow">→</span>
+            <span class="dd-node">Household assigned a persona + confidence score</span>
+          </div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">confidence NUMERIC(4,3)</span>  ← Every match also stores a 0–1 confidence score, so low-confidence matches can be flagged for review later</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why store a confidence score at all?</div>
+            <div class="dd-why-a">If the quiz answers don't clearly match any one persona, the app can fall back to safer, more general suggestions instead of confidently guessing wrong.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-row" onclick="toggleDetail('s1-copy')">
+          <div class="detail-left">
+            <span class="tag tag-mod">Modified</span>
+            <span class="detail-name">re-onboarding-content.ts</span>
+          </div>
+          <span class="detail-chevron" id="chev-s1-copy">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s1-copy">
+          <div class="seq-strip">
+            <span class="seq-strip-label">Session flow</span>
+            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','copy',3)"><span class="seq-num seq-num-purple">3</span>Copy config</div></div>
+            <a class="seq-jump" onclick="jumpSwim('s1',3)">View in swim lane ↗</a>
+          </div>
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">Holds every word of text shown across the 9 onboarding screens. Previously this text lived in the database and was fetched fresh on every screen; now it ships with the app itself.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow">
+            <span class="dd-node">Screen loads</span><span class="dd-arrow">→</span>
+            <span class="dd-node">Reads text from config file</span><span class="dd-arrow">→</span>
+            <span class="dd-node">No database round-trip needed</span>
+          </div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">export const RE_ONBOARDING_CONTENT</span>  ← One file holding all onboarding screen wording, instead of 5 separate database columns</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why move text out of the database?</div>
+            <div class="dd-why-a">Onboarding text doesn't change per-user — it's the same for everyone. Keeping it in code is faster to load and easier for the team to review and edit.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-row" onclick="toggleDetail('s1-tables')">
+          <div class="detail-left">
+            <span class="tag tag-db">DB</span>
+            <span class="detail-name plain">Persona / segment / state planner tables</span>
+          </div>
+          <span class="detail-chevron" id="chev-s1-tables">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s1-tables">
+          <div class="seq-strip">
+            <span class="seq-strip-label">Session flow</span>
+            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','tables',6)"><span class="seq-num seq-num-teal">6</span>New tables</div><span class="seq-arr">›</span></div>
+            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','tables',7)"><span class="seq-num seq-num-teal">7</span>Archive old</div></div>
+            <a class="seq-jump" onclick="jumpSwim('s1',6)">View in swim lane ↗</a>
+          </div>
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">Three new tables — <code>re_persona_slot_plan</code>, <code>re_segment_addon_rule</code>, <code>re_state_class_affinity</code> — replace the old lookup tables that were shaped exactly like the original Excel spreadsheet the meal-planning rules came from. The new tables are organised by persona, segment, and state instead, which is how the app actually needs to look things up.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow">
+            <span class="dd-node">Household has a persona</span><span class="dd-arrow">→</span>
+            <span class="dd-node">Look up persona's meal-class plan directly</span><span class="dd-arrow">→</span>
+            <span class="dd-node">Weekly plan generated</span>
+          </div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">re_persona_slot_plan — 1,148 rows, 41 personas</span>  ← Every persona now has its own ready-made meal-class plan, no extra lookups needed</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why was this change needed?</div>
+            <div class="dd-why-a">The old tables forced the app to re-derive which "cohort" a household belonged to on every single read, which was slow and fragile. The new structure looks a household's plan up directly by persona in one step.</div>
+          </div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why archive the old tables instead of deleting them?</div>
+            <div class="dd-why-a">As a safety net — they were renamed to "_archive" and kept, in case anything downstream was still reading them. The founder explicitly signed off on this one-time exception to the project's "never delete data" rule.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-row" onclick="toggleDetail('s1-security')">
+          <div class="detail-left">
+            <span class="tag tag-mod">Modified</span>
+            <span class="detail-name plain">Server function security + error fixes</span>
+          </div>
+          <span class="detail-chevron" id="chev-s1-security">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s1-security">
+          <div class="seq-strip">
+            <span class="seq-strip-label">Session flow</span>
+            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','security',9)"><span class="seq-num seq-num-amber">9</span>Lock down</div><span class="seq-arr">›</span></div>
+            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','security',10)"><span class="seq-num seq-num-amber">10</span>Errors</div><span class="seq-arr">›</span></div>
+            <div class="seq-node"><div class="seq-step" onclick="gotoSwimStep('s1','security',11)"><span class="seq-num seq-num-amber">11</span>Tests</div></div>
+            <a class="seq-jump" onclick="jumpSwim('s1',9)">View in swim lane ↗</a>
+          </div>
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">A full audit of all 14 server functions found 26 gaps — the most serious being 8 batch-job functions (the ones that regenerate every user's meal plan, send notifications, etc.) that had no security check at all. Anyone who guessed the URL could trigger them. All 26 gaps were fixed and deployed.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow">
+            <span class="dd-node">Audit all 14 functions</span><span class="dd-arrow">→</span>
+            <span class="dd-node">Fix 26 gaps (auth, error format)</span><span class="dd-arrow">→</span>
+            <span class="dd-node">Add 30 automated tests</span><span class="dd-arrow">→</span>
+            <span class="dd-node">All tests pass</span>
+          </div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">{ "success": false, "error": { "code": "...", "message": "...", "retry": false } }</span>  ← Every server function now fails in this exact shape, so testing and debugging is consistent across all of them</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why did missing-login errors come back as a generic server error before?</div>
+            <div class="dd-why-a">The security check was written inside the error-handling block instead of before it, so a missing login looked like a server crash (500) instead of "please log in" (401). Moving the check earlier fixed this everywhere.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-row" onclick="toggleDetail('s1-playstore')">
+          <div class="detail-left">
+            <span class="tag tag-cfg">Config</span>
+            <span class="detail-name plain">Play Store readiness</span>
+          </div>
+          <span class="detail-chevron" id="chev-s1-playstore">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s1-playstore">
+          <div class="seq-strip">
+            <span class="seq-strip-label">Session flow</span>
+            <div class="seq-node"><div class="seq-step" style="opacity:.4"><span class="seq-num seq-num-gray">·</span>Config-only, not in swim lane</div></div>
+          </div>
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">A set of fixes required before FooFoo can be submitted to the Google Play Store: the build format Google now requires, switching push notifications to "live" mode, and pointing the app at a privacy policy URL.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow">
+            <span class="dd-node">Build config updated</span><span class="dd-arrow">→</span>
+            <span class="dd-node">App audited against Play Store checklist</span><span class="dd-arrow">→</span>
+            <span class="dd-node">5 blockers + 7 warnings identified for founder</span>
+          </div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">"buildType": "app-bundle"</span>  ← Google Play has rejected the older "APK" format since 2021; this switches to the format it actually accepts</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Is FooFoo ready to submit to the Play Store yet?</div>
+            <div class="dd-why-a">Not yet — 5 blockers remain: a live privacy policy page (currently 404), terms of service page (also 404), a feature graphic image, screenshots, and a paid Google Play developer account.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="next-box">
+        <div class="next-label">Next session</div>
+        <div class="next-text">Finish the remaining onboarding screens, resolve the 6 high-priority DPDP legal/consent gaps, and deploy a real privacy policy page before Play Store submission.</div>
+      </div>
+
+    </div><!-- /detail -->
+
+  </div><!-- /page-s1 -->
+
+  <!-- SESSIONS_INJECT -->
+
+</main>
+
+<script>
+function showPage(id){
+  document.querySelectorAll('.page-content').forEach(p=>p.style.display='none');
+  const pg=document.getElementById('page-'+id);
+  if(pg) pg.style.display='block';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    const oc=n.getAttribute('onclick')||'';
+    if(oc.includes("'"+id+"'"))n.classList.add('active');
+  });
+}
+function switchView(session,view){
+  const pg=document.getElementById('page-'+session);
+  if(!pg)return;
+  pg.querySelectorAll('.view-pane').forEach(p=>p.classList.remove('active'));
+  pg.querySelectorAll('.view-tab').forEach(t=>t.classList.remove('active'));
+  const vp=document.getElementById(session+'-'+view);
+  if(vp)vp.classList.add('active');
+  if(event&&event.target)event.target.classList.add('active');
+}
+// Jump from swim lane step → detail drawer
+function jumpDetail(session,id){
+  switchView(session,'detail',null);
+  setTimeout(()=>{
+    const dr=document.getElementById('draw-'+session+'-'+id);
+    if(dr&&!dr.classList.contains('open'))toggleDetail(session+'-'+id);
+    const rw=document.getElementById('row-'+session+'-'+id);
+    if(rw)rw.scrollIntoView({behavior:'smooth',block:'start'});
+  },60);
+}
+// Jump from detail sequence strip → swim lane, highlight the step
+function jumpSwim(session,stepNum){
+  switchView(session,'swim',null);
+  setTimeout(()=>{
+    const steps=document.querySelectorAll('#'+session+'-swim .swim-step');
+    steps.forEach(s=>s.classList.remove('hl-step'));
+    steps.forEach(s=>{
+      const sn=s.querySelector('.step-num');
+      if(sn&&sn.textContent.trim()==stepNum){
+        s.classList.add('hl-step');
+        s.scrollIntoView({behavior:'smooth',block:'center'});
+        setTimeout(()=>s.classList.remove('hl-step'),2000);
+      }
+    });
+  },60);
+}
+// Sequence strip step click: navigate to page, then highlight swim lane step
+function gotoSwimStep(session,id,stepNum){
+  showPage(session);
+  jumpSwim(session,stepNum);
+}
+function toggleDetail(id){
+  const dr=document.getElementById('draw-'+id);
+  const ch=document.getElementById('chev-'+id);
+  if(!dr||!ch)return;
+  const row=ch.closest('.detail-row');
+  const isOpen=dr.classList.contains('open');
+  dr.classList.toggle('open',!isOpen);
+  row&&row.classList.toggle('open',!isOpen);
+  ch.classList.toggle('open',!isOpen);
+}
+</script>
+</body>
+</html>
