@@ -64,6 +64,22 @@ git diff HEAD package.json 2>/dev/null | grep "^[+-]" | grep -v "^---\|^+++" 2>/
 
 Do not document from memory. Always verify from actual file state.
 
+For every file touched that doesn't already have a Module Reference entry (see Step 4a),
+read its actual source before writing anything about it:
+```bash
+# Header comment / JSDoc block at the top of a touched file
+head -20 path/to/file.ts
+
+# Exported functions, to see what the module's surface area actually is
+grep -n "^export " path/to/file.ts
+
+# SQL doc comments on a touched migration
+grep -n "^--\|COMMENT ON" path/to/migration.sql
+```
+The plain-English module description must come from what the code/SQL comments actually
+say, not be invented. If a file has no header comment, infer purpose from its exported
+function names and a skim of the function bodies — don't guess at intent the code doesn't support.
+
 ---
 
 ## Step 3 — Classify every touched item
@@ -122,6 +138,37 @@ detail-row into the four `dd-label` sections above.
 - Add new nodes in the correct layer (Phone / Database / Server / Services)
 - Mark `is-new` for created this session, `is-mod` for modified
 - Do NOT remove old nodes — the map is cumulative
+- If you wrote a Module Reference entry for this node (see Step 4a), add
+  `onclick="jumpModule('{{MODULE_ID}}')"` to the `.arch-node` div so clicking the tile
+  opens that module's full explanation (F24). Nodes without a module entry yet stay
+  non-clickable rather than linking to nothing.
+
+### Step 4a — Module Reference (what each piece of code/DB is *for*)
+This is the layer that explains *why* a file or table exists, not just that it changed.
+It's a separate, cumulative register from the per-session Detail Drill-down — one entry
+per module, updated in place (not duplicated) whenever a later session touches it again.
+
+For every file or DB table you read in Step 2's source-inspection commands, write one
+module entry using `references/session-block-template.md`'s "Module register entry"
+block:
+1. **What it does** — plain English, drawn from the file's header comment/JSDoc or the
+   migration's SQL comments. If the source has no comment, summarise from its exported
+   functions/columns — never invent a purpose the code doesn't support.
+2. **Files / tables in this module** — list each file or table with a one-line plain-English
+   job description (e.g. "fetchTodayDishCandidates() — picks today's meal suggestions
+   for a household, ranked by how well they match this household's taste").
+3. **How it helps the app** — the concrete benefit to the end user or the business, in
+   one or two sentences. Not "implements X pattern" — "this is what makes sure a brand
+   new user doesn't see an empty screen."
+- Group related files into one module when they're part of the same feature (e.g. all
+  six `re-*.repository.ts` files could be one module each, or grouped by feature area —
+  use judgement, but never bundle unrelated files into one entry).
+- Append to the Module Reference register above `<!-- MODULES_INJECT -->`. Never remove
+  or rewrite another session's module entries — if a later session changes a module,
+  update that module's existing drawer content in place and note which session last
+  touched it, rather than creating a duplicate entry.
+- Update the `<span class="nav-badge">` count on the "Modules" sidebar nav-item to the
+  new total module count.
 
 ### Timeline row
 - Append one row to the timeline
@@ -156,7 +203,7 @@ detail-row into the four `dd-label` sections above.
 
 ```bash
 # Verify injection points exist
-grep -n "SESSIONS_INJECT\|NAV_INJECT\|ARCH_INJECT\|TIMELINE_INJECT\|FILES_INJECT\|DECISIONS_INJECT" KNOWLEDGE.html
+grep -n "SESSIONS_INJECT\|NAV_INJECT\|ARCH_.*_INJECT\|TIMELINE_INJECT\|FILES_INJECT\|MODULES_INJECT\|DECISIONS_INJECT" KNOWLEDGE.html
 ```
 
 Replace each injection comment with new content + the comment (so it stays injectable
@@ -171,8 +218,9 @@ becomes:
 <!-- SESSIONS_INJECT -->
 ```
 
-Do the same for NAV_INJECT, ARCH_INJECT (update nodes), TIMELINE_INJECT (append row),
-FILES_INJECT (append rows), DECISIONS_INJECT (append items).
+Do the same for NAV_INJECT, ARCH_PHONE_INJECT / ARCH_DB_INJECT / ARCH_SERVER_INJECT /
+ARCH_SERVICES_INJECT (update nodes), TIMELINE_INJECT (append row), FILES_INJECT (append
+rows), MODULES_INJECT (append module entries), DECISIONS_INJECT (append items).
 
 ---
 
@@ -181,8 +229,8 @@ FILES_INJECT (append rows), DECISIONS_INJECT (append items).
 ```bash
 # Confirm the file is valid and readable
 wc -l KNOWLEDGE.html
-grep -c "page-s" KNOWLEDGE.html   # should equal number of sessions
-grep "SESSIONS_INJECT" KNOWLEDGE.html   # should still be present for next session
+grep -c 'id="page-s' KNOWLEDGE.html   # should equal number of sessions
+grep "SESSIONS_INJECT\|MODULES_INJECT" KNOWLEDGE.html   # should still be present for next session
 ```
 
 Tell the user:

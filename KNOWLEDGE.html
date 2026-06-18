@@ -190,6 +190,10 @@
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Reference</div>
+    <div class="nav-item" onclick="showPage('modules')">
+      <span class="nav-icon">🧩</span> Modules
+      <span class="nav-badge">13</span>
+    </div>
     <div class="nav-item" onclick="showPage('files')">
       <span class="nav-icon">📁</span> Files register
       <span class="nav-badge">11</span>
@@ -225,13 +229,13 @@
         <div class="arch-node"><div class="arch-node-name plain">Original onboarding flow</div><div class="arch-node-desc">7-step legacy signup quiz</div></div>
         <div class="arch-node"><div class="arch-node-name plain">Auth screens</div><div class="arch-node-desc">Sign up, sign in, forgot password, email verification</div></div>
         <div class="arch-node"><div class="arch-node-name plain">Dish detail screen</div><div class="arch-node-desc">Single dish view</div></div>
-        <div class="arch-node is-mod"><div class="arch-node-name">re-onboarding.repository.ts</div><div class="arch-node-desc">Now reads UI copy from config, not DB · S1</div></div>
-        <div class="arch-node is-mod"><div class="arch-node-name">re-dish-expander.repository.ts</div><div class="arch-node-desc">Persona class-affinity priors wired in · S1</div></div>
-        <div class="arch-node"><div class="arch-node-name">re-cohort-resolver.repository.ts</div><div class="arch-node-desc">Assigns each household to a persona</div></div>
-        <div class="arch-node"><div class="arch-node-name">re-plan.repository.ts</div><div class="arch-node-desc">Builds the weekly meal plan</div></div>
-        <div class="arch-node"><div class="arch-node-name">re-addon.repository.ts</div><div class="arch-node-desc">Builds per-member add-on suggestions</div></div>
-        <div class="arch-node"><div class="arch-node-name">re-feedback.repository.ts</div><div class="arch-node-desc">Records likes/dislikes/never-again</div></div>
-        <div class="arch-node is-new"><div class="arch-node-name">re-onboarding-content.ts</div><div class="arch-node-desc">Static config holding all onboarding screen copy · S1</div></div>
+        <div class="arch-node is-mod" onclick="jumpModule('re-onboarding-repo')"><div class="arch-node-name">re-onboarding.repository.ts</div><div class="arch-node-desc">Now reads UI copy from config, not DB · S1</div></div>
+        <div class="arch-node is-mod" onclick="jumpModule('re-dish-expander')"><div class="arch-node-name">re-dish-expander.repository.ts</div><div class="arch-node-desc">Persona class-affinity priors wired in · S1</div></div>
+        <div class="arch-node" onclick="jumpModule('re-cohort-resolver')"><div class="arch-node-name">re-cohort-resolver.repository.ts</div><div class="arch-node-desc">Assigns each household to a persona</div></div>
+        <div class="arch-node" onclick="jumpModule('re-plan')"><div class="arch-node-name">re-plan.repository.ts</div><div class="arch-node-desc">Builds the weekly meal plan</div></div>
+        <div class="arch-node" onclick="jumpModule('re-addon')"><div class="arch-node-name">re-addon.repository.ts</div><div class="arch-node-desc">Builds per-member add-on suggestions</div></div>
+        <div class="arch-node" onclick="jumpModule('re-feedback')"><div class="arch-node-name">re-feedback.repository.ts</div><div class="arch-node-desc">Records likes/dislikes/never-again</div></div>
+        <div class="arch-node is-new" onclick="jumpModule('re-onboarding-content')"><div class="arch-node-name">re-onboarding-content.ts</div><div class="arch-node-desc">Static config holding all onboarding screen copy · S1</div></div>
         <div class="arch-node"><div class="arch-node-name">dishes / plans / week / grocery repositories</div><div class="arch-node-desc">Original MVP data access layer</div></div>
         <!-- ARCH_PHONE_INJECT -->
       </div>
@@ -239,10 +243,10 @@
     <div class="arch-section">
       <div class="arch-section-title">🗄 Database — tables</div>
       <div class="arch-grid" id="arch-db">
-        <div class="arch-node is-new"><div class="arch-node-name">re_persona_slot_plan</div><div class="arch-node-desc">1,148 rows — which meal classes fit each persona · S1</div></div>
-        <div class="arch-node is-new"><div class="arch-node-name">re_segment_addon_rule</div><div class="arch-node-desc">46 rows — add-on rules by household segment · S1</div></div>
-        <div class="arch-node is-new"><div class="arch-node-name">re_state_class_affinity</div><div class="arch-node-desc">890 rows — regional meal-class preference by state · S1</div></div>
-        <div class="arch-node is-new"><div class="arch-node-name">re_persona_class_affinity</div><div class="arch-node-desc">426 rows — cold-start meal-class scoring per persona · S1</div></div>
+        <div class="arch-node is-new" onclick="jumpModule('re-planner-tables')"><div class="arch-node-name">re_persona_slot_plan</div><div class="arch-node-desc">1,148 rows — which meal classes fit each persona · S1</div></div>
+        <div class="arch-node is-new" onclick="jumpModule('re-planner-tables')"><div class="arch-node-name">re_segment_addon_rule</div><div class="arch-node-desc">46 rows — add-on rules by household segment · S1</div></div>
+        <div class="arch-node is-new" onclick="jumpModule('re-planner-tables')"><div class="arch-node-name">re_state_class_affinity</div><div class="arch-node-desc">890 rows — regional meal-class preference by state · S1</div></div>
+        <div class="arch-node is-new" onclick="jumpModule('re-persona-class-affinity')"><div class="arch-node-name">re_persona_class_affinity</div><div class="arch-node-desc">426 rows — cold-start meal-class scoring per persona · S1</div></div>
         <div class="arch-node"><div class="arch-node-name">re_user_weekly_plans</div><div class="arch-node-desc">Each household's locked-in 7-day plan</div></div>
         <div class="arch-node"><div class="arch-node-name">re_user_addon_plans</div><div class="arch-node-desc">Per-member add-on plan</div></div>
         <div class="arch-node"><div class="arch-node-name">re_user_feedback / re_user_dish_affinity / re_user_class_affinity</div><div class="arch-node-desc">Learns what each household actually likes over time</div></div>
@@ -257,10 +261,10 @@
     <div class="arch-section">
       <div class="arch-section-title">☁️ Server — functions</div>
       <div class="arch-grid" id="arch-server">
-        <div class="arch-node"><div class="arch-node-name">re-onboarding-start / re-onboarding-answer</div><div class="arch-node-desc">Drives the 9-step quiz</div></div>
-        <div class="arch-node"><div class="arch-node-name">re-personas-assign</div><div class="arch-node-desc">Assigns a household to its persona</div></div>
-        <div class="arch-node"><div class="arch-node-name">re-plans-week-generate</div><div class="arch-node-desc">Generates the weekly meal plan</div></div>
-        <div class="arch-node"><div class="arch-node-name">re-recommendations-rank</div><div class="arch-node-desc">Ranks today's dish candidates for a household</div></div>
+        <div class="arch-node" onclick="jumpModule('re-onboarding-fns')"><div class="arch-node-name">re-onboarding-start / re-onboarding-answer</div><div class="arch-node-desc">Drives the 9-step quiz</div></div>
+        <div class="arch-node" onclick="jumpModule('re-personas-assign-fn')"><div class="arch-node-name">re-personas-assign</div><div class="arch-node-desc">Assigns a household to its persona</div></div>
+        <div class="arch-node" onclick="jumpModule('re-plans-week-generate-fn')"><div class="arch-node-name">re-plans-week-generate</div><div class="arch-node-desc">Generates the weekly meal plan</div></div>
+        <div class="arch-node" onclick="jumpModule('re-recommendations-rank-fn')"><div class="arch-node-name">re-recommendations-rank</div><div class="arch-node-desc">Ranks today's dish candidates for a household</div></div>
         <div class="arch-node"><div class="arch-node-name">re-feedback-events</div><div class="arch-node-desc">Captures like/dislike/never-again events</div></div>
         <div class="arch-node is-mod"><div class="arch-node-name">generate-daily-plan / regenerate-slot</div><div class="arch-node-desc">Auth guard fixed; standardized error codes</div></div>
         <div class="arch-node is-mod"><div class="arch-node-name">delete-user-account / log-re-decision</div><div class="arch-node-desc">Error responses standardized to one format</div></div>
@@ -304,6 +308,280 @@
       </div>
     </div>
     <!-- TIMELINE_INJECT -->
+  </div>
+
+  <!-- ── Modules ── -->
+  <div id="page-modules" class="page-content" style="display:none">
+    <div class="page-header">
+      <div class="page-title">Modules</div>
+      <div class="page-subtitle">What each piece of code or database table is actually for, in plain English — click an architecture tile to jump straight to its entry here.</div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-onboarding-repo" onclick="toggleDetail('mod-re-onboarding-repo')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name">re-onboarding.repository.ts</span></div>
+        <span class="detail-chevron" id="chev-mod-re-onboarding-repo">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-onboarding-repo">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The single place all of a household's onboarding answers get saved — location, diet rules, family members, cooking habits, health needs. It's also what fetches the question lists for each onboarding screen (states, main cohort cards, sub-cohort options) and tracks how far through the 9 steps a household has gotten, so they can resume if they leave partway through.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re-onboarding.repository.ts</code> — 18 functions covering: fetching question lists (states, cohort cards), saving each answer type (location, diet, household members, health), and marking onboarding complete.<br>
+          <code>deriveNonvegMode()</code> — a helper that turns "how often do you eat non-veg" answers into one of 6 standard categories (veg, vegan, jain, egg-only, occasional or regular non-veg) used everywhere else in the engine.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Without this, every onboarding screen would talk to the database directly in its own way — any change to how an answer is stored would mean hunting through every screen. Centralising it here means one place to fix or extend.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-dish-expander" onclick="toggleDetail('mod-re-dish-expander')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name">re-dish-expander.repository.ts</span></div>
+        <span class="detail-chevron" id="chev-mod-re-dish-expander">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-dish-expander">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">This is the "which dish should we actually suggest" engine. For a given meal slot, it scores every eligible dish against the household's diet rules, region, city type, cooking ability, and learned taste profile, then returns the best-ranked candidates.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>isDietCompatible()</code> — hard filter that removes any dish the household can't eat (e.g. non-veg dish for a veg household) before scoring even starts.<br>
+          <code>regionAffinityScore()</code> / <code>cityLifestyleScore()</code> — boost dishes that fit the household's state and city type (e.g. quick dishes score higher for busy metro households).<br>
+          <code>cookCapabilityScore()</code> — checks a dish's cooking complexity against how much cooking help the household has.<br>
+          <code>computeDishScore()</code> — combines every signal above into one ranking score per dish.<br>
+          <code>fetchTodayDishCandidates()</code> — the function screens actually call to get today's ranked suggestions.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is what stops FooFoo suggesting a 45-minute non-veg recipe to a Jain household with no time to cook. Every other part of the engine (today's plan, swap suggestions) calls into this scoring logic rather than re-implementing it.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-cohort-resolver" onclick="toggleDetail('mod-re-cohort-resolver')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name">re-cohort-resolver.repository.ts</span></div>
+        <span class="detail-chevron" id="chev-mod-re-cohort-resolver">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-cohort-resolver">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Works out which "neighbourhood profile" (cohort) a household belongs to — combining their home state, the city they're currently living in, any health conditions, and how much cooking help they have — and produces a confidence score for that match.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>resolveCityDestinationGroup()</code> — turns a free-text city name into a standard "destination group" (e.g. home-state Tier-1 city, cross-state metro, or generic PG/hostel) by checking it against known city lists in priority order.<br>
+          <code>buildOverlayPersonaIds()</code> — layers in extra personas for health conditions or limited cooking help, on top of the base region match.<br>
+          <code>runCohortAssignment()</code> — the orchestrator that runs the whole process end-to-end for one household and saves the result.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is what lets a Bangalore-based Tamil household and a Mumbai-based Tamil household get different meal suggestions, even though they answered the same diet questions — the cohort captures where they actually live, not just where they're from.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-plan" onclick="toggleDetail('mod-re-plan')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name">re-plan.repository.ts</span></div>
+        <span class="detail-chevron" id="chev-mod-re-plan">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-plan">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Builds and stores a household's 7-day meal-class plan for the current week — which meal class (e.g. "stuffed flatbread", "rice + curry") is scheduled for each slot on each day.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>getWeekStartMondayIST()</code> — figures out "this week" using Indian time, so the week always starts on the correct Monday regardless of when the server runs.<br>
+          <code>pickOverlaySlots()</code> — decides which days get a "special" meal class injected on top of the base plan (e.g. more region-specific dishes for households with a strong regional preference).<br>
+          <code>generateUserWeeklyPlan()</code> — builds and saves the full 7-day plan.<br>
+          <code>fetchUserWeeklyPlan()</code> — returns the already-generated plan for this week, so it isn't rebuilt on every screen visit.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is what makes the weekly plan screen consistent across the week instead of re-rolling suggestions every time a household opens the app.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-addon" onclick="toggleDetail('mod-re-addon')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name">re-addon.repository.ts</span></div>
+        <span class="detail-chevron" id="chev-mod-re-addon">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-addon">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Builds the per-person "add-on" suggestions that sit alongside the main weekly plan — things like a side dish or snack tailored to one specific family member rather than the whole household.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>generateUserAddonPlan()</code> — builds and saves the add-on plan. Deliberately "best-effort": if it fails, onboarding still completes, the household just doesn't get add-ons yet.<br>
+          <code>fetchTodayAddons()</code> — convenience lookup for just today's add-ons, grouped by meal slot.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Add-ons are a nice-to-have layered on top of the core plan, not a blocker — this module is written so a bug here never breaks the more important "what's the main meal" flow.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-feedback" onclick="toggleDetail('mod-re-feedback')">
+        <div class="detail-left"><span class="tag tag-mod">Modified</span><span class="detail-name">re-feedback.repository.ts</span></div>
+        <span class="detail-chevron" id="chev-mod-re-feedback">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-feedback">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Turns a household's actions (locking a dish, accepting it, swiping it away, marking "not today" or "never again") into adjusted taste scores, so future suggestions get better the more a household uses the app.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>RE_SIGNAL_WEIGHTS</code> — the table of how much each action moves the score (locking a dish: +0.40, accepting: +0.25, etc).<br>
+          <code>computeVarietyPenalty()</code> — docks a dish's score if it was suggested in the last 3 days, so households don't see the same meal on repeat.<br>
+          <code>isOnCooldown()</code> — checks whether a "not today" dish is still in its 3-day cooldown window.<br>
+          <code>recordFeedback()</code> — saves every swipe/lock/accept action as it happens.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is the learning loop — it's the difference between an app that suggests the same generic dish list forever, and one that gets noticeably more relevant to each household over a few weeks of use.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-onboarding-content" onclick="toggleDetail('mod-re-onboarding-content')">
+        <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name">re-onboarding-content.ts</span></div>
+        <span class="detail-chevron" id="chev-mod-re-onboarding-content">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-onboarding-content">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Holds the actual wording shown on onboarding screens — the description text for each of the 5 main cohort cards, and the "why we're asking" explanations for each routing question. The file's own header comment notes this content was deliberately moved out of the database because UI wording changes on a different schedule than the underlying data it used to live next to.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>RE_MAIN_COHORT_SCREEN_COPY</code> — maps each of the 5 main cohort options to its on-screen description.<br>
+          <code>RE_ROUTING_RULE_COPY</code> — maps each routing question to its prompt text and "why it matters" explanation.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Anyone reviewing or editing onboarding wording can now do it in one TypeScript file instead of needing database access — and the screens load faster since there's no database round-trip for text that never changes per-user.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-planner-tables" onclick="toggleDetail('mod-re-planner-tables')">
+        <div class="detail-left"><span class="tag tag-db">DB</span><span class="detail-name plain">Persona / segment / state planner tables</span></div>
+        <span class="detail-chevron" id="chev-mod-re-planner-tables">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-planner-tables">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Three tables added in one migration, explicitly additive (no existing tables touched): a lookup keyed by persona for which meal classes fit which day/slot, a lookup keyed by household segment for add-on rules, and a lookup keyed by state for regional meal-class preference.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re_persona_slot_plan</code> — persona + day-of-week + slot → primary/secondary/tertiary meal class.<br>
+          <code>re_segment_addon_rule</code> — household segment + slot → add-on class.<br>
+          <code>re_state_class_affinity</code> — state + slot + day type + meal class → priority rank.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">These replace the old tables that were shaped like the original Excel workbook the rules came from — looking up a plan used to mean re-deriving a household's "cohort" every time. These tables let the app look a household's plan up directly by persona, segment, or state in one step.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-persona-class-affinity" onclick="toggleDetail('mod-re-persona-class-affinity')">
+        <div class="detail-left"><span class="tag tag-db">DB</span><span class="detail-name">re_persona_class_affinity</span></div>
+        <span class="detail-chevron" id="chev-mod-re-persona-class-affinity">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-persona-class-affinity">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Normalises the boost-class lists that used to live as pipe-delimited text columns on the personas table (one column per meal slot) into proper rows — one row per persona + slot + meal class, with a weight.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re_persona_class_affinity</code> — persona + slot + meal class → affinity weight (defaults to 0.8). 426 rows, all 41 personas covered.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is what a brand new household sees before the app has learned anything about them: instead of an empty "no suggestions yet" screen, they get sensible starting suggestions based on what their persona typically likes.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-onboarding-fns" onclick="toggleDetail('mod-re-onboarding-fns')">
+        <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name plain">re-onboarding-start / re-onboarding-answer</span></div>
+        <span class="detail-chevron" id="chev-mod-re-onboarding-fns">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-onboarding-fns">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text"><code>re-onboarding-start</code> returns the list of main cohort cards for the very first onboarding screen. Its header comment notes it duplicates the screen-copy mapping from the app's config file, because server functions can't import the phone app's TypeScript directly — the same wording exists in two places by necessity.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re-onboarding-start</code> — fetches the main cohort list, attaches screen copy, returns it as the first screen's content.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">This is the very first thing a new household sees after signing up — if this function is slow or wrong, onboarding never gets started.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-personas-assign-fn" onclick="toggleDetail('mod-re-personas-assign-fn')">
+        <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name">re-personas-assign</span></div>
+        <span class="detail-chevron" id="chev-mod-re-personas-assign-fn">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-personas-assign-fn">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">Saves a household's persona match once onboarding has worked it out — and makes sure only one persona assignment is ever "active" per household by retiring the previous one first.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re-personas-assign</code> — receives the persona match + confidence score, retires any existing active assignment, inserts the new one.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">If a household's persona ever needs to be re-assigned (e.g. they move city), this guarantees there's never ambiguity about which assignment is the current one.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-plans-week-generate-fn" onclick="toggleDetail('mod-re-plans-week-generate-fn')">
+        <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name">re-plans-week-generate</span></div>
+        <span class="detail-chevron" id="chev-mod-re-plans-week-generate-fn">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-plans-week-generate-fn">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">The server endpoint the app calls to get (or trigger building) a household's weekly plan. It checks whether this week's plan already exists before rebuilding it, unless the app explicitly asks for a fresh one.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re-plans-week-generate</code> — receives a household ID, returns the cached plan or generates a new one for the current week.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Avoids regenerating the same week's plan on every app open — the actual plan-building logic lives in the re-plan module, this is just the door the app knocks on.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <div class="detail-item">
+      <div class="detail-row" id="row-mod-re-recommendations-rank-fn" onclick="toggleDetail('mod-re-recommendations-rank-fn')">
+        <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name">re-recommendations-rank</span></div>
+        <span class="detail-chevron" id="chev-mod-re-recommendations-rank-fn">▾</span>
+      </div>
+      <div class="detail-drawer" id="draw-mod-re-recommendations-rank-fn">
+        <div class="dd-label">What this does</div>
+        <div class="dd-text">A thin server endpoint that hands back today's (or a specified day's) ranked dish candidates. Its own header comment is explicit that the actual ranking math lives in the dish-expander module — this function just packages that result for the app to display.</div>
+        <div class="dd-label">Files / tables in this module</div>
+        <div class="dd-text">
+          <code>re-recommendations-rank</code> — fetches the day's class plan and dish candidates, returns them as one response.
+        </div>
+        <div class="dd-label">How it helps the app</div>
+        <div class="dd-text">Keeps the scoring logic in one place (the dish-expander module) rather than duplicating it on the server — this endpoint is deliberately "dumb" by design.</div>
+        <div class="dd-label">Last touched</div>
+        <div class="dd-text">S1 · Jun 18</div>
+      </div>
+    </div>
+
+    <!-- MODULES_INJECT -->
   </div>
 
   <!-- ── Files register ── -->

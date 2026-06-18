@@ -176,12 +176,53 @@ Inject above `<!-- SESSIONS_INJECT -->`:
 ---
 
 ## Architecture map node additions
-Inject into the correct layer section above `<!-- ARCH_INJECT -->`:
+Inject into the correct layer section above `<!-- ARCH_PHONE_INJECT -->` /
+`ARCH_DB_INJECT` / `ARCH_SERVER_INJECT` / `ARCH_SERVICES_INJECT` (whichever layer fits):
 
 ```html
-<div class="arch-node {{is-new OR is-mod OR blank}}">
+<div class="arch-node {{is-new OR is-mod OR blank}}" onclick="jumpModule('{{MODULE_ID}}')">
   <div class="arch-node-name {{plain if not a filename}}">{{NAME}}</div>
   <div class="arch-node-desc">{{Short desc}} · S{{N}}</div>
+</div>
+```
+
+Only add the `onclick` if you also wrote a Module Reference entry for `{{MODULE_ID}}`
+(see below) — a tile that links to nothing is worse than a tile that's just not clickable.
+
+---
+
+## Module register entry
+One entry per module/file/table — explains *what it's for*, not what changed this
+session. Append above `<!-- MODULES_INJECT -->` the first time a module is touched;
+on later sessions, find and update that module's existing entry in place instead of
+adding a duplicate.
+
+```html
+<div class="detail-item">
+  <div class="detail-row" id="row-mod-{{MODULE_ID}}" onclick="toggleDetail('mod-{{MODULE_ID}}')">
+    <div class="detail-left">
+      <span class="tag {{TAG_CLASS}}">{{TAG_LABEL}}</span>
+      <span class="detail-name {{plain_if_not_code}}">{{MODULE_NAME}}</span>
+    </div>
+    <span class="detail-chevron" id="chev-mod-{{MODULE_ID}}">▾</span>
+  </div>
+  <div class="detail-drawer" id="draw-mod-{{MODULE_ID}}">
+    <div class="dd-label">What this does</div>
+    <div class="dd-text">{{PLAIN_ENGLISH_FROM_HEADER_COMMENT_OR_JSDOC_OR_SQL_COMMENT}}</div>
+
+    <div class="dd-label">Files / tables in this module</div>
+    <div class="dd-text">
+      {{REPEAT_FOR_EACH_FILE_OR_TABLE:
+      <code>{{file_or_table_name}}</code> — {{one_line_plain_english_job_from_its_exported_functions_or_columns}}<br>
+      }}
+    </div>
+
+    <div class="dd-label">How it helps the app</div>
+    <div class="dd-text">{{CONCRETE_USER_OR_BUSINESS_BENEFIT — not "implements X pattern", but what breaks or what users notice if this didn't exist}}</div>
+
+    <div class="dd-label">Last touched</div>
+    <div class="dd-text">S{{N}} · {{DATE_SHORT}}</div>
+  </div>
 </div>
 ```
 

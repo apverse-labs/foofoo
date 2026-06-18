@@ -190,6 +190,9 @@ All `<!-- *_INJECT -->` comments MUST be preserved — they are how future sessi
 
   <div class="sidebar-section">
     <div class="sidebar-section-label">Reference</div>
+    <div class="nav-item" onclick="showPage('modules')">
+      <span class="nav-icon">🧩</span> Modules
+    </div>
     <div class="nav-item" onclick="showPage('files')">
       <span class="nav-icon">📁</span> Files register
     </div>
@@ -248,6 +251,15 @@ All `<!-- *_INJECT -->` comments MUST be preserved — they are how future sessi
       <div class="page-subtitle">Every session in order. Click any chip to open that session's full doc.</div>
     </div>
     <!-- TIMELINE_INJECT -->
+  </div>
+
+  <!-- ── Modules ── -->
+  <div id="page-modules" class="page-content" style="display:none">
+    <div class="page-header">
+      <div class="page-title">Modules</div>
+      <div class="page-subtitle">What each piece of code or database table is actually for, in plain English — click an architecture tile to jump straight to its entry here.</div>
+    </div>
+    <!-- MODULES_INJECT -->
   </div>
 
   <!-- ── Files register ── -->
@@ -314,6 +326,16 @@ function jumpDetail(session,id){
     const dr=document.getElementById('draw-'+session+'-'+id);
     if(dr&&!dr.classList.contains('open'))toggleDetail(session+'-'+id);
     const rw=document.getElementById('row-'+session+'-'+id);
+    if(rw)rw.scrollIntoView({behavior:'smooth',block:'start'});
+  },60);
+}
+// Jump from an architecture tile → its Module Reference entry (F24)
+function jumpModule(id){
+  showPage('modules');
+  setTimeout(()=>{
+    const dr=document.getElementById('draw-mod-'+id);
+    if(dr&&!dr.classList.contains('open'))toggleDetail('mod-'+id);
+    const rw=document.getElementById('row-mod-'+id);
     if(rw)rw.scrollIntoView({behavior:'smooth',block:'start'});
   },60);
 }
