@@ -250,6 +250,19 @@ flows data. Each session then just adds a third `.view-tab`, an empty `<div id="
 view-pane, and a small inline `<script>` defining that session's `flows[]` array and
 calling `renderFeatureFlows('s{{N}}-flows', flows)`.
 
+**Script ordering — critical.** The shared `<script>` block (containing `showPage`,
+`switchView`, `jumpDetail`, `jumpModule`, `toggleDetail`, `renderFeatureFlows`,
+`toggleFeatureStep`, `deepDiveFeature`) MUST appear immediately after `<body>` opens,
+**before** `<!-- SESSIONS_INJECT -->` and before any per-session inline `<script>`.
+Browsers execute non-deferred `<script>` tags synchronously in document order — if a
+session's inline script calls `renderFeatureFlows(...)` before that function has been
+defined further down the document, it throws `ReferenceError: renderFeatureFlows is
+not defined`. Never append the shared script block at the bottom of `<body>`. When
+validating (Step 6), check that the shared script's `<script>` opening tag's line
+number is lower than every per-session call site's line number — `node --check` on an
+extracted block alone will NOT catch this, since it only validates syntax, not
+cross-block execution order.
+
 ### Step 4b — System Flow (front-end → back-end sequence diagrams)
 A separate page, cumulative like Modules, showing how a major user-facing flow actually
 travels through the layers — e.g. "Onboarding → persona assignment" or "Daily plan
@@ -332,6 +345,26 @@ grep -c 'id="page-s' KNOWLEDGE.html   # should equal number of sessions
 grep "SESSIONS_INJECT\|MODULES_INJECT" KNOWLEDGE.html   # should still be present for next session
 grep -c "function renderFeatureFlows" KNOWLEDGE.html   # must be exactly 1 — never duplicated across sessions
 node --check /tmp/extracted-script.js   # extract the <script>...</script> contents and syntax-check before committing
+
+# Confirm every onclick-called function actually has a real `function NAME(` definition —
+# not just mentioned in a documentation code-sample string. This is how jumpModule shipped
+# broken once: it was referenced in 31 onclick attributes but never implemented.
+for fn in showPage switchView jumpDetail jumpModule toggleDetail renderFeatureFlows toggleFeatureStep deepDiveFeature; do
+  grep -q "function $fn(" KNOWLEDGE.html || echo "MISSING IMPLEMENTATION: $fn"
+done
+
+# Confirm every onclick="jumpModule('X')" / jumpDetail('s','X') target has a matching drawer.
+# A call with no matching draw-mod-X or draw-sN-X id will silently no-op or throw at click time.
+comm -23 \
+  <(grep -o "jumpModule('[^']*')" KNOWLEDGE.html | sed -E "s/jumpModule\('([^']*)'\)/\1/" | sort -u) \
+  <(grep -o 'id="draw-mod-[^"]*"' KNOWLEDGE.html | sed -E 's/id="draw-mod-([^"]*)"/\1/' | sort -u)
+# ^ any output here = a jumpModule call with no matching drawer — fix before committing
+
+# Confirm the shared <script> block (showPage/jumpModule/renderFeatureFlows/etc.) is
+# positioned BEFORE any per-session inline <script> that calls those functions — i.e.
+# its opening <script> line number must be lower than every session's call-site line.
+# It must sit right after <body> opens, before <!-- SESSIONS_INJECT -->.
+grep -n "^<script>\|SESSIONS_INJECT" KNOWLEDGE.html | head -3
 ```
 
 Tell the user:
