@@ -191,6 +191,151 @@
 </head>
 <body>
 
+<script>
+function showPage(id){
+  document.querySelectorAll('.page-content').forEach(p=>p.style.display='none');
+  const pg=document.getElementById('page-'+id);
+  if(pg) pg.style.display='block';
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n=>{
+    const oc=n.getAttribute('onclick')||'';
+    if(oc.includes("'"+id+"'"))n.classList.add('active');
+  });
+}
+function switchView(session,view){
+  const pg=document.getElementById('page-'+session);
+  if(!pg)return;
+  pg.querySelectorAll('.view-pane').forEach(p=>p.classList.remove('active'));
+  pg.querySelectorAll('.view-tab').forEach(t=>t.classList.remove('active'));
+  const vp=document.getElementById(session+'-'+view);
+  if(vp)vp.classList.add('active');
+  if(event&&event.target)event.target.classList.add('active');
+}
+// Jump from swim lane step → detail drawer
+function jumpDetail(session,id){
+  switchView(session,'detail',null);
+  setTimeout(()=>{
+    const dr=document.getElementById('draw-'+session+'-'+id);
+    if(dr&&!dr.classList.contains('open'))toggleDetail(session+'-'+id);
+    const rw=document.getElementById('row-'+session+'-'+id);
+    if(rw)rw.scrollIntoView({behavior:'smooth',block:'start'});
+  },60);
+}
+function toggleDetail(id){
+  const dr=document.getElementById('draw-'+id);
+  const ch=document.getElementById('chev-'+id);
+  if(!dr||!ch)return;
+  const row=ch.closest('.detail-row');
+  const isOpen=dr.classList.contains('open');
+  dr.classList.toggle('open',!isOpen);
+  row&&row.classList.toggle('open',!isOpen);
+  ch.classList.toggle('open',!isOpen);
+}
+
+// ── Feature flows tab (per-session) ──
+// Renders a flows[] array (see references/session-block-template.md) into rootId.
+// Called once per session from that session's own inline <script>, e.g.:
+//   renderFeatureFlows('s3-flows', FEATURE_FLOWS_S3);
+function renderFeatureFlows(rootId, flows){
+  const root=document.getElementById(rootId);
+  if(!root||!flows||!flows.length)return;
+  const layerMeta={
+    'Phone':{bg:'#E6F1FB',color:'#0C447C'},
+    'App logic':{bg:'#E1F5EE',color:'#085041'},
+    'Middleware':{bg:'#FAEEDA',color:'#633806'},
+    'Server':{bg:'#FFF0F0',color:'#791F1F'},
+    'Database':{bg:'#EEEDFE',color:'#3C3489'},
+    'Service':{bg:'#FAECE7',color:'#712B13'}
+  };
+  const tagMeta={
+    'UI':{bg:'#E6F1FB',color:'#0C447C'},
+    'HOOK':{bg:'#E1F5EE',color:'#085041'},
+    'API':{bg:'#FAEEDA',color:'#633806'},
+    'DB':{bg:'#EEEDFE',color:'#3C3489'},
+    'SDK':{bg:'#FAECE7',color:'#712B13'},
+    'POLICY':{bg:'#FBEAF0',color:'#72243E'}
+  };
+  function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function pill(text,meta){
+    const m=meta[text]||{bg:'#f2f1ee',color:'#6b6860'};
+    return '<span class="ff-pill" style="background:'+m.bg+';color:'+m.color+'">'+esc(text)+'</span>';
+  }
+  let html='<div class="ff-tabs">';
+  flows.forEach((f,i)=>{html+='<div class="ff-tab'+(i===0?' active':'')+'" data-ff-tab="'+i+'">'+esc(f.label)+'</div>';});
+  html+='</div>';
+  flows.forEach((f,i)=>{
+    html+='<div class="ff-panel" data-ff-panel="'+i+'" style="'+(i===0?'':'display:none')+'">';
+    html+='<div class="ff-meta">'+esc(f.label)+' · '+f.steps.length+' steps · click any step to see the code files and data flow</div>';
+    f.steps.forEach((s,si)=>{
+      const uid=rootId+'-f'+i+'-s'+si;
+      html+='<div class="ff-step" id="'+uid+'">';
+      html+='<div class="ff-step-header" onclick="toggleFeatureStep(\''+uid+'\')">';
+      html+='<div class="ff-step-num">'+(si+1)+'</div>';
+      html+=pill(s.layer,layerMeta);
+      if(s.tag)html+=pill(s.tag,tagMeta);
+      html+='<div class="ff-step-title">'+esc(s.title)+'</div>';
+      html+='<span class="ff-chevron" id="'+uid+'-chev">▾</span>';
+      html+='</div>';
+      html+='<div class="ff-step-body" id="'+uid+'-body">';
+      html+='<div class="ff-desc">'+esc(s.desc)+'</div>';
+      if(s.codeFlow&&s.codeFlow.length){
+        html+='<div class="ff-section-label">Code flow</div><div class="ff-codeflow">';
+        s.codeFlow.forEach(c=>{
+          if(c.chip!=null)html+='<span class="ff-code-chip">'+esc(c.chip)+'</span>';
+          else if(c.label!=null)html+='<span class="ff-code-arrow">→ '+esc(c.label)+'</span>';
+        });
+        html+='</div>';
+      }
+      if(s.files&&s.files.length){
+        html+='<div class="ff-section-label">Files touched</div><div class="ff-files-touched">';
+        s.files.forEach(fl=>{
+          html+='<div class="ff-file-row"><span class="ff-file-chip">📄 '+esc(fl.path)+'</span><span class="ff-file-desc">'+esc(fl.desc)+'</span></div>';
+        });
+        html+='</div>';
+      }
+      if(s.api){
+        html+='<div class="ff-section-label">API contract</div><div class="ff-api-row"><span class="ff-api-name">'+esc(s.api.endpoint)+'</span><span>'+esc(s.api.note)+'</span></div>';
+      }
+      if(s.db){
+        html+='<div class="ff-section-label">Database</div><div class="ff-db-row"><span class="ff-db-name">'+esc(s.db.table)+' · '+esc(s.db.op)+'</span><span>'+esc(s.db.note)+'</span></div>';
+      }
+      html+='</div></div>';
+    });
+    html+='<div class="ff-deepdive"><button class="ff-deepdive-btn" onclick="deepDiveFeature(\''+esc(f.label).replace(/'/g,"\\'")+'\')">🔎 Deep-dive: error handling &amp; edge cases for '+esc(f.label)+'</button></div>';
+    html+='</div>';
+  });
+  root.innerHTML=html;
+  root.querySelectorAll('.ff-tab').forEach(tab=>{
+    tab.addEventListener('click',function(){
+      const idx=this.getAttribute('data-ff-tab');
+      root.querySelectorAll('.ff-tab').forEach(t=>t.classList.remove('active'));
+      this.classList.add('active');
+      root.querySelectorAll('.ff-panel').forEach(p=>{p.style.display=(p.getAttribute('data-ff-panel')===idx)?'':'none';});
+    });
+  });
+}
+function toggleFeatureStep(uid){
+  const body=document.getElementById(uid+'-body');
+  const chev=document.getElementById(uid+'-chev');
+  const step=document.getElementById(uid);
+  if(!body||!chev||!step)return;
+  const isOpen=step.classList.contains('open');
+  step.classList.toggle('open',!isOpen);
+  chev.textContent=isOpen?'▾':'▴';
+}
+function deepDiveFeature(featureLabel){
+  const prompt='Go deeper on error handling and edge cases for the "'+featureLabel+'" feature flow documented in KNOWLEDGE.html — what can fail at each step, and how is/should it be handled?';
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(prompt).then(()=>{
+      alert('Prompt copied to clipboard — paste it into Claude Code to go deeper:\n\n'+prompt);
+    }).catch(()=>{alert(prompt);});
+  }else{
+    alert(prompt);
+  }
+}
+</script>
+
+
 <nav id="sidebar">
   <div class="sidebar-logo">
     <div class="app-name">FooFoo</div>
@@ -2022,148 +2167,5 @@
 
 </main>
 
-<script>
-function showPage(id){
-  document.querySelectorAll('.page-content').forEach(p=>p.style.display='none');
-  const pg=document.getElementById('page-'+id);
-  if(pg) pg.style.display='block';
-  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
-  document.querySelectorAll('.nav-item').forEach(n=>{
-    const oc=n.getAttribute('onclick')||'';
-    if(oc.includes("'"+id+"'"))n.classList.add('active');
-  });
-}
-function switchView(session,view){
-  const pg=document.getElementById('page-'+session);
-  if(!pg)return;
-  pg.querySelectorAll('.view-pane').forEach(p=>p.classList.remove('active'));
-  pg.querySelectorAll('.view-tab').forEach(t=>t.classList.remove('active'));
-  const vp=document.getElementById(session+'-'+view);
-  if(vp)vp.classList.add('active');
-  if(event&&event.target)event.target.classList.add('active');
-}
-// Jump from swim lane step → detail drawer
-function jumpDetail(session,id){
-  switchView(session,'detail',null);
-  setTimeout(()=>{
-    const dr=document.getElementById('draw-'+session+'-'+id);
-    if(dr&&!dr.classList.contains('open'))toggleDetail(session+'-'+id);
-    const rw=document.getElementById('row-'+session+'-'+id);
-    if(rw)rw.scrollIntoView({behavior:'smooth',block:'start'});
-  },60);
-}
-function toggleDetail(id){
-  const dr=document.getElementById('draw-'+id);
-  const ch=document.getElementById('chev-'+id);
-  if(!dr||!ch)return;
-  const row=ch.closest('.detail-row');
-  const isOpen=dr.classList.contains('open');
-  dr.classList.toggle('open',!isOpen);
-  row&&row.classList.toggle('open',!isOpen);
-  ch.classList.toggle('open',!isOpen);
-}
-
-// ── Feature flows tab (per-session) ──
-// Renders a flows[] array (see references/session-block-template.md) into rootId.
-// Called once per session from that session's own inline <script>, e.g.:
-//   renderFeatureFlows('s3-flows', FEATURE_FLOWS_S3);
-function renderFeatureFlows(rootId, flows){
-  const root=document.getElementById(rootId);
-  if(!root||!flows||!flows.length)return;
-  const layerMeta={
-    'Phone':{bg:'#E6F1FB',color:'#0C447C'},
-    'App logic':{bg:'#E1F5EE',color:'#085041'},
-    'Middleware':{bg:'#FAEEDA',color:'#633806'},
-    'Server':{bg:'#FFF0F0',color:'#791F1F'},
-    'Database':{bg:'#EEEDFE',color:'#3C3489'},
-    'Service':{bg:'#FAECE7',color:'#712B13'}
-  };
-  const tagMeta={
-    'UI':{bg:'#E6F1FB',color:'#0C447C'},
-    'HOOK':{bg:'#E1F5EE',color:'#085041'},
-    'API':{bg:'#FAEEDA',color:'#633806'},
-    'DB':{bg:'#EEEDFE',color:'#3C3489'},
-    'SDK':{bg:'#FAECE7',color:'#712B13'},
-    'POLICY':{bg:'#FBEAF0',color:'#72243E'}
-  };
-  function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
-  function pill(text,meta){
-    const m=meta[text]||{bg:'#f2f1ee',color:'#6b6860'};
-    return '<span class="ff-pill" style="background:'+m.bg+';color:'+m.color+'">'+esc(text)+'</span>';
-  }
-  let html='<div class="ff-tabs">';
-  flows.forEach((f,i)=>{html+='<div class="ff-tab'+(i===0?' active':'')+'" data-ff-tab="'+i+'">'+esc(f.label)+'</div>';});
-  html+='</div>';
-  flows.forEach((f,i)=>{
-    html+='<div class="ff-panel" data-ff-panel="'+i+'" style="'+(i===0?'':'display:none')+'">';
-    html+='<div class="ff-meta">'+esc(f.label)+' · '+f.steps.length+' steps · click any step to see the code files and data flow</div>';
-    f.steps.forEach((s,si)=>{
-      const uid=rootId+'-f'+i+'-s'+si;
-      html+='<div class="ff-step" id="'+uid+'">';
-      html+='<div class="ff-step-header" onclick="toggleFeatureStep(\''+uid+'\')">';
-      html+='<div class="ff-step-num">'+(si+1)+'</div>';
-      html+=pill(s.layer,layerMeta);
-      if(s.tag)html+=pill(s.tag,tagMeta);
-      html+='<div class="ff-step-title">'+esc(s.title)+'</div>';
-      html+='<span class="ff-chevron" id="'+uid+'-chev">▾</span>';
-      html+='</div>';
-      html+='<div class="ff-step-body" id="'+uid+'-body">';
-      html+='<div class="ff-desc">'+esc(s.desc)+'</div>';
-      if(s.codeFlow&&s.codeFlow.length){
-        html+='<div class="ff-section-label">Code flow</div><div class="ff-codeflow">';
-        s.codeFlow.forEach(c=>{
-          if(c.chip!=null)html+='<span class="ff-code-chip">'+esc(c.chip)+'</span>';
-          else if(c.label!=null)html+='<span class="ff-code-arrow">→ '+esc(c.label)+'</span>';
-        });
-        html+='</div>';
-      }
-      if(s.files&&s.files.length){
-        html+='<div class="ff-section-label">Files touched</div><div class="ff-files-touched">';
-        s.files.forEach(fl=>{
-          html+='<div class="ff-file-row"><span class="ff-file-chip">📄 '+esc(fl.path)+'</span><span class="ff-file-desc">'+esc(fl.desc)+'</span></div>';
-        });
-        html+='</div>';
-      }
-      if(s.api){
-        html+='<div class="ff-section-label">API contract</div><div class="ff-api-row"><span class="ff-api-name">'+esc(s.api.endpoint)+'</span><span>'+esc(s.api.note)+'</span></div>';
-      }
-      if(s.db){
-        html+='<div class="ff-section-label">Database</div><div class="ff-db-row"><span class="ff-db-name">'+esc(s.db.table)+' · '+esc(s.db.op)+'</span><span>'+esc(s.db.note)+'</span></div>';
-      }
-      html+='</div></div>';
-    });
-    html+='<div class="ff-deepdive"><button class="ff-deepdive-btn" onclick="deepDiveFeature(\''+esc(f.label).replace(/'/g,"\\'")+'\')">🔎 Deep-dive: error handling &amp; edge cases for '+esc(f.label)+'</button></div>';
-    html+='</div>';
-  });
-  root.innerHTML=html;
-  root.querySelectorAll('.ff-tab').forEach(tab=>{
-    tab.addEventListener('click',function(){
-      const idx=this.getAttribute('data-ff-tab');
-      root.querySelectorAll('.ff-tab').forEach(t=>t.classList.remove('active'));
-      this.classList.add('active');
-      root.querySelectorAll('.ff-panel').forEach(p=>{p.style.display=(p.getAttribute('data-ff-panel')===idx)?'':'none';});
-    });
-  });
-}
-function toggleFeatureStep(uid){
-  const body=document.getElementById(uid+'-body');
-  const chev=document.getElementById(uid+'-chev');
-  const step=document.getElementById(uid);
-  if(!body||!chev||!step)return;
-  const isOpen=step.classList.contains('open');
-  step.classList.toggle('open',!isOpen);
-  chev.textContent=isOpen?'▾':'▴';
-}
-function deepDiveFeature(featureLabel){
-  const prompt='Go deeper on error handling and edge cases for the "'+featureLabel+'" feature flow documented in KNOWLEDGE.html — what can fail at each step, and how is/should it be handled?';
-  if(navigator.clipboard&&navigator.clipboard.writeText){
-    navigator.clipboard.writeText(prompt).then(()=>{
-      alert('Prompt copied to clipboard — paste it into Claude Code to go deeper:\n\n'+prompt);
-    }).catch(()=>{alert(prompt);});
-  }else{
-    alert(prompt);
-  }
-}
-</script>
 </body>
 </html>
