@@ -221,6 +221,16 @@ function jumpDetail(session,id){
     if(rw)rw.scrollIntoView({behavior:'smooth',block:'start'});
   },60);
 }
+// Jump from an architecture tile or system-flow bar → Modules page detail drawer
+function jumpModule(id){
+  showPage('modules');
+  setTimeout(()=>{
+    const dr=document.getElementById('draw-mod-'+id);
+    if(dr&&!dr.classList.contains('open'))toggleDetail('mod-'+id);
+    const rw=document.getElementById('row-mod-'+id);
+    if(rw)rw.scrollIntoView({behavior:'smooth',block:'start'});
+  },60);
+}
 function toggleDetail(id){
   const dr=document.getElementById('draw-'+id);
   const ch=document.getElementById('chev-'+id);
