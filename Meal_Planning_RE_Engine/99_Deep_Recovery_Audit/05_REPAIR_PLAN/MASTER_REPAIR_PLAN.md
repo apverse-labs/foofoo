@@ -25,3 +25,8 @@ BUILD-01 (seed), BUILD-03 (assignment), BUILD-05 (add-on), BUILD-07 (feedback), 
 ## Global no-go rules
 Additive migrations only (Up+Down, registered in SYSTEM_STATE before apply); staging only; no production;
 do not modify canonical workbook; one build per repair pass; re-read source per build before coding.
+
+## Cross-reference (added 2026-06-17)
+- `foofoo/PENDING.md` § "RE Data Gaps — Dish Database (R1–R4)" links back to this plan and to `06_REPAIR_LOGS/` — note R1–R4 are gaps in the **app-side legacy RE** (the `dishes`/`cuisines_master` tables), a different system from the builds tracked here; do not assume R1–R4 fix actions apply to this module's `re_class_dish_options`/`re_cohorts` seed data.
+- `06_REPAIR_LOGS/BUILD_02_REPAIR_LOG.md` and `BUILD_04_REPAIR_LOG.md` already show repair work logged for BUILD-02 and BUILD-04 — read those before re-deriving the P1/P2 priority items above, since some may already be partially addressed.
+- `foofoo-tests/reports/md/re-qa-status.md` for live CI status of any repairs once merged to `apverse-labs-RE`.

@@ -29,3 +29,13 @@
 onboarding capture UIs) + LOW forward builds. **Halted at G6 for repair approval as instructed.**
 
 Legend: ✅ done · ⏳ pending this run · ⛔ stop point · 🚫 out of scope this run.
+
+## Cross-reference to root QA/audit docs (added 2026-06-17)
+
+This Deep Recovery & Parity Audit tree (binary-doc/workbook parity, requirement traceability, repair planning) is intentionally separate from but should be read alongside the root-level RE QA docs at `foofoo-tests/reports/md/`:
+
+- `foofoo-tests/reports/md/re-qa-status.md` — live GitHub Actions QA dashboard (CI job status for `apverse-labs-RE` branch against `kwypxyqxojauhiehuirz` staging) — operational/CI status, complements this tree's static document-parity audit.
+- `foofoo-tests/reports/md/re-persona-coverage.md` — 50/50 persona test coverage report — functional test coverage, complements `03_CODE_AUDIT/TEST_COVERAGE_AUDIT.md` in this tree (which assesses coverage against the 482-requirement ledger rather than persona-level functional behavior).
+- `foofoo-tests/reports/md/re-schema-registry.md` — mirrors the root `SYSTEM_STATE.md` Schema Registry for RE-specific schema IDs — complements `02_DB_AUDIT/SUPABASE_SCHEMA_SNAPSHOT.md` in this tree (which is a point-in-time snapshot, not a versioned migration registry).
+
+Also see `foofoo/PENDING.md` § "RE Data Gaps — Dish Database" (R1–R4) — those gaps are in the **app-side legacy RE** (`dishes` table scoring), a different system from this module; cross-referenced there to avoid the two being conflated.

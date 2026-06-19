@@ -81,3 +81,15 @@ _Last updated: 2026-05-25_
 
 ## Reminder: hygiene-audit review items still pending
 The 24 "needs review" items (DUP-02, DUP-04, DUP-05, DUP-06, OPT-01–04, CS-08–14, DC-01, DC-07, DC-08, DC-10, DUP-01, DUP-03) were deferred at user request. They remain documented in hygiene-audit.md.
+
+---
+
+## apverse-labs-re (Meal_Planning_RE_Engine) Scope
+
+**Coverage:** All work logged in this completion summary (PRs #19–#21 plus the logger/JSDoc/logging PR) touched only `foofoo/` and `foofoo-tests/`. None of it covers `Meal_Planning_RE_Engine/`.
+
+**2026-06-17 addendum (this session):** 5 further unused-import/dead-code fixes applied — see `hygiene-audit.md` "2026-06-17 Safe-fix pass" for the itemised list (file:line + fix). No console.log replacements were needed (confirmed again this session — all `console.log` calls remaining in `foofoo/supabase/functions/**` are legitimate Deno Edge Function runtime logging, consistent with the "0 replaced" finding already recorded above; `Meal_Planning_RE_Engine/00_Implementation` has no console.log calls because it has no implementation source yet, only test scaffolding).
+
+**Not yet covered for RE:** No equivalent "hygiene completion" pass has been run for `Meal_Planning_RE_Engine/`. When the RE module gains real implementation code (per its CLAUDE.md build sequence BUILD-01 onward), a parallel hygiene pass should be scheduled — at that point, decide whether RE-module logging should reuse `foofoo/src/utils/systemLogger.ts` / `foofoo/src/lib/logger.ts` (if RE code runs client-side) or follow the Edge-Function `console.log` convention (if RE code runs server-side as Supabase Edge Functions), per the existing app-wide pattern documented above.
+
+**Cross-reference:** `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/03_CODE_AUDIT/` (code structure + traceability + wrong-pattern-scan reports — the RE module's nearest equivalent audit artifact) and `06_REPAIR_LOGS/` (BUILD_02 and BUILD_04 repair logs — the RE module's nearest equivalent to "completion summary" entries, though scoped to data/architecture repairs rather than hygiene).

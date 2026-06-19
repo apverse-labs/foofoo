@@ -232,3 +232,16 @@ _Audited: 2026-05-25 | Auditor: Claude Code_
 3. The `suggestion_logs` anonymisation test is a soft check that cannot verify a specific user's rows were anonymised (only that null user_id rows exist globally)
 
 **Action:** Set `SUPABASE_URL`, `SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` in the test environment (`.env` or CI secrets) and re-run before Play Store submission. These tests must all pass.
+
+---
+
+## apverse-labs-re (Meal_Planning_RE_Engine) Scope
+
+**Coverage:** This DPDP compliance audit covers consent flow, data subject rights, and data minimisation for the main FooFoo app's `profiles`/`user_diet_rules`/`user_consent` tables. It does not assess the RE module's own user-data tables (`re_user_household_profiles`, `re_user_weekly_plans`, `re_user_addon_plans`, `re_user_feedback`, `re_user_dish_affinity`, `re_user_class_affinity` — per `SYSTEM_STATE.md` Schema Registry SCHEMA-RE-001 through SCHEMA-RE-016) which are personal/behavioral data subject to the same DPDP obligations (access, correction, erasure, consent).
+
+**Not yet covered for RE:**
+- Whether the planned `export-user-data` Edge Function (PENDING.md H2, currently ⬜ not built) would need to also query the `re_*` tables once RE goes to production — not assessed here.
+- Whether RE's `re_user_feedback` raw event log (swipes, locks, never-list actions) needs the same anonymisation-on-deletion treatment as `suggestion_logs` gets in the main app's `delete-account` Edge Function — not assessed; `re_user_feedback` likely needs an equivalent CASCADE/anonymise path before RE reaches production users.
+- Consent granularity (H1 in PENDING.md) doesn't currently account for RE-specific processing (e.g. cohort/persona assignment, feedback-based learning) as a distinct disclosed purpose.
+
+**Cross-reference:** No DPDP/compliance-specific file exists yet in `Meal_Planning_RE_Engine/99_Deep_Recovery_Audit/`. Closest related artifacts: `02_DB_AUDIT/SUPABASE_SCHEMA_SNAPSHOT.md` (lists the `re_*` user-data tables and their RLS state, but doesn't assess DPDP rights coverage) and `02_DB_AUDIT/DB_GAP_REGISTER.md` (0 blockers — schema-level, not compliance-level). Per root `CLAUDE.md`/`Meal_Planning_RE_Engine/CLAUDE.md` guardrails, this gap requires a founder/product decision on RE data-rights scope before code is written — not resolved in this session.

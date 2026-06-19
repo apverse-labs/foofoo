@@ -1,5 +1,6 @@
 import { supabaseRE } from '../services/supabase-re';
 import { Logger } from '../utils/systemLogger';
+import { RE_MAIN_COHORT_SCREEN_COPY, RE_SUBCOHORT_CHIP_TEXT } from '../config/re-onboarding-content';
 import type {
   REState, REMainCohort, RESubcohort,
   REHouseholdProfile, REHouseholdMember,
@@ -62,10 +63,13 @@ export async function fetchREMainCohorts(): Promise<REMainCohort[]> {
   try {
     const { data, error } = await supabaseRE
       .from('re_main_cohorts')
-      .select('main_cohort_id, main_cohort_label, user_understands_as, subcohort_screen_copy')
+      .select('main_cohort_id, main_cohort_label, user_understands_as')
       .order('main_cohort_id', { ascending: true });
     if (error) throw error;
-    return (data ?? []) as REMainCohort[];
+    return ((data ?? []) as Omit<REMainCohort, 'subcohort_screen_copy'>[]).map((row) => ({
+      ...row,
+      subcohort_screen_copy: RE_MAIN_COHORT_SCREEN_COPY[row.main_cohort_id] ?? '',
+    }));
   } catch (err: any) {
     Logger.error('RE_ONBOARDING', 'fetchREMainCohorts failed', { error: err?.message });
     return [];
@@ -80,11 +84,14 @@ export async function fetchRESubcohorts(mainCohortId: string): Promise<RESubcoho
   try {
     const { data, error } = await supabaseRE
       .from('re_subcohorts')
-      .select('sub_cohort_id, main_cohort_id, show_as_chip_text, maps_to_persona_id')
+      .select('sub_cohort_id, main_cohort_id, maps_to_persona_id')
       .eq('main_cohort_id', mainCohortId)
       .order('sub_cohort_id', { ascending: true });
     if (error) throw error;
-    return (data ?? []) as RESubcohort[];
+    return ((data ?? []) as Omit<RESubcohort, 'show_as_chip_text'>[]).map((row) => ({
+      ...row,
+      show_as_chip_text: RE_SUBCOHORT_CHIP_TEXT[row.sub_cohort_id]?.chipLabel ?? '',
+    }));
   } catch (err: any) {
     Logger.error('RE_ONBOARDING', 'fetchRESubcohorts failed', { error: err?.message, mainCohortId });
     return [];
