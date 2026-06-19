@@ -185,6 +185,71 @@ block:
 - Update the `<span class="nav-badge">` count on the "Modules" sidebar nav-item to the
   new total module count.
 
+### Step 4a-2 — Feature flows tab (per-session, code-level walkthrough)
+A third tab on every session page, alongside "Swim lane flow" and "Detail drill-down" —
+not a separate page like Modules/System Flow. One button per feature built or modified
+*this session*; each feature is a stack of collapsible steps across up to 6 possible
+layers, in this fixed order when present: **Phone → App logic → Middleware → Server →
+Database → Service**. This is the most granular view in the book — it's where a PM
+can see the actual file-to-file call chain for one feature without reading code.
+
+**Identify features first.** A "feature" here is a user-facing capability, not a file —
+"User login," "Place order," not "LoginScreen.tsx." Group this session's touched files
+by which feature they serve; a feature with only 1-2 files is fine, don't force-merge
+unrelated work into one feature button.
+
+**Verify every file path before writing it down.** This is non-negotiable:
+```bash
+test -f path/to/file.tsx && echo "EXISTS" || echo "MISSING — do not include"
+```
+Every file path named in a step's "Code flow" or "Files touched" must be a real path in
+the actual repo, checked with `test -f` (or equivalent) before it goes in the data. Do
+not invent a plausible-looking file. If a step's logic genuinely isn't in a separate
+file (e.g. inline in the same component), say so in the description rather than naming
+a file that doesn't exist.
+
+**Data shape** — one `flows[]` array per session, each entry one feature:
+```js
+{
+  id: 'user-login',              // unique within this session
+  label: 'User login',           // shown on the tab button
+  steps: [
+    {
+      layer: 'Phone',            // Phone | App logic | Middleware | Server | Database | Service
+      tag: 'UI',                 // UI | HOOK | API | DB | SDK | POLICY
+      title: 'Login screen mounts',
+      desc: 'Plain English, no jargon — what actually happens at this step.',
+      codeFlow: [                 // the real call chain, verified to exist
+        {chip:'screens/LoginScreen.tsx'}, {label:'renders'},
+        {chip:'components/EmailInput.tsx'}, {label:'local state'},
+        {chip:'hooks/useLoginForm.ts'}
+      ],
+      files: [                    // every file in this step, one plain-English job each
+        {path:'screens/LoginScreen.tsx', desc:'Renders the visible form'},
+        {path:'hooks/useLoginForm.ts', desc:'Holds form state, error messages'}
+      ],
+      api: null,                  // {endpoint:'POST /auth/login', note:'...'} — omit entirely if this step makes no API call
+      db: null                    // {table:'users', op:'SELECT', note:'...'} — omit entirely if this step touches no table
+    }
+    // ... more steps, in real call order, across whichever layers this feature actually uses
+  ]
+}
+```
+- `api`/`db` are `null` (or omitted) on steps that don't have that surface — the renderer
+  skips those sections entirely rather than showing an empty one.
+- Not every feature uses all 6 layers. A pure front-end interaction might only have
+  Phone + App logic steps. Don't pad with fake Middleware/Server/Database steps to fill
+  the layer list.
+
+**Injection mechanics** — see `references/session-block-template.md`'s "Feature flows
+tab" section for the exact markup and the one-time global JS (`renderFeatureFlows`,
+`toggleFeatureStep`, `deepDiveFeature`). The renderer function itself goes in the
+shared `<script>` block **once** — if `function renderFeatureFlows` isn't already in
+the file, copy it in from `references/shell-template.md` before adding any session's
+flows data. Each session then just adds a third `.view-tab`, an empty `<div id="s{{N}}-flows">`
+view-pane, and a small inline `<script>` defining that session's `flows[]` array and
+calling `renderFeatureFlows('s{{N}}-flows', flows)`.
+
 ### Step 4b — System Flow (front-end → back-end sequence diagrams)
 A separate page, cumulative like Modules, showing how a major user-facing flow actually
 travels through the layers — e.g. "Onboarding → persona assignment" or "Daily plan
@@ -265,6 +330,8 @@ flow diagrams), DECISIONS_INJECT (append items).
 wc -l KNOWLEDGE.html
 grep -c 'id="page-s' KNOWLEDGE.html   # should equal number of sessions
 grep "SESSIONS_INJECT\|MODULES_INJECT" KNOWLEDGE.html   # should still be present for next session
+grep -c "function renderFeatureFlows" KNOWLEDGE.html   # must be exactly 1 — never duplicated across sessions
+node --check /tmp/extracted-script.js   # extract the <script>...</script> contents and syntax-check before committing
 ```
 
 Tell the user:

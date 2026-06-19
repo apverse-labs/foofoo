@@ -50,6 +50,7 @@ Inject above `<!-- SESSIONS_INJECT -->`:
   <div class="view-tabs">
     <div class="view-tab active" onclick="switchView('s{{N}}','swim')">Swim lane flow</div>
     <div class="view-tab" onclick="switchView('s{{N}}','detail')">Detail drill-down</div>
+    <div class="view-tab" onclick="switchView('s{{N}}','flows')">Feature flows</div>
   </div>
 
   <!-- ══ SWIM LANE VIEW ══ -->
@@ -170,8 +171,45 @@ Inject above `<!-- SESSIONS_INJECT -->`:
 
   </div><!-- /detail -->
 
+  <!-- ══ FEATURE FLOWS VIEW ══ -->
+  <div id="s{{N}}-flows" class="view-pane"></div>
+  <script>
+  window.FEATURE_FLOWS_S{{N}} = [
+    {{REPEAT_FOR_EACH_FEATURE_BUILT_OR_MODIFIED_THIS_SESSION:
+    {
+      id: '{{feature-id}}',
+      label: '{{Feature label shown on the tab button}}',
+      steps: [
+        {{REPEAT_FOR_EACH_STEP_IN_REAL_CALL_ORDER:
+        {
+          layer: '{{Phone|App logic|Middleware|Server|Database|Service}}',
+          tag: '{{UI|HOOK|API|DB|SDK|POLICY}}',
+          title: '{{Short step title}}',
+          desc: '{{Plain English, no jargon, what happens at this step}}',
+          codeFlow: [ {chip:'{{verified/real/file/path.ts}}'}, {label:'{{calls|renders|returns}}'}, {chip:'{{next/real/file.ts}}'} ],
+          files: [ {path:'{{verified/real/file/path.ts}}', desc:'{{one-line plain-English job}}'} ],
+          api: {{null, OR {endpoint:'POST /x', note:'plain English'} if this step makes an API call}},
+          db: {{null, OR {table:'table_name', op:'INSERT|UPDATE|SELECT', note:'plain English'} if this step touches a table}}
+        }
+        }}
+      ]
+    }
+    }}
+  ];
+  renderFeatureFlows('s{{N}}-flows', window.FEATURE_FLOWS_S{{N}});
+  </script>
+
 </div><!-- /page-s{{N}} -->
 ```
+
+**Before writing any `codeFlow`/`files` entry, verify the path is real:**
+```bash
+test -f path/to/file.ts && echo EXISTS || echo "MISSING — fix or drop this entry"
+```
+Never write a plausible-looking path that wasn't checked. If `function renderFeatureFlows`
+doesn't already exist anywhere in `KNOWLEDGE.html`'s `<script>` block, copy it in once
+from `references/shell-template.md` before adding this session's `<script>` block above —
+it must appear exactly once in the whole file, shared by every session.
 
 ---
 

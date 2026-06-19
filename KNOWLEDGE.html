@@ -156,6 +156,36 @@
   .empty-pane h3{font-size:15px;font-weight:600;color:var(--text2);margin-bottom:6px}
   .empty-pane p{font-size:13px;line-height:1.6}
 
+  /* ── Feature flows tab (per-session) ── */
+  .ff-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .ff-tab{padding:9px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:13px;font-weight:500;color:var(--text);cursor:pointer;transition:border-color .12s,color .12s;user-select:none}
+  .ff-tab:hover{border-color:var(--border2)}
+  .ff-tab.active{border-color:#1a56db;color:#1a56db}
+  .ff-meta{font-size:13px;color:var(--text2);margin-bottom:14px}
+  .ff-step{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;background:var(--surface);overflow:hidden}
+  .ff-step-header{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none}
+  .ff-step-num{width:24px;height:24px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--text2);flex-shrink:0}
+  .ff-pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;flex-shrink:0}
+  .ff-step-title{font-size:14px;font-weight:600;color:var(--text);flex:1}
+  .ff-chevron{font-size:12px;color:var(--text3);flex-shrink:0}
+  .ff-step-body{display:none;padding:0 16px 16px 60px}
+  .ff-step.open .ff-step-body{display:block}
+  .ff-section-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin:14px 0 6px}
+  .ff-section-label:first-child{margin-top:0}
+  .ff-desc{font-size:13px;color:var(--text2);line-height:1.6}
+  .ff-codeflow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .ff-code-chip{font-family:'SF Mono','Fira Code',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text)}
+  .ff-code-arrow{font-size:12px;color:var(--text3)}
+  .ff-files-touched{display:flex;flex-direction:column;gap:7px}
+  .ff-file-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .ff-file-chip{font-family:'SF Mono','Fira Code',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 9px;color:var(--text)}
+  .ff-file-desc{font-size:12px;color:var(--text2)}
+  .ff-api-row,.ff-db-row{font-size:12px;color:var(--text2);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .ff-api-name,.ff-db-name{font-family:'SF Mono','Fira Code',monospace;font-weight:600;color:var(--text);flex-shrink:0}
+  .ff-deepdive{margin-top:14px;text-align:center}
+  .ff-deepdive-btn{padding:10px 18px;border-radius:8px;border:1px solid var(--blue-border);background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:600;cursor:pointer}
+  .ff-deepdive-btn:hover{background:var(--blue-border)}
+
   @media(max-width:640px){#sidebar{display:none}#main{padding:20px 16px}.stat-row{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -188,8 +218,12 @@
       <span class="nav-icon">🧩</span> S1 · Meal Engine + Compliance
       <span class="nav-badge">Jun 18</span>
     </div>
-    <div class="nav-item active" onclick="showPage('s2')">
+    <div class="nav-item" onclick="showPage('s2')">
       <span class="nav-icon">🛠</span> S2 · Knowledge book overhaul
+      <span class="nav-badge">Jun 18</span>
+    </div>
+    <div class="nav-item active" onclick="showPage('s3')">
+      <span class="nav-icon">🧩</span> S3 · Feature flows tab
       <span class="nav-badge">Jun 18</span>
     </div>
     <!-- NAV_INJECT -->
@@ -205,7 +239,7 @@
     </div>
     <div class="nav-item" onclick="showPage('files')">
       <span class="nav-icon">📁</span> Files register
-      <span class="nav-badge">15</span>
+      <span class="nav-badge">19</span>
     </div>
     <div class="nav-item" onclick="showPage('db')">
       <span class="nav-icon">🗄</span> Database schema
@@ -213,7 +247,7 @@
     </div>
     <div class="nav-item" onclick="showPage('decisions')">
       <span class="nav-icon">💡</span> Key decisions
-      <span class="nav-badge">9</span>
+      <span class="nav-badge">11</span>
     </div>
   </div>
 </nav>
@@ -493,6 +527,20 @@
           <span class="tl-chip" onclick="showPage('s2')">Dotfiles skill fix</span>
         </div>
         <div class="tl-note">Fixed the knowledge book's own broken navigation, added 31 module explanations sourced from real code comments, and a System Flow view. Next: get the dotfiles fix pushed once repo access is granted.</div>
+      </div>
+    </div>
+    <div class="timeline-row">
+      <div class="tl-date">Jun 18<br>2026</div>
+      <div class="tl-spine"><div class="tl-dot" style="background:#5145b8"></div></div>
+      <div class="tl-content">
+        <span class="tl-badge" style="background:#f0effe;color:#5145b8">S3</span>
+        <div class="tl-title">Feature flows tab</div>
+        <div class="tl-chips">
+          <span class="tl-chip" onclick="showPage('s3')">Feature flows tab</span>
+          <span class="tl-chip" onclick="showPage('s3')">renderFeatureFlows()</span>
+          <span class="tl-chip" onclick="showPage('s3')">File-path verification rule</span>
+        </div>
+        <div class="tl-note">Every session page now has a code-level, file-by-file feature walkthrough. Next: extend coverage to new features as they're built.</div>
       </div>
     </div>
     <!-- TIMELINE_INJECT -->
@@ -1150,6 +1198,10 @@
         <tr><td class="fr-file">.claude/skills/session-knowledge-doc/SKILL.md</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S2</td><td class="fr-desc">Added Module Reference + System Flow instructions, self-documentation rule, 5-layer architecture guidance</td></tr>
         <tr><td class="fr-file">.claude/skills/session-knowledge-doc/references/shell-template.md</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S2</td><td class="fr-desc">Split Phone/App Logic architecture layers, added Modules + System Flow pages, fixed tile cursor/hover CSS</td></tr>
         <tr><td class="fr-file">.claude/skills/session-knowledge-doc/references/session-block-template.md</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S2</td><td class="fr-desc">Added Module Reference entry template and System Flow diagram template</td></tr>
+        <tr><td class="fr-file">KNOWLEDGE.html</td><td><span class="tag tag-new">New</span></td><td class="fr-session">S3</td><td class="fr-desc">Added the Feature flows tab to S1 and S2, plus the shared renderFeatureFlows/toggleFeatureStep/deepDiveFeature JS</td></tr>
+        <tr><td class="fr-file">.claude/skills/session-knowledge-doc/SKILL.md</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S3</td><td class="fr-desc">Added Step 4a-2 — Feature flows tab rules, including the file-path verification requirement</td></tr>
+        <tr><td class="fr-file">.claude/skills/session-knowledge-doc/references/shell-template.md</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S3</td><td class="fr-desc">Added Feature flows CSS and the global renderFeatureFlows/toggleFeatureStep/deepDiveFeature functions</td></tr>
+        <tr><td class="fr-file">.claude/skills/session-knowledge-doc/references/session-block-template.md</td><td><span class="tag tag-mod">Modified</span></td><td class="fr-session">S3</td><td class="fr-desc">Added the third view-tab and flows[] data template for the Feature flows view</td></tr>
         <!-- FILES_INJECT -->
       </tbody>
     </table>
@@ -1215,6 +1267,16 @@
       <div class="decision-a">Screens and repositories were both bundled under "Phone," which hid the middle layer of the app entirely — exactly the gap that was flagged. Splitting them makes the actual code structure visible, not just the UI.</div>
       <div class="decision-meta">S2 · Jun 18</div>
     </div>
+    <div class="decision-item">
+      <div class="decision-q">Why does the Deep-dive button copy a prompt to the clipboard instead of actually calling Claude?</div>
+      <div class="decision-a">KNOWLEDGE.html is a static file with no backend connection — it can't make a live API call to Claude. Copying a ready-made prompt (with a plain alert() fallback if clipboard access fails) is the closest equivalent that stays fully self-contained, matching the project's "no external dependencies" requirement.</div>
+      <div class="decision-meta">S3 · Jun 18</div>
+    </div>
+    <div class="decision-item">
+      <div class="decision-q">Why require test -f on every file path instead of trusting recent exploration?</div>
+      <div class="decision-a">A feature's call chain often names files that weren't individually opened during this session's work — easy to write a plausible-sounding path (e.g. assuming a hook exists because the pattern is common) that's actually wrong. An explicit check costs one command and removes the guesswork entirely.</div>
+      <div class="decision-meta">S3 · Jun 18</div>
+    </div>
     <!-- DECISIONS_INJECT -->
   </div>
 
@@ -1243,6 +1305,7 @@
     <div class="view-tabs">
       <div class="view-tab active" onclick="switchView('s1','swim')">Swim lane flow</div>
       <div class="view-tab" onclick="switchView('s1','detail')">Detail drill-down</div>
+      <div class="view-tab" onclick="switchView('s1','flows')">Feature flows</div>
     </div>
 
     <!-- ══ SWIM LANE VIEW ══ -->
@@ -1519,9 +1582,127 @@
 
     </div><!-- /detail -->
 
+    <!-- ══ FEATURE FLOWS VIEW ══ -->
+    <div id="s1-flows" class="view-pane"></div>
+    <script>
+    window.FEATURE_FLOWS_S1 = [
+      {
+        id: 'onboarding-persona-match',
+        label: 'Onboarding → persona match',
+        steps: [
+          {
+            layer: 'Phone', tag: 'UI',
+            title: 'Household answers the 9-step quiz',
+            desc: 'The app opens the first onboarding screen — "Where\'s home?" — and walks the household through 9 screens capturing location, diet, family, and cooking habits.',
+            codeFlow: [ {chip:'app/(re-onboarding)/re-step-1.tsx'}, {label:'navigates through'}, {chip:'re-step-2.tsx … re-step-9.tsx'} ],
+            files: [ {path:'app/(re-onboarding)/re-step-1.tsx', desc:'First screen — captures home state and current city'} ],
+            api: null, db: null
+          },
+          {
+            layer: 'Server', tag: 'API',
+            title: 'Server returns each screen\'s question content',
+            desc: 'As the household moves through the quiz, the server sends back the cohort cards and routing questions for the current step.',
+            codeFlow: [ {chip:'re-step-1.tsx'}, {label:'calls'}, {chip:'supabase.functions.invoke("re-onboarding-start")'} ],
+            files: [ {path:'supabase/functions/re-onboarding-start/index.ts', desc:'Fetches the main cohort list and screen wording for step 1'} ],
+            api: {endpoint:'POST /re-onboarding-start', note:'Returns the 5 main cohort cards plus their on-screen description text'},
+            db: null
+          },
+          {
+            layer: 'App logic', tag: 'HOOK',
+            title: 'Every answer is saved as it\'s given',
+            desc: 'Each answer — location, diet rules, household members, health needs — is written to the household\'s profile immediately, not batched at the end.',
+            codeFlow: [ {chip:'re-step-1.tsx'}, {label:'calls'}, {chip:'re-onboarding.repository.ts → saveRELocation()'} ],
+            files: [ {path:'src/repositories/re-onboarding.repository.ts', desc:'Saves each onboarding answer to the household\'s profile as it\'s given'} ],
+            api: null, db: null
+          },
+          {
+            layer: 'App logic', tag: 'HOOK',
+            title: 'The household\'s cohort/persona is worked out',
+            desc: 'Combines home state, current city, health conditions, and cook-dependency into a cohort match with a confidence score.',
+            codeFlow: [ {chip:'re-onboarding.repository.ts'}, {label:'calls'}, {chip:'re-cohort-resolver.repository.ts → runCohortAssignment()'} ],
+            files: [ {path:'src/repositories/re-cohort-resolver.repository.ts', desc:'Works out which of the 41 personas this household matches, with a confidence score'} ],
+            api: null, db: null
+          },
+          {
+            layer: 'Server', tag: 'API',
+            title: 'The persona match is saved as "active"',
+            desc: 'Retires any previous persona assignment first, so there\'s never ambiguity about which one is current for this household.',
+            codeFlow: [ {chip:'re-cohort-resolver.repository.ts'}, {label:'calls'}, {chip:'supabase.functions.invoke("re-personas-assign")'} ],
+            files: [ {path:'supabase/functions/re-personas-assign/index.ts', desc:'Saves the persona match, retiring any earlier assignment'} ],
+            api: {endpoint:'POST /re-personas-assign', note:'Body: { profileId, personaId, confidence } — upserts the active assignment'},
+            db: {table:'re_persona_assignments', op:'INSERT', note:'One row per household, old assignment marked inactive first'}
+          },
+          {
+            layer: 'Database', tag: 'DB',
+            title: 'Cold-start taste data is ready for this persona',
+            desc: 'The moment a persona is assigned, this table already has sensible starting meal preferences for it — so the household never sees a blank "no suggestions yet" screen.',
+            codeFlow: [], files: [ {path:'supabase/migrations — re_persona_class_affinity', desc:'426 rows of pre-computed starting taste data, one set per persona'} ],
+            api: null,
+            db: {table:'re_persona_class_affinity', op:'SELECT', note:'Read by the dish-ranking step the first time this household opens the Home screen'}
+          }
+        ]
+      },
+      {
+        id: 'daily-plan-generation',
+        label: 'Daily plan generation',
+        steps: [
+          {
+            layer: 'Phone', tag: 'UI',
+            title: 'Household opens the Home screen',
+            desc: 'Opening Home triggers a request for today\'s plan — the household doesn\'t do anything else to make this happen.',
+            codeFlow: [], files: [], api: null, db: null
+          },
+          {
+            layer: 'Server', tag: 'API',
+            title: 'Server checks or builds this week\'s plan',
+            desc: 'Returns the cached plan if one already exists for this week, otherwise triggers the plan-builder.',
+            codeFlow: [ {chip:'Home screen'}, {label:'calls'}, {chip:'supabase.functions.invoke("re-plans-week-generate")'} ],
+            files: [ {path:'supabase/functions/re-plans-week-generate/index.ts', desc:'Returns the cached weekly plan, or generates a new one if missing'} ],
+            api: {endpoint:'POST /re-plans-week-generate', note:'Body: { userId, forceRegenerate? } — idempotent unless forced'},
+            db: null
+          },
+          {
+            layer: 'App logic', tag: 'HOOK',
+            title: 'The 7-day class plan is built',
+            desc: 'Looks up which meal class belongs in each day/slot for this household\'s persona, and saves the result.',
+            codeFlow: [ {chip:'re-plans-week-generate/index.ts'}, {label:'calls'}, {chip:'re-plan.repository.ts → generateUserWeeklyPlan()'} ],
+            files: [ {path:'src/repositories/re-plan.repository.ts', desc:'Builds and saves the household\'s 7-day meal-class plan'} ],
+            api: null,
+            db: {table:'re_user_weekly_plans', op:'INSERT', note:'One row per household per day of the week'}
+          },
+          {
+            layer: 'Server', tag: 'API',
+            title: 'Today\'s ranked dish suggestions are requested',
+            desc: 'A thin endpoint that packages today\'s ranked candidates for the screen — the actual ranking math happens one step further in.',
+            codeFlow: [ {chip:'Home screen'}, {label:'calls'}, {chip:'supabase.functions.invoke("re-recommendations-rank")'} ],
+            files: [ {path:'supabase/functions/re-recommendations-rank/index.ts', desc:'Packages today\'s class plan + ranked dish candidates for the screen'} ],
+            api: {endpoint:'POST /re-recommendations-rank', note:'Body: { userId, dayOfWeek? } — returns ranked dish candidates for today\'s slots'},
+            db: null
+          },
+          {
+            layer: 'App logic', tag: 'HOOK',
+            title: 'Every eligible dish is scored for this household',
+            desc: 'Diet compatibility, region, city type, cooking ability, and learned taste are combined into one score per dish.',
+            codeFlow: [ {chip:'re-recommendations-rank/index.ts'}, {label:'calls'}, {chip:'re-dish-expander.repository.ts → fetchTodayDishCandidates()'} ],
+            files: [ {path:'src/repositories/re-dish-expander.repository.ts', desc:'Scores and ranks every eligible dish for this household'} ],
+            api: null,
+            db: {table:'re_class_dish_options', op:'SELECT', note:'Pulls every dish variant that belongs to today\'s meal class before scoring'}
+          },
+          {
+            layer: 'Phone', tag: 'UI',
+            title: 'Household sees today\'s ranked suggestions',
+            desc: 'Best-matching dish shown first for each meal slot.',
+            codeFlow: [], files: [], api: null, db: null
+          }
+        ]
+      }
+    ];
+    renderFeatureFlows('s1-flows', window.FEATURE_FLOWS_S1);
+    </script>
+
   </div><!-- /page-s1 -->
 
-  <div id="page-s2" class="page-content">
+  <div id="page-s2" class="page-content" style="display:none">
 
     <div class="page-header">
       <div class="page-title">S2 · Knowledge book overhaul</div>
@@ -1545,6 +1726,7 @@
     <div class="view-tabs">
       <div class="view-tab active" onclick="switchView('s2','swim')">Swim lane flow</div>
       <div class="view-tab" onclick="switchView('s2','detail')">Detail drill-down</div>
+      <div class="view-tab" onclick="switchView('s2','flows')">Feature flows</div>
     </div>
 
     <!-- ══ SWIM LANE VIEW ══ -->
@@ -1670,7 +1852,171 @@
       </div>
     </div><!-- /detail -->
 
+    <!-- ══ FEATURE FLOWS VIEW ══ -->
+    <div id="s2-flows" class="view-pane"></div>
+    <script>
+    window.FEATURE_FLOWS_S2 = [
+      {
+        id: 'architecture-tile-to-module',
+        label: 'Architecture tile → Module explanation',
+        steps: [
+          {
+            layer: 'Phone', tag: 'UI',
+            title: 'PM clicks an architecture tile',
+            desc: 'On the App Architecture page, clicking any wired tile (one with a real explanation behind it) is the entry point — unwired tiles deliberately don\'t respond, so there\'s no dead click.',
+            codeFlow: [ {chip:'KNOWLEDGE.html — .arch-node[onclick]'}, {label:'calls'}, {chip:'jumpModule(moduleId)'} ],
+            files: [ {path:'KNOWLEDGE.html', desc:'Contains every architecture tile and the Modules/Files/Decisions reference pages'} ],
+            api: null, db: null
+          },
+          {
+            layer: 'App logic', tag: 'HOOK',
+            title: 'jumpModule() switches page and expands the entry',
+            desc: 'Navigates to the Modules page, then finds and opens the specific drawer that matches this tile, scrolling it into view.',
+            codeFlow: [ {chip:'jumpModule(id)'}, {label:'calls'}, {chip:'showPage("modules")'}, {label:'then'}, {chip:'toggleDetail("mod-"+id)'} ],
+            files: [
+              {path:'.claude/skills/session-knowledge-doc/references/shell-template.md', desc:'Source of truth for the renderFeatureFlows/jumpModule JS, copied into KNOWLEDGE.html'}
+            ],
+            api: null, db: null
+          },
+          {
+            layer: 'Phone', tag: 'UI',
+            title: 'PM reads the plain-English module explanation',
+            desc: 'The drawer shows what the file/table does, every file inside it with a one-line job description, and how it helps the app — sourced from the code\'s own header comments, not invented.',
+            codeFlow: [],
+            files: [ {path:'.claude/skills/session-knowledge-doc/SKILL.md', desc:'Documents the rule that this content must come from reading the actual code, not memory'} ],
+            api: null, db: null
+          }
+        ]
+      }
+    ];
+    renderFeatureFlows('s2-flows', window.FEATURE_FLOWS_S2);
+    </script>
+
   </div><!-- /page-s2 -->
+
+  <div id="page-s3" class="page-content">
+
+    <div class="page-header">
+      <div class="page-title">S3 · Feature flows tab</div>
+      <div class="page-subtitle">Added a third tab to every session — a feature-by-feature, step-by-step code walkthrough showing exactly which files run in what order, with the API/database handshakes called out explicitly.</div>
+    </div>
+
+    <div class="session-card">
+      <div class="session-card-header">
+        <div class="session-card-title">What was built this session</div>
+        <div class="session-card-meta">2026-06-18<br>4 things touched</div>
+      </div>
+      <div class="session-card-desc">Every session page now has a "Feature flows" tab alongside Swim lane flow and Detail drill-down. Pick a feature from the top row of buttons, and each step of that feature — across Phone, App logic, Middleware, Server, Database, and Service layers — expands to show the plain-English explanation, the real file-to-file call chain, every file touched, and (only when relevant) the exact API endpoint or database operation. A "Deep-dive" button on each feature copies a ready-made follow-up prompt for going deeper on error handling and edge cases.</div>
+      <div class="stat-row">
+        <div class="stat"><div class="stat-n" style="color:#1a56db">0</div><div class="stat-l">Screens</div></div>
+        <div class="stat"><div class="stat-n" style="color:#5145b8">4</div><div class="stat-l">Code files</div></div>
+        <div class="stat"><div class="stat-n" style="color:#0e7a5a">0</div><div class="stat-l">DB changes</div></div>
+        <div class="stat"><div class="stat-n" style="color:#92500a">0</div><div class="stat-l">Server fns</div></div>
+      </div>
+    </div>
+
+    <div class="view-tabs">
+      <div class="view-tab active" onclick="switchView('s3','swim')">Swim lane flow</div>
+      <div class="view-tab" onclick="switchView('s3','detail')">Detail drill-down</div>
+    </div>
+
+    <!-- ══ SWIM LANE VIEW ══ -->
+    <div id="s3-swim" class="view-pane active">
+      <div class="swim-lane lane-blue">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Knowledge book</div><div class="swim-label-sub">what you see</div></div></div>
+        <div class="swim-body">
+          <div class="swim-step" onclick="jumpDetail('s3','tab')">
+            <div class="step-num num-blue">1</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">New "Feature flows" tab on every session</span><span class="tag tag-new">New</span></div><div class="step-desc">A feature-by-feature, step-by-step code walkthrough — the most granular view in the book.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="swim-arrow">↕ Driven by a data array, not hand-written HTML, so it's reusable across every session</div>
+      <div class="swim-lane" style="margin-bottom:10px">
+        <div class="swim-label"><div class="swim-label-inner"><div class="swim-label-title">Skill logic</div><div class="swim-label-sub">dotfiles tooling</div></div></div>
+        <div class="swim-body" style="background:var(--purple-bg);border-color:var(--purple-border)">
+          <div class="swim-step" onclick="jumpDetail('s3','renderer')">
+            <div class="step-num num-purple">2</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">One shared renderer function, used by every session</span><span class="tag tag-new">New</span></div><div class="step-desc">renderFeatureFlows() turns a flows[] array into the interactive tab — written once, reused forever.</div></div>
+          </div>
+          <div class="swim-step" onclick="jumpDetail('s3','verify-rule')">
+            <div class="step-num num-purple">3</div>
+            <div class="step-content"><div class="step-title-row"><span class="step-title">New rule: every file path must be verified before it's written down</span><span class="tag tag-new">New</span></div><div class="step-desc">No more plausible-but-invented file paths — `test -f` first, always.</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="next-box">
+        <div class="next-label">Next session</div>
+        <div class="next-text">Add Feature flows coverage for any new features built going forward. Consider adding flows for the remaining un-covered S1 work (Play Store readiness, edge-function security audit) if useful.</div>
+      </div>
+    </div>
+
+    <!-- ══ DETAIL DRILL-DOWN VIEW ══ -->
+    <div id="s3-detail" class="view-pane">
+      <div class="detail-item">
+        <div class="detail-row" id="row-s3-tab" onclick="toggleDetail('s3-tab')">
+          <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name plain">Feature flows tab</span></div>
+          <span class="detail-chevron" id="chev-s3-tab">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s3-tab">
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">A third view tab on every session page. Top row of buttons, one per feature built or modified that session; each feature is a stack of collapsible steps across up to 6 layers (Phone, App logic, Middleware, Server, Database, Service).</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow"><span class="dd-node">Click a feature button</span><span class="dd-arrow">→</span><span class="dd-node">Click a step</span><span class="dd-arrow">→</span><span class="dd-node">See plain-English explanation, code flow, files, API/DB</span></div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">switchView('s{{N}}','flows')</span>  ← Reuses the exact same tab-switching function as Swim lane flow / Detail drill-down — zero changes needed to existing JS</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why a third tab instead of a separate page like Modules or System Flow?</div>
+            <div class="dd-why-a">This content is scoped to one session's features, not cumulative across the whole project — it belongs with that session's other two views, not as a standalone reference page.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-row" id="row-s3-renderer" onclick="toggleDetail('s3-renderer')">
+          <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name">renderFeatureFlows()</span></div>
+          <span class="detail-chevron" id="chev-s3-renderer">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s3-renderer">
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">Takes a session's flows[] data array and builds the entire interactive tab — tab buttons, collapsible steps, code-flow chips, files-touched chips, and the API/DB sections that only render when a step actually has that surface.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow"><span class="dd-node">Session's inline script defines flows[]</span><span class="dd-arrow">→</span><span class="dd-node">renderFeatureFlows() builds the HTML</span><span class="dd-arrow">→</span><span class="dd-node">toggleFeatureStep() handles expand/collapse</span></div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">if(s.api){ ... } if(s.db){ ... }</span>  ← Sections only render when the step actually has that surface — no empty "API contract" box on a step that doesn't call one</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why one shared function instead of hand-writing the HTML per session, like Swim lane flow?</div>
+            <div class="dd-why-a">The data is more structured (6 possible layers × 5 sub-fields per step) than a swim lane step — a data-driven renderer keeps every session's tab visually identical without copy-pasting the markup each time.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="detail-item">
+        <div class="detail-row" id="row-s3-verify-rule" onclick="toggleDetail('s3-verify-rule')">
+          <div class="detail-left"><span class="tag tag-new">New</span><span class="detail-name plain">File-path verification rule</span></div>
+          <span class="detail-chevron" id="chev-s3-verify-rule">▾</span>
+        </div>
+        <div class="detail-drawer" id="draw-s3-verify-rule">
+          <div class="dd-label">What this does</div>
+          <div class="dd-text">Before any file path goes into a Feature flow's "Code flow" or "Files touched" section, it must be checked against the real filesystem — never written from a guess at what a file is probably named.</div>
+          <div class="dd-label">Flow through it</div>
+          <div class="dd-flow"><span class="dd-node">Identify a file the feature touches</span><span class="dd-arrow">→</span><span class="dd-node">test -f path/to/file</span><span class="dd-arrow">→</span><span class="dd-node">Only include if it exists</span></div>
+          <div class="dd-label">Key line of code</div>
+          <div class="dd-code"><span class="dd-hl">test -f path/to/file.tsx && echo EXISTS || echo "MISSING — do not include"</span>  ← Every path named in S1 and S2's Feature flows was checked this way before being written</div>
+          <div class="dd-why">
+            <div class="dd-why-q">Why is this rule necessary when the Module Reference rule already says "read the real code"?</div>
+            <div class="dd-why-a">Module Reference describes files already confirmed to exist (they were read to write the entry). Feature flows often name files in a call chain that weren't separately read in full — easy to write a plausible-sounding path that's actually wrong without an explicit existence check.</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="next-box">
+        <div class="next-label">Next session</div>
+        <div class="next-text">Add Feature flows coverage for any new features built going forward.</div>
+      </div>
+    </div>
+
+  </div><!-- /page-s3 -->
 
   <!-- SESSIONS_INJECT -->
 
@@ -1715,6 +2061,108 @@ function toggleDetail(id){
   dr.classList.toggle('open',!isOpen);
   row&&row.classList.toggle('open',!isOpen);
   ch.classList.toggle('open',!isOpen);
+}
+
+// ── Feature flows tab (per-session) ──
+// Renders a flows[] array (see references/session-block-template.md) into rootId.
+// Called once per session from that session's own inline <script>, e.g.:
+//   renderFeatureFlows('s3-flows', FEATURE_FLOWS_S3);
+function renderFeatureFlows(rootId, flows){
+  const root=document.getElementById(rootId);
+  if(!root||!flows||!flows.length)return;
+  const layerMeta={
+    'Phone':{bg:'#E6F1FB',color:'#0C447C'},
+    'App logic':{bg:'#E1F5EE',color:'#085041'},
+    'Middleware':{bg:'#FAEEDA',color:'#633806'},
+    'Server':{bg:'#FFF0F0',color:'#791F1F'},
+    'Database':{bg:'#EEEDFE',color:'#3C3489'},
+    'Service':{bg:'#FAECE7',color:'#712B13'}
+  };
+  const tagMeta={
+    'UI':{bg:'#E6F1FB',color:'#0C447C'},
+    'HOOK':{bg:'#E1F5EE',color:'#085041'},
+    'API':{bg:'#FAEEDA',color:'#633806'},
+    'DB':{bg:'#EEEDFE',color:'#3C3489'},
+    'SDK':{bg:'#FAECE7',color:'#712B13'},
+    'POLICY':{bg:'#FBEAF0',color:'#72243E'}
+  };
+  function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function pill(text,meta){
+    const m=meta[text]||{bg:'#f2f1ee',color:'#6b6860'};
+    return '<span class="ff-pill" style="background:'+m.bg+';color:'+m.color+'">'+esc(text)+'</span>';
+  }
+  let html='<div class="ff-tabs">';
+  flows.forEach((f,i)=>{html+='<div class="ff-tab'+(i===0?' active':'')+'" data-ff-tab="'+i+'">'+esc(f.label)+'</div>';});
+  html+='</div>';
+  flows.forEach((f,i)=>{
+    html+='<div class="ff-panel" data-ff-panel="'+i+'" style="'+(i===0?'':'display:none')+'">';
+    html+='<div class="ff-meta">'+esc(f.label)+' · '+f.steps.length+' steps · click any step to see the code files and data flow</div>';
+    f.steps.forEach((s,si)=>{
+      const uid=rootId+'-f'+i+'-s'+si;
+      html+='<div class="ff-step" id="'+uid+'">';
+      html+='<div class="ff-step-header" onclick="toggleFeatureStep(\''+uid+'\')">';
+      html+='<div class="ff-step-num">'+(si+1)+'</div>';
+      html+=pill(s.layer,layerMeta);
+      if(s.tag)html+=pill(s.tag,tagMeta);
+      html+='<div class="ff-step-title">'+esc(s.title)+'</div>';
+      html+='<span class="ff-chevron" id="'+uid+'-chev">▾</span>';
+      html+='</div>';
+      html+='<div class="ff-step-body" id="'+uid+'-body">';
+      html+='<div class="ff-desc">'+esc(s.desc)+'</div>';
+      if(s.codeFlow&&s.codeFlow.length){
+        html+='<div class="ff-section-label">Code flow</div><div class="ff-codeflow">';
+        s.codeFlow.forEach(c=>{
+          if(c.chip!=null)html+='<span class="ff-code-chip">'+esc(c.chip)+'</span>';
+          else if(c.label!=null)html+='<span class="ff-code-arrow">→ '+esc(c.label)+'</span>';
+        });
+        html+='</div>';
+      }
+      if(s.files&&s.files.length){
+        html+='<div class="ff-section-label">Files touched</div><div class="ff-files-touched">';
+        s.files.forEach(fl=>{
+          html+='<div class="ff-file-row"><span class="ff-file-chip">📄 '+esc(fl.path)+'</span><span class="ff-file-desc">'+esc(fl.desc)+'</span></div>';
+        });
+        html+='</div>';
+      }
+      if(s.api){
+        html+='<div class="ff-section-label">API contract</div><div class="ff-api-row"><span class="ff-api-name">'+esc(s.api.endpoint)+'</span><span>'+esc(s.api.note)+'</span></div>';
+      }
+      if(s.db){
+        html+='<div class="ff-section-label">Database</div><div class="ff-db-row"><span class="ff-db-name">'+esc(s.db.table)+' · '+esc(s.db.op)+'</span><span>'+esc(s.db.note)+'</span></div>';
+      }
+      html+='</div></div>';
+    });
+    html+='<div class="ff-deepdive"><button class="ff-deepdive-btn" onclick="deepDiveFeature(\''+esc(f.label).replace(/'/g,"\\'")+'\')">🔎 Deep-dive: error handling &amp; edge cases for '+esc(f.label)+'</button></div>';
+    html+='</div>';
+  });
+  root.innerHTML=html;
+  root.querySelectorAll('.ff-tab').forEach(tab=>{
+    tab.addEventListener('click',function(){
+      const idx=this.getAttribute('data-ff-tab');
+      root.querySelectorAll('.ff-tab').forEach(t=>t.classList.remove('active'));
+      this.classList.add('active');
+      root.querySelectorAll('.ff-panel').forEach(p=>{p.style.display=(p.getAttribute('data-ff-panel')===idx)?'':'none';});
+    });
+  });
+}
+function toggleFeatureStep(uid){
+  const body=document.getElementById(uid+'-body');
+  const chev=document.getElementById(uid+'-chev');
+  const step=document.getElementById(uid);
+  if(!body||!chev||!step)return;
+  const isOpen=step.classList.contains('open');
+  step.classList.toggle('open',!isOpen);
+  chev.textContent=isOpen?'▾':'▴';
+}
+function deepDiveFeature(featureLabel){
+  const prompt='Go deeper on error handling and edge cases for the "'+featureLabel+'" feature flow documented in KNOWLEDGE.html — what can fail at each step, and how is/should it be handled?';
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(prompt).then(()=>{
+      alert('Prompt copied to clipboard — paste it into Claude Code to go deeper:\n\n'+prompt);
+    }).catch(()=>{alert(prompt);});
+  }else{
+    alert(prompt);
+  }
 }
 </script>
 </body>

@@ -160,6 +160,36 @@ All `<!-- *_INJECT -->` comments MUST be preserved — they are how future sessi
   .empty-pane h3{font-size:15px;font-weight:600;color:var(--text2);margin-bottom:6px}
   .empty-pane p{font-size:13px;line-height:1.6}
 
+  /* ── Feature flows tab (per-session) ── */
+  .ff-tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px}
+  .ff-tab{padding:9px 16px;border:1px solid var(--border);border-radius:8px;background:var(--surface);font-size:13px;font-weight:500;color:var(--text);cursor:pointer;transition:border-color .12s,color .12s;user-select:none}
+  .ff-tab:hover{border-color:var(--border2)}
+  .ff-tab.active{border-color:#1a56db;color:#1a56db}
+  .ff-meta{font-size:13px;color:var(--text2);margin-bottom:14px}
+  .ff-step{border:1px solid var(--border);border-radius:var(--radius);margin-bottom:10px;background:var(--surface);overflow:hidden}
+  .ff-step-header{display:flex;align-items:center;gap:10px;padding:13px 16px;cursor:pointer;user-select:none}
+  .ff-step-num{width:24px;height:24px;border-radius:50%;border:1px solid var(--border2);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--text2);flex-shrink:0}
+  .ff-pill{font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;flex-shrink:0}
+  .ff-step-title{font-size:14px;font-weight:600;color:var(--text);flex:1}
+  .ff-chevron{font-size:12px;color:var(--text3);flex-shrink:0}
+  .ff-step-body{display:none;padding:0 16px 16px 60px}
+  .ff-step.open .ff-step-body{display:block}
+  .ff-section-label{font-size:10px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--text3);margin:14px 0 6px}
+  .ff-section-label:first-child{margin-top:0}
+  .ff-desc{font-size:13px;color:var(--text2);line-height:1.6}
+  .ff-codeflow{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+  .ff-code-chip{font-family:'SF Mono','Fira Code',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:5px 10px;color:var(--text)}
+  .ff-code-arrow{font-size:12px;color:var(--text3)}
+  .ff-files-touched{display:flex;flex-direction:column;gap:7px}
+  .ff-file-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+  .ff-file-chip{font-family:'SF Mono','Fira Code',monospace;font-size:11px;background:var(--surface2);border:1px solid var(--border);border-radius:6px;padding:4px 9px;color:var(--text)}
+  .ff-file-desc{font-size:12px;color:var(--text2)}
+  .ff-api-row,.ff-db-row{font-size:12px;color:var(--text2);display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+  .ff-api-name,.ff-db-name{font-family:'SF Mono','Fira Code',monospace;font-weight:600;color:var(--text);flex-shrink:0}
+  .ff-deepdive{margin-top:14px;text-align:center}
+  .ff-deepdive-btn{padding:10px 18px;border-radius:8px;border:1px solid var(--blue-border);background:var(--blue-bg);color:var(--blue);font-size:13px;font-weight:600;cursor:pointer}
+  .ff-deepdive-btn:hover{background:var(--blue-border)}
+
   @media(max-width:640px){#sidebar{display:none}#main{padding:20px 16px}.stat-row{grid-template-columns:repeat(2,1fr)}}
 </style>
 </head>
@@ -368,6 +398,108 @@ function toggleDetail(id){
   dr.classList.toggle('open',!isOpen);
   row&&row.classList.toggle('open',!isOpen);
   ch.classList.toggle('open',!isOpen);
+}
+
+// ── Feature flows tab (per-session) ──
+// Renders a flows[] array (see references/session-block-template.md) into rootId.
+// Called once per session from that session's own inline <script>, e.g.:
+//   renderFeatureFlows('s3-flows', FEATURE_FLOWS_S3);
+function renderFeatureFlows(rootId, flows){
+  const root=document.getElementById(rootId);
+  if(!root||!flows||!flows.length)return;
+  const layerMeta={
+    'Phone':{bg:'#E6F1FB',color:'#0C447C'},
+    'App logic':{bg:'#E1F5EE',color:'#085041'},
+    'Middleware':{bg:'#FAEEDA',color:'#633806'},
+    'Server':{bg:'#FFF0F0',color:'#791F1F'},
+    'Database':{bg:'#EEEDFE',color:'#3C3489'},
+    'Service':{bg:'#FAECE7',color:'#712B13'}
+  };
+  const tagMeta={
+    'UI':{bg:'#E6F1FB',color:'#0C447C'},
+    'HOOK':{bg:'#E1F5EE',color:'#085041'},
+    'API':{bg:'#FAEEDA',color:'#633806'},
+    'DB':{bg:'#EEEDFE',color:'#3C3489'},
+    'SDK':{bg:'#FAECE7',color:'#712B13'},
+    'POLICY':{bg:'#FBEAF0',color:'#72243E'}
+  };
+  function esc(s){return (s==null?'':String(s)).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');}
+  function pill(text,meta){
+    const m=meta[text]||{bg:'#f2f1ee',color:'#6b6860'};
+    return '<span class="ff-pill" style="background:'+m.bg+';color:'+m.color+'">'+esc(text)+'</span>';
+  }
+  let html='<div class="ff-tabs">';
+  flows.forEach((f,i)=>{html+='<div class="ff-tab'+(i===0?' active':'')+'" data-ff-tab="'+i+'">'+esc(f.label)+'</div>';});
+  html+='</div>';
+  flows.forEach((f,i)=>{
+    html+='<div class="ff-panel" data-ff-panel="'+i+'" style="'+(i===0?'':'display:none')+'">';
+    html+='<div class="ff-meta">'+esc(f.label)+' · '+f.steps.length+' steps · click any step to see the code files and data flow</div>';
+    f.steps.forEach((s,si)=>{
+      const uid=rootId+'-f'+i+'-s'+si;
+      html+='<div class="ff-step" id="'+uid+'">';
+      html+='<div class="ff-step-header" onclick="toggleFeatureStep(\''+uid+'\')">';
+      html+='<div class="ff-step-num">'+(si+1)+'</div>';
+      html+=pill(s.layer,layerMeta);
+      if(s.tag)html+=pill(s.tag,tagMeta);
+      html+='<div class="ff-step-title">'+esc(s.title)+'</div>';
+      html+='<span class="ff-chevron" id="'+uid+'-chev">▾</span>';
+      html+='</div>';
+      html+='<div class="ff-step-body" id="'+uid+'-body">';
+      html+='<div class="ff-desc">'+esc(s.desc)+'</div>';
+      if(s.codeFlow&&s.codeFlow.length){
+        html+='<div class="ff-section-label">Code flow</div><div class="ff-codeflow">';
+        s.codeFlow.forEach(c=>{
+          if(c.chip!=null)html+='<span class="ff-code-chip">'+esc(c.chip)+'</span>';
+          else if(c.label!=null)html+='<span class="ff-code-arrow">→ '+esc(c.label)+'</span>';
+        });
+        html+='</div>';
+      }
+      if(s.files&&s.files.length){
+        html+='<div class="ff-section-label">Files touched</div><div class="ff-files-touched">';
+        s.files.forEach(fl=>{
+          html+='<div class="ff-file-row"><span class="ff-file-chip">📄 '+esc(fl.path)+'</span><span class="ff-file-desc">'+esc(fl.desc)+'</span></div>';
+        });
+        html+='</div>';
+      }
+      if(s.api){
+        html+='<div class="ff-section-label">API contract</div><div class="ff-api-row"><span class="ff-api-name">'+esc(s.api.endpoint)+'</span><span>'+esc(s.api.note)+'</span></div>';
+      }
+      if(s.db){
+        html+='<div class="ff-section-label">Database</div><div class="ff-db-row"><span class="ff-db-name">'+esc(s.db.table)+' · '+esc(s.db.op)+'</span><span>'+esc(s.db.note)+'</span></div>';
+      }
+      html+='</div></div>';
+    });
+    html+='<div class="ff-deepdive"><button class="ff-deepdive-btn" onclick="deepDiveFeature(\''+esc(f.label).replace(/'/g,"\\'")+'\')">🔎 Deep-dive: error handling &amp; edge cases for '+esc(f.label)+'</button></div>';
+    html+='</div>';
+  });
+  root.innerHTML=html;
+  root.querySelectorAll('.ff-tab').forEach(tab=>{
+    tab.addEventListener('click',function(){
+      const idx=this.getAttribute('data-ff-tab');
+      root.querySelectorAll('.ff-tab').forEach(t=>t.classList.remove('active'));
+      this.classList.add('active');
+      root.querySelectorAll('.ff-panel').forEach(p=>{p.style.display=(p.getAttribute('data-ff-panel')===idx)?'':'none';});
+    });
+  });
+}
+function toggleFeatureStep(uid){
+  const body=document.getElementById(uid+'-body');
+  const chev=document.getElementById(uid+'-chev');
+  const step=document.getElementById(uid);
+  if(!body||!chev||!step)return;
+  const isOpen=step.classList.contains('open');
+  step.classList.toggle('open',!isOpen);
+  chev.textContent=isOpen?'▾':'▴';
+}
+function deepDiveFeature(featureLabel){
+  const prompt='Go deeper on error handling and edge cases for the "'+featureLabel+'" feature flow documented in KNOWLEDGE.html — what can fail at each step, and how is/should it be handled?';
+  if(navigator.clipboard&&navigator.clipboard.writeText){
+    navigator.clipboard.writeText(prompt).then(()=>{
+      alert('Prompt copied to clipboard — paste it into Claude Code to go deeper:\n\n'+prompt);
+    }).catch(()=>{alert(prompt);});
+  }else{
+    alert(prompt);
+  }
 }
 </script>
 </body>
